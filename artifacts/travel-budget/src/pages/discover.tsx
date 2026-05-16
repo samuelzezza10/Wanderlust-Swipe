@@ -400,17 +400,45 @@ export default function Discover() {
 
   /* ── No results ── */
   if (trips.length === 0) {
+    const isNoDirectTrain =
+      filters.trainPreference === "direct" && !!filters.departureStation;
     return (
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         <div className="flex-1 flex items-center justify-center flex-col p-6 text-center">
-          <div className="text-6xl mb-4">😭</div>
-          <h2 className="text-xl font-bold mb-2">{t.filters.noResults}</h2>
-          <p className="text-base text-muted-foreground mb-2 max-w-xs">{noResultsMsgRef.current}</p>
-          <p className="text-sm text-muted-foreground/70 mb-8 max-w-xs">{t.filters.noResultsSub}</p>
-          <Button onClick={() => setFilterOpen(true)} variant="outline" className="gap-2">
-            <SlidersHorizontal className="w-4 h-4" />{t.filters.edit}
-          </Button>
+          {isNoDirectTrain ? (
+            <>
+              <div className="text-6xl mb-4">🚂</div>
+              <h2 className="text-xl font-bold mb-3">{t.discover.noDirectTrainTitle}</h2>
+              <p className="text-sm text-muted-foreground mb-8 max-w-xs leading-relaxed">
+                {t.discover.noDirectTrain}
+              </p>
+              <Button
+                onClick={() => {
+                  const updated = { ...filters, trainPreference: "with_stops" as const };
+                  setFilters(updated);
+                  loadTrips(updated);
+                }}
+                className="gap-2 mb-3"
+              >
+                <TrainFront className="w-4 h-4" />
+                {t.filters.trainWithChanges}
+              </Button>
+              <Button onClick={() => setFilterOpen(true)} variant="outline" size="sm">
+                {t.filters.edit}
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="text-6xl mb-4">😭</div>
+              <h2 className="text-xl font-bold mb-2">{t.filters.noResults}</h2>
+              <p className="text-base text-muted-foreground mb-2 max-w-xs">{noResultsMsgRef.current}</p>
+              <p className="text-sm text-muted-foreground/70 mb-8 max-w-xs">{t.filters.noResultsSub}</p>
+              <Button onClick={() => setFilterOpen(true)} variant="outline" className="gap-2">
+                <SlidersHorizontal className="w-4 h-4" />{t.filters.edit}
+              </Button>
+            </>
+          )}
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
       </div>

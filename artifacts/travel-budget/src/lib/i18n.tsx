@@ -46,6 +46,8 @@ const en = {
     welcomeTitle: "Welcome to TravelBudget",
     welcomeSub: "Discover the journey of your dreams",
     welcomeStart: "Start exploring",
+    noDirectTrainTitle: "No direct train from here! 😅",
+    noDirectTrain: "Sadly, no direct trains leave from your station… Try switching to 'With connections' — at least you'll see more scenery along the way! 🚂😂",
   },
   tripDetail: {
     overview: "Overview",
@@ -153,6 +155,10 @@ const en = {
     departureStation: "Departure station",
     arrivalStation: "Arrival station",
     hotelStars: "Hotel stars",
+    trainType: "Train type",
+    trainDirect: "Direct only",
+    trainWithChanges: "With connections",
+    budgetIncludes: "Total per person — includes round-trip transport + hotel",
   },
   fun: {
     loadingMessages: [
@@ -215,6 +221,8 @@ const it: Translations = {
     welcomeTitle: "Benvenuto su TravelBudget",
     welcomeSub: "Scopri il viaggio dei tuoi sogni",
     welcomeStart: "Inizia a scoprire",
+    noDirectTrainTitle: "Nessun diretto da qui! 😅",
+    noDirectTrain: "Purtroppo dalla tua stazione non parte nessun treno diretto… Prova a mettere 'Con cambio' — almeno vedrai più paesaggi lungo la strada! 🚂😂",
   },
   tripDetail: {
     overview: "Panoramica",
@@ -322,6 +330,10 @@ const it: Translations = {
     departureStation: "Stazione partenza",
     arrivalStation: "Stazione arrivo",
     hotelStars: "Stelle hotel",
+    trainType: "Tipo di treno",
+    trainDirect: "Solo diretto",
+    trainWithChanges: "Con cambio",
+    budgetIncludes: "Totale a persona — comprende trasporto andata+ritorno + hotel",
   },
   fun: {
     loadingMessages: [
@@ -384,6 +396,8 @@ const es: Translations = {
     welcomeTitle: "Bienvenido a TravelBudget",
     welcomeSub: "Descubre el viaje de tus sueños",
     welcomeStart: "Empezar a explorar",
+    noDirectTrainTitle: "¡Sin directo desde aquí! 😅",
+    noDirectTrain: "Lamentablemente, ningún tren directo sale de tu estación… ¡Prueba 'Con transbordos' — al menos verás más paisajes por el camino! 🚂😂",
   },
   tripDetail: {
     overview: "Descripción",
@@ -491,6 +505,10 @@ const es: Translations = {
     departureStation: "Estación de salida",
     arrivalStation: "Estación de llegada",
     hotelStars: "Estrellas del hotel",
+    trainType: "Tipo de tren",
+    trainDirect: "Solo directo",
+    trainWithChanges: "Con transbordos",
+    budgetIncludes: "Total por persona — incluye transporte ida+vuelta + hotel",
   },
   fun: {
     loadingMessages: [
@@ -553,6 +571,8 @@ const fr: Translations = {
     welcomeTitle: "Bienvenue sur TravelBudget",
     welcomeSub: "Découvrez le voyage de vos rêves",
     welcomeStart: "Commencer à explorer",
+    noDirectTrainTitle: "Pas de direct depuis ici ! 😅",
+    noDirectTrain: "Malheureusement, aucun train direct ne part de votre gare… Essayez 'Avec correspondances' — au moins vous verrez plus de paysages en route ! 🚂😂",
   },
   tripDetail: {
     overview: "Aperçu",
@@ -660,6 +680,10 @@ const fr: Translations = {
     departureStation: "Gare de départ",
     arrivalStation: "Gare d'arrivée",
     hotelStars: "Étoiles de l'hôtel",
+    trainType: "Type de train",
+    trainDirect: "Direct uniquement",
+    trainWithChanges: "Avec correspondances",
+    budgetIncludes: "Total par personne — inclut transport aller-retour + hôtel",
   },
   fun: {
     loadingMessages: [
@@ -722,6 +746,8 @@ const de: Translations = {
     welcomeTitle: "Willkommen bei TravelBudget",
     welcomeSub: "Entdecken Sie die Reise Ihrer Träume",
     welcomeStart: "Jetzt entdecken",
+    noDirectTrainTitle: "Kein Direktzug von hier! 😅",
+    noDirectTrain: "Leider fährt von Ihrem Bahnhof kein Direktzug ab… Versuchen Sie 'Mit Umsteigen' — zumindest sehen Sie mehr Landschaft unterwegs! 🚂😂",
   },
   tripDetail: {
     overview: "Überblick",
@@ -829,6 +855,10 @@ const de: Translations = {
     departureStation: "Abfahrtsbahnhof",
     arrivalStation: "Zielbahnhof",
     hotelStars: "Hotelsterne",
+    trainType: "Zugart",
+    trainDirect: "Nur Direktzug",
+    trainWithChanges: "Mit Umsteigen",
+    budgetIncludes: "Gesamt pro Person — inkl. Hin- und Rückfahrt + Hotel",
   },
   fun: {
     loadingMessages: [

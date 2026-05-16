@@ -24,6 +24,7 @@ export interface TripFilters {
   arrivalStation: string;
   hotelStarsMin: number;
   hotelStarsMax: number;
+  trainPreference: "direct" | "with_stops" | "any";
 }
 
 export const DEFAULT_FILTERS: TripFilters = {
@@ -44,6 +45,7 @@ export const DEFAULT_FILTERS: TripFilters = {
   arrivalStation: "",
   hotelStarsMin: 1,
   hotelStarsMax: 5,
+  trainPreference: "any",
 };
 
 export function countActiveFilters(f: TripFilters): number {
@@ -64,6 +66,7 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.departureStation) n++;
   if (f.arrivalStation) n++;
   if (f.hotelStarsMin !== 1 || f.hotelStarsMax !== 5) n++;
+  if (f.trainPreference !== "any") n++;
   return n;
 }
 
@@ -198,7 +201,9 @@ export function FilterSheet({
                 className="flex-1 accent-primary" />
               <span className="font-bold text-sm w-20 text-right">€{draft.budget.toLocaleString()}</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">{t.filters.perPerson}</p>
+            <p className="text-xs text-primary/70 font-medium mt-2 text-xs">
+              💡 {t.filters.budgetIncludes}
+            </p>
           </FilterSection>
 
           {/* ── Stelle hotel ───────────────────────────────── */}
@@ -257,6 +262,19 @@ export function FilterSheet({
               ]}
               value={draft.flightPreference}
               onChange={(v) => set("flightPreference", v as TripFilters["flightPreference"])}
+            />
+          </FilterSection>
+
+          {/* ── Tipo treno ─────────────────────────────────── */}
+          <FilterSection label={t.filters.trainType}>
+            <RadioGroup
+              options={[
+                { value: "any", label: t.filters.anyFlight },
+                { value: "direct", label: t.filters.trainDirect },
+                { value: "with_stops", label: t.filters.trainWithChanges },
+              ]}
+              value={draft.trainPreference}
+              onChange={(v) => set("trainPreference", v as TripFilters["trainPreference"])}
             />
           </FilterSection>
 
