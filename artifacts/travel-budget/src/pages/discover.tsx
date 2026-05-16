@@ -2,7 +2,12 @@ import { useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useGenerateTrips, useSaveTrip, useGetPreferences } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { MapPin, Plane, Hotel, Check, X, RotateCcw } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import {
+  MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
+  Clock, Star, Navigation, Wifi, ArrowRight,
+} from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -11,6 +16,13 @@ import { useI18n } from "@/lib/i18n";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+function getImgSrc(imageUrl: string) {
+  const raw = imageUrl ?? "";
+  const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  const fixed = withSlash.replace(/\.(jpg|jpeg)$/i, ".png");
+  return `${basePath}${fixed}`;
+}
+
 export default function Discover() {
   const { isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
@@ -18,6 +30,7 @@ export default function Discover() {
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [history, setHistory] = useState<number[]>([]);
+  const [detailTrip, setDetailTrip] = useState<TripSuggestion | null>(null);
 
   const { data: prefs } = useGetPreferences({
     query: { enabled: !!isSignedIn, queryKey: ["preferences"] },
@@ -50,14 +63,11 @@ export default function Discover() {
     );
   };
 
-  // Load trips on first render
-  useState(() => {
-    loadTrips();
-  });
+  // Load on first mount
+  useState(() => { loadTrips(); });
 
   const handleSwipe = (direction: "left" | "right") => {
     if (currentIndex >= trips.length) return;
-
     const trip = trips[currentIndex];
 
     if (direction === "right") {
@@ -72,10 +82,7 @@ export default function Discover() {
         });
       } else {
         toast(t.discover.signUpToSave, {
-          action: {
-            label: t.landing.getStarted,
-            onClick: () => setLocation("/sign-up"),
-          },
+          action: { label: t.landing.getStarted, onClick: () => setLocation("/sign-up") },
         });
       }
     }
@@ -119,71 +126,94 @@ export default function Discover() {
   }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden relative">
-      <div className="relative w-full max-w-sm aspect-[3/4]">
-        <AnimatePresence>
-          {trips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
-            const isTop = i === trips.slice(currentIndex, currentIndex + 3).length - 1;
-            return (
-              <TripCard
-                key={trip.id}
-                trip={trip}
-                isTop={isTop}
-                index={i}
-                onSwipe={handleSwipe}
-                likeLabel={t.discover.like}
-                nopeLabel={t.discover.nope}
-                totalLabel={t.discover.total}
-              />
-            );
-          })}
-        </AnimatePresence>
+    <>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden relative">
+        <div className="relative w-full max-w-sm aspect-[3/4]">
+          <AnimatePresence>
+            {trips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
+              const stack = trips.slice(currentIndex, currentIndex + 3);
+              const isTop = i === stack.length - 1;
+              return (
+                <TripCard
+                  key={trip.id}
+                  trip={trip}
+                  isTop={isTop}
+                  index={i}
+                  onSwipe={handleSwipe}
+                  onInfo={() => setDetailTrip(trip)}
+                  likeLabel={t.discover.like}
+                  nopeLabel={t.discover.nope}
+                  totalLabel={t.discover.total}
+                />
+              );
+            })}
+          </AnimatePresence>
+        </div>
+
+        <div className="flex items-center gap-6 mt-8">
+          <Button
+            variant="outline" size="icon"
+            className="w-12 h-12 rounded-full text-muted-foreground border-2"
+            onClick={handleUndo}
+            disabled={history.length === 0}
+          >
+            <RotateCcw className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="outline" size="icon"
+            className="w-16 h-16 rounded-full text-danger border-2 border-danger/20 hover:bg-danger/10"
+            onClick={() => handleSwipe("left")}
+          >
+            <X className="w-8 h-8" />
+          </Button>
+          <Button
+            variant="outline" size="icon"
+            className="w-16 h-16 rounded-full text-green-500 border-2 border-green-500/20 hover:bg-green-500/10"
+            onClick={() => handleSwipe("right")}
+          >
+            <Check className="w-8 h-8" />
+          </Button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-6 mt-8">
-        <Button
-          variant="outline"
-          size="icon"
-          className="w-12 h-12 rounded-full text-muted-foreground border-2"
-          onClick={handleUndo}
-          disabled={history.length === 0}
-        >
-          <RotateCcw className="w-5 h-5" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="w-16 h-16 rounded-full text-danger border-2 border-danger/20 hover:bg-danger/10"
-          onClick={() => handleSwipe("left")}
-        >
-          <X className="w-8 h-8" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="w-16 h-16 rounded-full text-green-500 border-2 border-green-500/20 hover:bg-green-500/10"
-          onClick={() => handleSwipe("right")}
-        >
-          <Check className="w-8 h-8" />
-        </Button>
-      </div>
-    </div>
+      {/* Trip detail sheet */}
+      <TripDetailSheet
+        trip={detailTrip}
+        onClose={() => setDetailTrip(null)}
+        isSignedIn={!!isSignedIn}
+        onSave={() => {
+          if (detailTrip) {
+            if (isSignedIn) {
+              saveTrip.mutate({
+                data: {
+                  tripData: detailTrip,
+                  destination: detailTrip.destination,
+                  totalPrice: detailTrip.totalPrice,
+                  imageUrl: detailTrip.imageUrl,
+                },
+              });
+              setDetailTrip(null);
+            } else {
+              setLocation("/sign-up");
+            }
+          }
+        }}
+      />
+    </>
   );
 }
 
+/* ─── Trip Card ─────────────────────────────────────────────────────────── */
+
 function TripCard({
-  trip,
-  isTop,
-  index,
-  onSwipe,
-  likeLabel,
-  nopeLabel,
-  totalLabel,
+  trip, isTop, index, onSwipe, onInfo,
+  likeLabel, nopeLabel, totalLabel,
 }: {
   trip: TripSuggestion;
   isTop: boolean;
   index: number;
   onSwipe: (dir: "left" | "right") => void;
+  onInfo: () => void;
   likeLabel: string;
   nopeLabel: string;
   totalLabel: string;
@@ -191,25 +221,13 @@ function TripCard({
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
-
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [0, -100], [0, 1]);
 
-  const handleDragEnd = (_event: any, info: any) => {
-    if (info.offset.x > 100) {
-      onSwipe("right");
-    } else if (info.offset.x < -100) {
-      onSwipe("left");
-    }
+  const handleDragEnd = (_: any, info: any) => {
+    if (info.offset.x > 100) onSwipe("right");
+    else if (info.offset.x < -100) onSwipe("left");
   };
-
-  const imgSrc = (() => {
-    const raw = trip.imageUrl ?? "";
-    const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
-    // Replace .jpg/.jpeg with .png to match actual files
-    const fixed = withSlash.replace(/\.(jpg|jpeg)$/i, ".png");
-    return `${basePath}${fixed}`;
-  })();
 
   return (
     <motion.div
@@ -231,11 +249,21 @@ function TripCard({
     >
       <div className="relative h-full w-full">
         <img
-          src={imgSrc}
+          src={getImgSrc(trip.imageUrl)}
           alt={trip.destination}
           className="w-full h-full object-cover pointer-events-none"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 pointer-events-none" />
+
+        {/* Info button — top-right, only on top card */}
+        {isTop && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onInfo(); }}
+            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors z-10"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+        )}
 
         {isTop && (
           <>
@@ -257,7 +285,6 @@ function TripCard({
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none">
           <h2 className="text-3xl font-bold mb-1">{trip.destination}</h2>
           <p className="text-white/80 font-medium mb-4">{trip.country}</p>
-
           <div className="flex gap-4 mb-4">
             <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
               <Plane className="w-4 h-4" />
@@ -268,7 +295,6 @@ function TripCard({
               <span>${trip.hotel.pricePerNight}/nt</span>
             </div>
           </div>
-
           <div className="flex items-end justify-between">
             <p className="text-sm text-white/80 line-clamp-2 pr-4">{trip.description}</p>
             <div className="text-right shrink-0">
@@ -279,5 +305,185 @@ function TripCard({
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/* ─── Trip Detail Sheet ──────────────────────────────────────────────────── */
+
+function TripDetailSheet({
+  trip, onClose, isSignedIn, onSave,
+}: {
+  trip: TripSuggestion | null;
+  onClose: () => void;
+  isSignedIn: boolean;
+  onSave: () => void;
+}) {
+  const { t } = useI18n();
+
+  return (
+    <Sheet open={!!trip} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <SheetContent side="bottom" className="h-[90dvh] p-0 rounded-t-3xl overflow-hidden flex flex-col">
+        {trip && (
+          <>
+            {/* Hero image */}
+            <div className="relative h-52 shrink-0">
+              <img
+                src={getImgSrc(trip.imageUrl)}
+                alt={trip.destination}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/70" />
+              <div className="absolute bottom-4 left-5 right-5 text-white">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <h2 className="text-3xl font-bold">{trip.destination}</h2>
+                    <p className="text-white/80 flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5" /> {trip.country}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-white/70 uppercase tracking-wider">{t.tripDetail.totalCost}</p>
+                    <p className="text-2xl font-bold">${trip.totalPrice}</p>
+                    <p className="text-xs text-white/70">{t.tripDetail.perPerson}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+
+              {/* Description */}
+              <section>
+                <h3 className="font-bold text-base mb-2">{t.tripDetail.overview}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{trip.description}</p>
+              </section>
+
+              {/* Highlights */}
+              {trip.highlights && trip.highlights.length > 0 && (
+                <section>
+                  <h3 className="font-bold text-base mb-3">{t.tripDetail.highlights}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {trip.highlights.map((h, i) => (
+                      <Badge key={i} variant="secondary" className="text-xs px-3 py-1">
+                        {h}
+                      </Badge>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Transport */}
+              <section className="bg-muted/40 rounded-2xl p-4">
+                <h3 className="font-bold text-base mb-3 flex items-center gap-2">
+                  <Plane className="w-4 h-4 text-primary" />
+                  {trip.transport.type === "train" ? t.tripDetail.train : t.tripDetail.flight}
+                </h3>
+                <div className="space-y-2.5 text-sm">
+                  <DetailRow label={trip.transport.company} value={`$${trip.transport.price}`} bold />
+                  <div className="flex items-center justify-between">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">{t.tripDetail.departure}</p>
+                      <p className="font-bold text-base">{trip.transport.departureTime}</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-0.5 flex-1 px-3">
+                      <p className="text-xs text-muted-foreground">{trip.transport.duration}</p>
+                      <div className="flex items-center gap-1 w-full">
+                        <div className="h-px flex-1 bg-border" />
+                        <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                      </div>
+                      <Badge variant={trip.transport.isDirect ? "default" : "outline"} className="text-[10px] px-2 py-0">
+                        {trip.transport.isDirect ? t.tripDetail.direct : t.tripDetail.withStops}
+                      </Badge>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">{t.tripDetail.arrival}</p>
+                      <p className="font-bold text-base">{trip.transport.arrivalTime}</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Hotel */}
+              <section className="bg-muted/40 rounded-2xl p-4">
+                <h3 className="font-bold text-base mb-3 flex items-center gap-2">
+                  <Hotel className="w-4 h-4 text-primary" />
+                  {t.tripDetail.hotel}
+                </h3>
+                <div className="space-y-2.5 text-sm">
+                  <DetailRow label={trip.hotel.name} value={`$${trip.hotel.pricePerNight}${t.tripDetail.perNight}`} bold />
+                  <div className="flex items-center gap-4 text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      {trip.hotel.stars} {t.tripDetail.stars}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Navigation className="w-3.5 h-3.5" />
+                      {trip.hotel.distanceFromCenter} {t.tripDetail.kmFromCenter}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5" />
+                      {trip.hotel.rating}/5
+                    </span>
+                  </div>
+                  {trip.hotel.amenities && trip.hotel.amenities.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1.5">{t.tripDetail.amenities}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {trip.hotel.amenities.map((a, i) => (
+                          <span key={i} className="text-xs bg-background border rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                            <Wifi className="w-3 h-3" /> {a}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Duration summary */}
+              <section className="flex gap-3">
+                <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
+                  <Clock className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                  <p className="text-lg font-bold">{trip.durationDays}</p>
+                  <p className="text-xs text-muted-foreground">{t.tripDetail.nights}</p>
+                </div>
+                <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
+                  <Plane className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                  <p className="text-lg font-bold">${trip.transport.price}</p>
+                  <p className="text-xs text-muted-foreground">{t.tripDetail.flight}</p>
+                </div>
+                <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
+                  <Hotel className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                  <p className="text-lg font-bold">${trip.hotel.pricePerNight}</p>
+                  <p className="text-xs text-muted-foreground">{t.tripDetail.perNight.replace("/ ", "")}</p>
+                </div>
+              </section>
+
+              {/* CTA */}
+              <Button size="lg" className="w-full" onClick={onSave}>
+                {isSignedIn ? (
+                  <><Check className="w-4 h-4 mr-2" /> Save Trip</>
+                ) : (
+                  <>{t.tripDetail.signUpCta} <ArrowRight className="w-4 h-4 ml-2" /></>
+                )}
+              </Button>
+
+              {/* bottom padding for safe area */}
+              <div className="h-4" />
+            </div>
+          </>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+function DetailRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className={bold ? "font-semibold" : "text-muted-foreground"}>{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
   );
 }
