@@ -7,6 +7,7 @@
  */
 import type { HotelOption } from './hotelOption';
 import type { TransportOption } from './transportOption';
+import type { TripSuggestionTripType } from './tripSuggestionTripType';
 
 export interface TripSuggestion {
   id: string;
@@ -24,4 +25,5 @@ export interface TripSuggestion {
   hotelTotalCost?: number;
   returnTransport?: TransportOption;
   tags?: string[];
+  tripType?: TripSuggestionTripType;
 }

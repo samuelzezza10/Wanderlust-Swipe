@@ -572,6 +572,7 @@ function generateTrip(
   accommodationType: AccommodationType,
   propertyType: string,
   id: string,
+  tripType: "one_way" | "round_trip" = "round_trip",
 ) {
   // ─── Budget is always TOTAL for the whole trip ────────────────
   const budgetPerPerson = Math.floor(budget / numberOfPeople);
@@ -607,15 +608,17 @@ function generateTrip(
   const hotelTotalPerPerson = pricePerNight * numberOfNights;
 
   // ─── Transport cost (per person) ─────────────────────────────
+  const isOneWay = tripType === "one_way";
   const transportBudgetPerPerson = budgetPerPerson - hotelTotalPerPerson;
   if (transportBudgetPerPerson < 40) return null;
 
-  const maxOutbound = Math.floor(transportBudgetPerPerson * 0.52);
-  const minOutbound = Math.max(20, Math.floor(transportBudgetPerPerson * 0.30));
+  // One-way: only one leg, so more budget headroom for outbound
+  const maxOutbound = Math.floor(transportBudgetPerPerson * (isOneWay ? 0.88 : 0.52));
+  const minOutbound = Math.max(20, Math.floor(transportBudgetPerPerson * (isOneWay ? 0.48 : 0.30)));
   if (maxOutbound < minOutbound) return null;
 
   const outboundPrice = randomBetween(minOutbound, maxOutbound);
-  const returnPrice = Math.floor(outboundPrice * (0.80 + Math.random() * 0.35));
+  const returnPrice = isOneWay ? 0 : Math.floor(outboundPrice * (0.80 + Math.random() * 0.35));
   const totalTransportPerPerson = outboundPrice + returnPrice;
   const totalPerPerson = totalTransportPerPerson + hotelTotalPerPerson;
 
@@ -677,6 +680,7 @@ function generateTrip(
     destination: dest.destination,
     country: dest.country,
     departureCity: fromCity,
+    tripType,
     totalPrice,
     pricePerPerson: totalPerPerson,
     transport: {
@@ -690,17 +694,19 @@ function generateTrip(
       from: fromCity,
       to: dest.destination,
     },
-    returnTransport: {
-      type: transportType,
-      company: getCompany(),
-      duration: `${retDurH}h ${retDurM}m`,
-      price: returnPrice,
-      isDirect: isReturnDirect,
-      departureTime: fmt(retDepH, randomBetween(0, 59)),
-      arrivalTime: fmt(retArrH, randomBetween(0, 59)),
-      from: dest.destination,
-      to: fromCity,
-    },
+    ...(isOneWay ? {} : {
+      returnTransport: {
+        type: transportType,
+        company: getCompany(),
+        duration: `${retDurH}h ${retDurM}m`,
+        price: returnPrice,
+        isDirect: isReturnDirect,
+        departureTime: fmt(retDepH, randomBetween(0, 59)),
+        arrivalTime: fmt(retArrH, randomBetween(0, 59)),
+        from: dest.destination,
+        to: fromCity,
+      },
+    }),
     hotel: {
       name: hotelName,
       stars,
@@ -774,6 +780,7 @@ router.post("/trips/surprise", (req, res) => {
         accommodationType as AccommodationType,
         propertyType,
         `surprise-${Date.now()}-${attempt}`,
+        "round_trip",
       );
 
       if (!trip) continue;
@@ -810,6 +817,7 @@ router.post("/trips/generate", async (req, res) => {
     minHotelRating = null,
     hotelStarsMin = null,
     hotelStarsMax = null,
+    tripType = "round_trip",
   } = req.body;
 
   // ─── Freemium: check search limit for authenticated users ──────
@@ -867,6 +875,7 @@ router.post("/trips/generate", async (req, res) => {
       accommodationType as AccommodationType,
       propertyType,
       `trip-${Date.now()}-${attempts}`,
+      tripType as "one_way" | "round_trip",
     );
 
     if (!trip) continue;

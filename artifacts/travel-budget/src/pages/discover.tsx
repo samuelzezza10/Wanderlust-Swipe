@@ -470,6 +470,7 @@ export default function Discover() {
           minHotelRating: f.minHotelRating,
           hotelStarsMin: f.hotelStarsMin !== 1 ? f.hotelStarsMin : null,
           hotelStarsMax: f.hotelStarsMax !== 5 ? f.hotelStarsMax : null,
+          tripType: f.tripType || "round_trip",
           hotelAmenities: [
             ...(f.freeCancellation ? ["free_cancellation"] : []),
             ...(f.breakfastIncluded ? ["breakfast"] : []),
@@ -553,6 +554,9 @@ export default function Discover() {
           <div className="flex flex-col items-center gap-3 px-8 text-center">
             <Plane className="w-14 h-14 text-primary mb-1 animate-bounce" />
             <p className="text-muted-foreground font-medium">{loadingMsgRef.current}</p>
+            <p className="text-xs text-primary font-semibold mt-3 bg-primary/10 px-4 py-1.5 rounded-full">
+              {filters.tripType === "one_way" ? t.filters.oneWayHint : t.filters.roundTripHint}
+            </p>
           </div>
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
@@ -889,12 +893,21 @@ function TripCard({
         )}
 
         <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
-          {savingsMsg && isTop && (
-            <div className="mb-2.5 inline-flex items-center gap-1.5 bg-green-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-              <span>💰</span>
-              <span>{savingsMsg}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+            {trip.tripType && (
+              <div className={`inline-flex items-center gap-1 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1.5 rounded-full ${
+                trip.tripType === "one_way" ? "bg-primary/80" : "bg-blue-600/80"
+              }`}>
+                <span>{trip.tripType === "one_way" ? `✈️ ${t.filters.oneWay}` : `🔄 ${t.filters.roundTrip}`}</span>
+              </div>
+            )}
+            {savingsMsg && isTop && (
+              <div className="inline-flex items-center gap-1.5 bg-green-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                <span>💰</span>
+                <span>{savingsMsg}</span>
+              </div>
+            )}
+          </div>
           <h2 className="text-3xl font-bold mb-0.5">{trip.destination}</h2>
           <p className="text-white/80 font-medium mb-3">{trip.country}</p>
           <div className="flex gap-2.5 mb-3">

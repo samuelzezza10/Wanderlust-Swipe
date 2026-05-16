@@ -9,6 +9,7 @@ import type { TripPreferencesAccommodationType } from './tripPreferencesAccommod
 import type { TripPreferencesFlightPreference } from './tripPreferencesFlightPreference';
 import type { TripPreferencesPropertyType } from './tripPreferencesPropertyType';
 import type { TripPreferencesTrainPreference } from './tripPreferencesTrainPreference';
+import type { TripPreferencesTripType } from './tripPreferencesTripType';
 
 export interface TripPreferences {
   language?: string;
@@ -46,4 +47,6 @@ export interface TripPreferences {
   /** @nullable */
   hotelStarsMax?: number | null;
   trainPreference?: TripPreferencesTrainPreference;
+  /** Whether the trip is one-way or round-trip (default round_trip) */
+  tripType?: TripPreferencesTripType;
 }

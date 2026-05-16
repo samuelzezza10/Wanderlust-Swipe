@@ -320,6 +320,10 @@ components:
         trainPreference:
           type: string
           enum: [direct, with_stops, any]
+        tripType:
+          type: string
+          enum: [one_way, round_trip]
+          description: Whether the trip is one-way or round-trip (default round_trip)
 
     TripSuggestion:
       type: object
@@ -367,6 +371,9 @@ components:
           type: array
           items:
             type: string
+        tripType:
+          type: string
+          enum: [one_way, round_trip]
 
     TransportOption:
       type: object

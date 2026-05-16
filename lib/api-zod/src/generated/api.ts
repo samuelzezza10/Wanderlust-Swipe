@@ -80,7 +80,8 @@ export const GenerateSurpriseTripsResponseItem = zod.object({
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional()
 }).optional(),
-  "tags": zod.array(zod.string()).optional()
+  "tags": zod.array(zod.string()).optional(),
+  "tripType": zod.enum(['one_way', 'round_trip']).optional()
 })
 export const GenerateSurpriseTripsResponse = zod.array(GenerateSurpriseTripsResponseItem)
 
@@ -111,7 +112,8 @@ export const GenerateTripsBody = zod.object({
   "minHotelRating": zod.number().nullish().describe('Minimum hotel rating out of 10'),
   "hotelStarsMin": zod.number().nullish(),
   "hotelStarsMax": zod.number().nullish(),
-  "trainPreference": zod.enum(['direct', 'with_stops', 'any']).optional()
+  "trainPreference": zod.enum(['direct', 'with_stops', 'any']).optional(),
+  "tripType": zod.enum(['one_way', 'round_trip']).optional().describe('Whether the trip is one-way or round-trip (default round_trip)')
 })
 
 export const GenerateTripsResponseItem = zod.object({
@@ -153,7 +155,8 @@ export const GenerateTripsResponseItem = zod.object({
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional()
 }).optional(),
-  "tags": zod.array(zod.string()).optional()
+  "tags": zod.array(zod.string()).optional(),
+  "tripType": zod.enum(['one_way', 'round_trip']).optional()
 })
 export const GenerateTripsResponse = zod.array(GenerateTripsResponseItem)
 
@@ -208,7 +211,8 @@ export const GetSavedTripsResponseItem = zod.object({
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional()
 }).optional(),
-  "tags": zod.array(zod.string()).optional()
+  "tags": zod.array(zod.string()).optional(),
+  "tripType": zod.enum(['one_way', 'round_trip']).optional()
 })
 })
 export const GetSavedTripsResponse = zod.array(GetSavedTripsResponseItem)
@@ -257,7 +261,8 @@ export const SaveTripBody = zod.object({
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional()
 }).optional(),
-  "tags": zod.array(zod.string()).optional()
+  "tags": zod.array(zod.string()).optional(),
+  "tripType": zod.enum(['one_way', 'round_trip']).optional()
 }),
   "destination": zod.string(),
   "totalPrice": zod.number(),
@@ -320,7 +325,8 @@ export const GetSavedTripResponse = zod.object({
   "departureTime": zod.string().optional(),
   "arrivalTime": zod.string().optional()
 }).optional(),
-  "tags": zod.array(zod.string()).optional()
+  "tags": zod.array(zod.string()).optional(),
+  "tripType": zod.enum(['one_way', 'round_trip']).optional()
 })
 })
 

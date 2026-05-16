@@ -38,6 +38,7 @@ export interface TripFilters {
   onlinePayment: boolean;
   elevator: boolean;
   petFriendly: boolean;
+  tripType: "one_way" | "round_trip";
 }
 
 export const DEFAULT_FILTERS: TripFilters = {
@@ -68,6 +69,7 @@ export const DEFAULT_FILTERS: TripFilters = {
   onlinePayment: false,
   elevator: false,
   petFriendly: false,
+  tripType: "round_trip",
 };
 
 export function countActiveFilters(f: TripFilters): number {
@@ -98,6 +100,7 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.onlinePayment) n++;
   if (f.elevator) n++;
   if (f.petFriendly) n++;
+  if (f.tripType === "one_way") n++;
   return n;
 }
 
@@ -114,6 +117,7 @@ export function FilterBar({
   const departure = filters.departureAirport || filters.departureStation || "";
 
   const chips: string[] = [];
+  if (filters.tripType === "one_way") chips.push(`✈️ ${t.filters.oneWay}`);
   if (filters.numberOfChildren > 0) chips.push(`${filters.numberOfChildren} ${t.filters.children.toLowerCase()}`);
   if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${t.filters.pets.toLowerCase()}`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
@@ -199,7 +203,7 @@ export function FilterSheet({
     if (!dep) errs["departure"] = t.filters.missingDeparture;
     if (!arr) errs["arrival"] = t.filters.missingArrival;
     if (!f.departureDate) errs["departureDate"] = t.filters.missingDepartureDate;
-    if (!f.returnDate) errs["returnDate"] = t.filters.missingReturnDate;
+    if (f.tripType !== "one_way" && !f.returnDate) errs["returnDate"] = t.filters.missingReturnDate;
 
     if (f.departureDate && f.returnDate && f.returnDate < f.departureDate) {
       errs["returnDate"] = t.filters.returnBeforeDeparture;
@@ -271,6 +275,35 @@ export function FilterSheet({
         </SheetHeader>
 
         <div ref={contentRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+
+          {/* ── Tipo viaggio ─────────────────────────────────── */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">{t.filters.tripTypeLabel}</p>
+            <div className="flex gap-2">
+              {(["round_trip", "one_way"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => {
+                    setDraft((prev) => ({
+                      ...prev,
+                      tripType: v,
+                      ...(v === "one_way" ? { returnDate: "" } : {}),
+                    }));
+                  }}
+                  className={`flex-1 py-3 rounded-xl border text-sm font-semibold transition-colors ${
+                    draft.tripType === v
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  {v === "round_trip" ? `🔄 ${t.filters.roundTrip}` : `✈️ ${t.filters.oneWay}`}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {draft.tripType === "one_way" ? t.filters.oneWayHint : t.filters.roundTripHint}
+            </p>
+          </div>
 
           {/* ── Validation banner ───────────────────────────── */}
           {tried && hasErrors && (
@@ -385,15 +418,25 @@ export function FilterSheet({
                 )}
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">{t.filters.returnDate}</label>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {t.filters.returnDate}
+                  {draft.tripType === "one_way" && (
+                    <span className="ml-1.5 text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">
+                      {t.filters.oneWay}
+                    </span>
+                  )}
+                </label>
                 <input
                   type="date"
                   value={draft.returnDate}
                   min={draft.departureDate || new Date().toISOString().split("T")[0]}
+                  disabled={draft.tripType === "one_way"}
                   onChange={(e) => set("returnDate", e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground transition-colors ${
-                    errors["returnDate"] ? "border-red-400 bg-red-50 focus:ring-red-400" : ""
-                  }`}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm transition-colors ${
+                    draft.tripType === "one_way"
+                      ? "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                      : "bg-background text-foreground"
+                  } ${errors["returnDate"] ? "border-red-400 bg-red-50" : ""}`}
                 />
                 {errors["returnDate"] && (
                   <p className="text-xs text-red-500 font-medium mt-1 flex items-center gap-1">

@@ -107,6 +107,17 @@ export const TripPreferencesTrainPreference = {
   any: 'any',
 } as const;
 
+/**
+ * Whether the trip is one-way or round-trip (default round_trip)
+ */
+export type TripPreferencesTripType = typeof TripPreferencesTripType[keyof typeof TripPreferencesTripType];
+
+
+export const TripPreferencesTripType = {
+  one_way: 'one_way',
+  round_trip: 'round_trip',
+} as const;
+
 export interface TripPreferences {
   language?: string;
   budget: number;
@@ -143,7 +154,17 @@ export interface TripPreferences {
   /** @nullable */
   hotelStarsMax?: number | null;
   trainPreference?: TripPreferencesTrainPreference;
+  /** Whether the trip is one-way or round-trip (default round_trip) */
+  tripType?: TripPreferencesTripType;
 }
+
+export type TripSuggestionTripType = typeof TripSuggestionTripType[keyof typeof TripSuggestionTripType];
+
+
+export const TripSuggestionTripType = {
+  one_way: 'one_way',
+  round_trip: 'round_trip',
+} as const;
 
 export type TransportOptionType = typeof TransportOptionType[keyof typeof TransportOptionType];
 
@@ -190,6 +211,7 @@ export interface TripSuggestion {
   hotelTotalCost?: number;
   returnTransport?: TransportOption;
   tags?: string[];
+  tripType?: TripSuggestionTripType;
 }
 
 export interface SavedTripInput {
