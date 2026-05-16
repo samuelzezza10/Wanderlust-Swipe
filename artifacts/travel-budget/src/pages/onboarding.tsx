@@ -13,9 +13,9 @@ export default function Onboarding() {
   const savePreferences = useSavePreferences();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
-    budget: 1000,
-    numberOfPeople: 1,
-    departureLocation: "New York",
+    budget: 2000,
+    numberOfPeople: 2,
+    departureLocation: "",
     flightPreference: "any",
   });
 

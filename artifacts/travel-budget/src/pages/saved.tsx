@@ -1,14 +1,19 @@
 import { useGetSavedTrips } from "@workspace/api-client-react";
-import { Link } from "wouter";
+import { Link, Redirect } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Plane, Hotel, Calendar } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@clerk/react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function Saved() {
-  const { data: savedTrips, isLoading } = useGetSavedTrips();
+  const { isSignedIn, isLoaded } = useAuth();
+  const { data: savedTrips, isLoading } = useGetSavedTrips({ query: { enabled: !!isSignedIn, queryKey: ["saved-trips"] } });
   const { t } = useI18n();
+
+  if (!isLoaded) return <div className="p-8 text-center text-muted-foreground">{t.saved.loading}</div>;
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
 
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">{t.saved.loading}</div>;
@@ -52,7 +57,7 @@ export default function Saved() {
                       <p className="text-muted-foreground text-sm">{saved.tripData.country}</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold">${saved.totalPrice}</div>
+                      <div className="text-lg font-bold">€{saved.totalPrice.toLocaleString()}</div>
                       <div className="text-xs text-muted-foreground">{t.saved.total}</div>
                     </div>
                   </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useGenerateTrips, useSaveTrip, useGetPreferences } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -295,6 +295,23 @@ export default function Discover() {
   const { data: prefs } = useGetPreferences({
     query: { enabled: !!isSignedIn, queryKey: ["preferences"] },
   });
+
+  // Initialise filter state from saved user preferences (runs once when prefs first load)
+  const prefsInitializedRef = useRef(false);
+  useEffect(() => {
+    if (prefs && !prefsInitializedRef.current) {
+      prefsInitializedRef.current = true;
+      setFilters(f => ({
+        ...f,
+        ...(prefs.defaultBudget != null ? { budget: prefs.defaultBudget } : {}),
+        ...(prefs.defaultNumberOfPeople != null ? { numberOfPeople: prefs.defaultNumberOfPeople } : {}),
+        ...(prefs.defaultDepartureLocation ? { departureAirport: prefs.defaultDepartureLocation } : {}),
+        ...(prefs.defaultFlightPreference
+          ? { flightPreference: prefs.defaultFlightPreference as TripFilters["flightPreference"] }
+          : {}),
+      }));
+    }
+  }, [prefs]);
 
   const generateTrips = useGenerateTrips();
   const saveTrip = useSaveTrip();

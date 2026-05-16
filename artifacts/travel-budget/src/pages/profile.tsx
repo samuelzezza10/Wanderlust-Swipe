@@ -1,16 +1,25 @@
-import { useUser } from "@clerk/react";
+import { useUser, useAuth, useClerk } from "@clerk/react";
 import { useGetPreferences, useGetTripStats } from "@workspace/api-client-react";
-import { Link } from "wouter";
-import { Settings, Shield, Award, Map, FileText } from "lucide-react";
+import { Link, Redirect } from "wouter";
+import { Settings, Shield, Award, Map, FileText, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export default function Profile() {
+  const { isSignedIn, isLoaded: authLoaded } = useAuth();
   const { user, isLoaded } = useUser();
-  const { data: prefs } = useGetPreferences();
-  const { data: stats } = useGetTripStats();
+  const { signOut } = useClerk();
+  const { data: prefs } = useGetPreferences({ query: { enabled: !!isSignedIn, queryKey: ["preferences"] } });
+  const { data: stats } = useGetTripStats({ query: { enabled: !!isSignedIn, queryKey: ["trip-stats"] } });
   const { t } = useI18n();
 
-  if (!isLoaded) return <div className="p-8 text-center text-muted-foreground">{t.profile.loading}</div>;
+  if (!authLoaded || !isLoaded) return <div className="p-8 text-center text-muted-foreground">{t.profile.loading}</div>;
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
+
+  const email = user?.emailAddresses?.[0]?.emailAddress ?? "";
+  const initials = (user?.firstName?.[0] ?? email[0] ?? "?").toUpperCase();
 
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto w-full">
@@ -18,11 +27,11 @@ export default function Profile() {
 
       <div className="flex items-center gap-6 mb-10 p-6 bg-card border rounded-2xl">
         <div className="w-20 h-20 bg-primary/10 text-primary rounded-full flex items-center justify-center text-2xl font-bold shrink-0">
-          {user?.firstName?.[0] || user?.emailAddresses[0].emailAddress[0].toUpperCase()}
+          {initials}
         </div>
         <div>
           <h2 className="text-2xl font-bold">{user?.firstName || t.profile.traveler}</h2>
-          <p className="text-muted-foreground">{user?.emailAddresses[0].emailAddress}</p>
+          <p className="text-muted-foreground">{email}</p>
         </div>
       </div>
 
@@ -34,7 +43,7 @@ export default function Profile() {
         </div>
         <div className="bg-card border rounded-xl p-5 flex flex-col items-center justify-center text-center">
           <Map className="w-8 h-8 text-secondary mb-2" />
-          <div className="text-3xl font-bold">${stats?.averagePrice || 0}</div>
+          <div className="text-3xl font-bold">€{stats?.averagePrice || 0}</div>
           <div className="text-sm text-muted-foreground">{t.profile.avgTripPrice}</div>
         </div>
       </div>
@@ -49,7 +58,7 @@ export default function Profile() {
               <div className="font-medium">{t.profile.updatePreferences}</div>
             </div>
             <div className="text-sm text-muted-foreground">
-              {prefs?.defaultDepartureLocation || t.profile.notSet} • ${prefs?.defaultBudget || 0}
+              {prefs?.defaultDepartureLocation || t.profile.notSet} • €{prefs?.defaultBudget || 0}
             </div>
           </div>
         </Link>
@@ -71,6 +80,18 @@ export default function Profile() {
             </div>
           </div>
         </Link>
+      </div>
+
+      {/* Sign out — visible only on mobile where the desktop nav is hidden */}
+      <div className="mt-6 md:hidden">
+        <Button
+          variant="outline"
+          className="w-full text-muted-foreground"
+          onClick={() => signOut({ redirectUrl: basePath || "/" })}
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          {t.profile.signOut}
+        </Button>
       </div>
 
       <div className="mt-8 pt-6 border-t flex gap-4 justify-center text-xs text-muted-foreground">
