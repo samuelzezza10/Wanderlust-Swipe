@@ -104,12 +104,58 @@ const HOTELS_LUXURY = [
   ["Hotel Arts Barcelona", "W Barcelona", "Mandarin Oriental Barcelona"],
 ];
 
-const AMENITIES = [
-  ["WiFi", "Pool", "Spa", "Restaurant", "Gym"],
-  ["WiFi", "Beach Access", "Bar", "Concierge"],
-  ["WiFi", "Gym", "Restaurant", "24h Reception"],
-  ["WiFi", "Pool", "Ocean View", "Breakfast"],
+const APARTMENTS = [
+  ["Studio Montmartre", "Appartement Marais", "Loft République"],
+  ["Bali Villa Ubud", "Canggu Apartment", "Seminyak Loft"],
+  ["Shinjuku Studio", "Harajuku Flat", "Akihabara Loft"],
+  ["Oia Cave Apartment", "Fira Studio", "Imerovigli Loft"],
+  ["SoHo Loft", "Brooklyn Apartment", "Midtown Studio"],
+  ["Bairro Alto Apartment", "Mouraria Studio", "Intendente Loft"],
+  ["Maldives Beach House", "Lagoon Apartment", "Dhoni Loft"],
+  ["Eixample Apartment", "Born Studio", "Gràcia Loft"],
 ];
+
+const BASE_AMENITIES = ["WiFi", "24h Reception"];
+
+// Feature flags by tier — each one has a probability of being included
+const FEATURE_PROBS = {
+  budget: {
+    free_cancellation: 0.3,
+    breakfast: 0.15,
+    parking: 0.2,
+    private_bathroom: 0.5,
+    elevator: 0.3,
+    pet_friendly: 0.2,
+    online_payment: 0.6,
+    pool: 0.1,
+    spa: 0.0,
+    gym: 0.1,
+  },
+  standard: {
+    free_cancellation: 0.55,
+    breakfast: 0.45,
+    parking: 0.5,
+    private_bathroom: 0.85,
+    elevator: 0.65,
+    pet_friendly: 0.35,
+    online_payment: 0.85,
+    pool: 0.4,
+    spa: 0.2,
+    gym: 0.35,
+  },
+  luxury: {
+    free_cancellation: 0.8,
+    breakfast: 0.75,
+    parking: 0.75,
+    private_bathroom: 1.0,
+    elevator: 0.9,
+    pet_friendly: 0.5,
+    online_payment: 1.0,
+    pool: 0.9,
+    spa: 0.85,
+    gym: 0.8,
+  },
+};
 
 function randomBetween(min: number, max: number) {
   if (min >= max) return min;
@@ -121,6 +167,31 @@ function fmt(h: number, m: number) {
 }
 
 type AccommodationType = "budget" | "standard" | "luxury" | null;
+type Tier = "budget" | "standard" | "luxury";
+
+function generateHotelFeatures(tier: Tier): { amenities: string[]; features: Set<string> } {
+  const probs = FEATURE_PROBS[tier];
+  const features = new Set<string>();
+  const amenities = [...BASE_AMENITIES];
+
+  for (const [feat, prob] of Object.entries(probs)) {
+    if (Math.random() < prob) {
+      features.add(feat);
+      // Map to display amenity labels
+      if (feat === "breakfast") amenities.push("Breakfast Included");
+      else if (feat === "parking") amenities.push("Parking");
+      else if (feat === "pool") amenities.push("Pool");
+      else if (feat === "spa") amenities.push("Spa");
+      else if (feat === "gym") amenities.push("Gym");
+      else if (feat === "free_cancellation") amenities.push("Free Cancellation");
+      else if (feat === "private_bathroom") amenities.push("Private Bathroom");
+      else if (feat === "elevator") amenities.push("Elevator");
+      else if (feat === "pet_friendly") amenities.push("Pets Allowed");
+      else if (feat === "online_payment") amenities.push("Online Payment");
+    }
+  }
+  return { amenities, features };
+}
 
 function generateTrip(
   destIndex: number,
@@ -129,6 +200,7 @@ function generateTrip(
   numberOfNights: number,
   flightPreference: string,
   accommodationType: AccommodationType,
+  propertyType: string,
   id: string,
 ) {
   const dest = DESTINATIONS[destIndex % DESTINATIONS.length];
@@ -136,20 +208,24 @@ function generateTrip(
   // ─── Accommodation tier ───────────────────────────────────────
   let stars: number;
   let hotelList: string[][];
-  let hotelShare: number; // fraction of per-person budget for hotel
+  let hotelShare: number;
+  let tier: Tier;
 
   if (accommodationType === "budget") {
     stars = randomBetween(2, 3);
-    hotelList = HOTELS_BUDGET;
+    hotelList = propertyType === "apartment" ? APARTMENTS : HOTELS_BUDGET;
     hotelShare = 0.28;
+    tier = "budget";
   } else if (accommodationType === "luxury") {
     stars = randomBetween(4, 5);
-    hotelList = HOTELS_LUXURY;
+    hotelList = propertyType === "apartment" ? APARTMENTS : HOTELS_LUXURY;
     hotelShare = 0.55;
+    tier = "luxury";
   } else {
     stars = randomBetween(3, 4);
-    hotelList = HOTELS_STANDARD;
+    hotelList = propertyType === "apartment" ? APARTMENTS : HOTELS_STANDARD;
     hotelShare = 0.42;
+    tier = "standard";
   }
 
   // ─── Hotel cost (strictly within budget share) ────────────────
@@ -168,7 +244,6 @@ function generateTrip(
   if (maxOutbound < minOutbound) return null;
 
   const outboundPrice = randomBetween(minOutbound, maxOutbound);
-  // Return leg: 80–115% of outbound price
   const returnPrice = Math.floor(outboundPrice * (0.80 + Math.random() * 0.35));
 
   const totalTransportPerPerson = outboundPrice + returnPrice;
@@ -209,9 +284,13 @@ function generateTrip(
   const hotelIdx = destIndex % hotelList.length;
   const hotelNames = hotelList[hotelIdx];
   const hotelName = hotelNames[randomBetween(0, hotelNames.length - 1)];
-  const amenitySet = AMENITIES[randomBetween(0, AMENITIES.length - 1)];
+  const { amenities: amenitySet, features } = generateHotelFeatures(tier);
   const distanceFromCenter = parseFloat((Math.random() * 4 + 0.3).toFixed(1));
   const transportToHotelKm = parseFloat((Math.random() * 28 + 2).toFixed(1));
+  // Rating: budget 3.5-7.5, standard 6-8.5, luxury 7.5-10
+  const ratingMin = tier === "luxury" ? 7.5 : tier === "standard" ? 6.0 : 3.5;
+  const ratingMax = tier === "luxury" ? 10 : tier === "standard" ? 8.8 : 7.5;
+  const rating = parseFloat((ratingMin + Math.random() * (ratingMax - ratingMin)).toFixed(1));
 
   return {
     id,
@@ -243,7 +322,7 @@ function generateTrip(
       pricePerNight,
       distanceFromCenter,
       amenities: amenitySet,
-      rating: parseFloat((3.5 + Math.random() * 1.5).toFixed(1)),
+      rating,
       imageUrl: null,
     },
     hotelTotalCost,
@@ -253,6 +332,7 @@ function generateTrip(
     durationDays: numberOfNights + 1,
     transportToHotelKm,
     tags: dest.tags,
+    _features: features, // internal, not serialized
   };
 }
 
@@ -262,15 +342,21 @@ router.post("/trips/generate", (req, res) => {
     numberOfPeople = 2,
     numberOfNights = 7,
     flightPreference = "any",
+    trainPreference = "any",
     hotelDistanceKm = null,
     maxDistanceFromAirportKm = null,
     accommodationType = null,
+    propertyType = "any",
+    hotelAmenities = [],
+    minHotelRating = null,
+    hotelStarsMin = null,
+    hotelStarsMax = null,
   } = req.body;
 
   const seen = new Set<string>();
   const results: ReturnType<typeof generateTrip>[] = [];
   let attempts = 0;
-  const MAX_ATTEMPTS = 80;
+  const MAX_ATTEMPTS = 120;
 
   while (results.length < 8 && attempts < MAX_ATTEMPTS) {
     const destIndex = attempts % DESTINATIONS.length;
@@ -283,23 +369,38 @@ router.post("/trips/generate", (req, res) => {
       numberOfNights,
       flightPreference,
       accommodationType as AccommodationType,
+      propertyType,
       `trip-${Date.now()}-${attempts}`,
     );
 
     if (!trip) continue;
     if (seen.has(trip.destination)) continue;
 
-    // ─── Apply additional strict filters ─────────────────────────
-    if (flightPreference === "direct" && !trip.transport.isDirect) continue;
-    if (flightPreference === "with_stops" && trip.transport.isDirect) continue;
+    // ─── Apply strict filters ─────────────────────────────────────
+    if (flightPreference === "direct" && trip.transport.type === "flight" && !trip.transport.isDirect) continue;
+    if (flightPreference === "with_stops" && trip.transport.type === "flight" && trip.transport.isDirect) continue;
+    if (trainPreference === "direct" && trip.transport.type === "train" && !trip.transport.isDirect) continue;
+    if (trainPreference === "with_stops" && trip.transport.type === "train" && trip.transport.isDirect) continue;
     if (hotelDistanceKm != null && trip.hotel.distanceFromCenter > hotelDistanceKm) continue;
     if (maxDistanceFromAirportKm != null && trip.transportToHotelKm > maxDistanceFromAirportKm) continue;
     if (accommodationType === "budget" && trip.hotel.stars > 3) continue;
     if (accommodationType === "standard" && (trip.hotel.stars < 3 || trip.hotel.stars > 4)) continue;
     if (accommodationType === "luxury" && trip.hotel.stars < 4) continue;
+    if (hotelStarsMin != null && trip.hotel.stars < hotelStarsMin) continue;
+    if (hotelStarsMax != null && trip.hotel.stars > hotelStarsMax) continue;
+    if (minHotelRating != null && trip.hotel.rating < minHotelRating) continue;
+
+    // ─── Amenity filters ──────────────────────────────────────────
+    const requiredAmenities: string[] = Array.isArray(hotelAmenities) ? hotelAmenities : [];
+    if (requiredAmenities.length > 0) {
+      const hasAll = requiredAmenities.every((a: string) => trip._features.has(a));
+      if (!hasAll) continue;
+    }
 
     seen.add(trip.destination);
-    results.push(trip);
+    // Remove internal field before returning
+    const { _features, ...tripOut } = trip;
+    results.push(tripOut as typeof trip);
   }
 
   res.json(results);
@@ -330,9 +431,9 @@ router.get("/trips/stats", async (req, res) => {
     const topDestinations = [...new Set(trips.map((t) => t.destination))].slice(0, 3);
     const mostRecentTrip = trips[0]?.destination ?? null;
 
-    res.json({ totalSaved, totalSpent, topDestinations, averagePrice, mostRecentTrip });
+    return res.json({ totalSaved, totalSpent, topDestinations, averagePrice, mostRecentTrip });
   } catch {
-    res.json({ totalSaved: 0, totalSpent: 0, topDestinations: [], averagePrice: 0, mostRecentTrip: null });
+    return res.json({ totalSaved: 0, totalSpent: 0, topDestinations: [], averagePrice: 0, mostRecentTrip: null });
   }
 });
 

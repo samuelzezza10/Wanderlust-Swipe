@@ -36,10 +36,10 @@ router.get("/preferences", requireAuth, async (req: any, res) => {
       .where(eq(userPreferencesTable.clerkUserId, req.userId));
 
     if (!prefs) return res.status(404).json({ error: "No preferences found" });
-    res.json(formatPrefs(prefs));
+    return res.json(formatPrefs(prefs));
   } catch (err) {
     req.log.error({ err }, "Error fetching preferences");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

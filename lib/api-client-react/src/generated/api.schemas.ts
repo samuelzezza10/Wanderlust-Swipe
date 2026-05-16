@@ -30,6 +30,27 @@ export const TripPreferencesAccommodationType = {
   luxury: 'luxury',
 } as const;
 
+/**
+ * @nullable
+ */
+export type TripPreferencesPropertyType = typeof TripPreferencesPropertyType[keyof typeof TripPreferencesPropertyType] | null;
+
+
+export const TripPreferencesPropertyType = {
+  hotel: 'hotel',
+  apartment: 'apartment',
+  any: 'any',
+} as const;
+
+export type TripPreferencesTrainPreference = typeof TripPreferencesTrainPreference[keyof typeof TripPreferencesTrainPreference];
+
+
+export const TripPreferencesTrainPreference = {
+  direct: 'direct',
+  with_stops: 'with_stops',
+  any: 'any',
+} as const;
+
 export interface TripPreferences {
   language?: string;
   budget: number;
@@ -52,6 +73,20 @@ export interface TripPreferences {
   flightPreference?: TripPreferencesFlightPreference;
   /** @nullable */
   accommodationType?: TripPreferencesAccommodationType;
+  /** Required hotel amenities (free_cancellation, breakfast, parking, private_bathroom, elevator, pet_friendly, online_payment) */
+  hotelAmenities?: string[];
+  /** @nullable */
+  propertyType?: TripPreferencesPropertyType;
+  /**
+     * Minimum hotel rating out of 10
+     * @nullable
+     */
+  minHotelRating?: number | null;
+  /** @nullable */
+  hotelStarsMin?: number | null;
+  /** @nullable */
+  hotelStarsMax?: number | null;
+  trainPreference?: TripPreferencesTrainPreference;
 }
 
 export type TransportOptionType = typeof TransportOptionType[keyof typeof TransportOptionType];

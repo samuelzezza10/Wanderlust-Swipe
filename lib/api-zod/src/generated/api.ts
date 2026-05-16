@@ -37,7 +37,13 @@ export const GenerateTripsBody = zod.object({
   "maxDistanceFromAirportKm": zod.number().nullish(),
   "numberOfNights": zod.number(),
   "flightPreference": zod.enum(['direct', 'with_stops', 'any']).optional(),
-  "accommodationType": zod.union([zod.literal('budget'),zod.literal('standard'),zod.literal('luxury'),zod.literal(null)]).nullish()
+  "accommodationType": zod.union([zod.literal('budget'),zod.literal('standard'),zod.literal('luxury'),zod.literal(null)]).nullish(),
+  "hotelAmenities": zod.array(zod.string()).optional().describe('Required hotel amenities (free_cancellation, breakfast, parking, private_bathroom, elevator, pet_friendly, online_payment)'),
+  "propertyType": zod.union([zod.literal('hotel'),zod.literal('apartment'),zod.literal('any'),zod.literal(null)]).nullish(),
+  "minHotelRating": zod.number().nullish().describe('Minimum hotel rating out of 10'),
+  "hotelStarsMin": zod.number().nullish(),
+  "hotelStarsMax": zod.number().nullish(),
+  "trainPreference": zod.enum(['direct', 'with_stops', 'any']).optional()
 })
 
 export const GenerateTripsResponseItem = zod.object({

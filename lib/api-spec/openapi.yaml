@@ -219,6 +219,24 @@ components:
         accommodationType:
           type: ["string", "null"]
           enum: [budget, standard, luxury, null]
+        hotelAmenities:
+          type: array
+          items:
+            type: string
+          description: Required hotel amenities (free_cancellation, breakfast, parking, private_bathroom, elevator, pet_friendly, online_payment)
+        propertyType:
+          type: ["string", "null"]
+          enum: [hotel, apartment, any, null]
+        minHotelRating:
+          type: ["number", "null"]
+          description: Minimum hotel rating out of 10
+        hotelStarsMin:
+          type: ["integer", "null"]
+        hotelStarsMax:
+          type: ["integer", "null"]
+        trainPreference:
+          type: string
+          enum: [direct, with_stops, any]
 
     TripSuggestion:
       type: object

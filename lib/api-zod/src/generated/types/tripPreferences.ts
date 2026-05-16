@@ -7,6 +7,8 @@
  */
 import type { TripPreferencesAccommodationType } from './tripPreferencesAccommodationType';
 import type { TripPreferencesFlightPreference } from './tripPreferencesFlightPreference';
+import type { TripPreferencesPropertyType } from './tripPreferencesPropertyType';
+import type { TripPreferencesTrainPreference } from './tripPreferencesTrainPreference';
 
 export interface TripPreferences {
   language?: string;
@@ -30,4 +32,18 @@ export interface TripPreferences {
   flightPreference?: TripPreferencesFlightPreference;
   /** @nullable */
   accommodationType?: TripPreferencesAccommodationType;
+  /** Required hotel amenities (free_cancellation, breakfast, parking, private_bathroom, elevator, pet_friendly, online_payment) */
+  hotelAmenities?: string[];
+  /** @nullable */
+  propertyType?: TripPreferencesPropertyType;
+  /**
+     * Minimum hotel rating out of 10
+     * @nullable
+     */
+  minHotelRating?: number | null;
+  /** @nullable */
+  hotelStarsMin?: number | null;
+  /** @nullable */
+  hotelStarsMax?: number | null;
+  trainPreference?: TripPreferencesTrainPreference;
 }

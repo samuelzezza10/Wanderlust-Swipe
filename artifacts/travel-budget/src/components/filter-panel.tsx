@@ -2,7 +2,10 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal, X, Minus, Plus, ChevronRight, Star } from "lucide-react";
+import {
+  SlidersHorizontal, X, Minus, Plus, ChevronRight, Star,
+  Check,
+} from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 
@@ -15,6 +18,7 @@ export interface TripFilters {
   returnDate: string;
   numberOfNights: number;
   flightPreference: "direct" | "with_stops" | "any";
+  trainPreference: "direct" | "with_stops" | "any";
   maxDistanceFromAirportKm: number | null;
   maxHotelDistanceFromCenterKm: number | null;
   accommodationType: "budget" | "standard" | "luxury" | null;
@@ -24,7 +28,16 @@ export interface TripFilters {
   arrivalStation: string;
   hotelStarsMin: number;
   hotelStarsMax: number;
-  trainPreference: "direct" | "with_stops" | "any";
+  // Hotel features
+  freeCancellation: boolean;
+  breakfastIncluded: boolean;
+  parkingAvailable: boolean;
+  minHotelRating: number | null;
+  privateBathroom: boolean;
+  propertyType: "hotel" | "apartment" | "any";
+  onlinePayment: boolean;
+  elevator: boolean;
+  petFriendly: boolean;
 }
 
 export const DEFAULT_FILTERS: TripFilters = {
@@ -36,6 +49,7 @@ export const DEFAULT_FILTERS: TripFilters = {
   returnDate: "",
   numberOfNights: 7,
   flightPreference: "any",
+  trainPreference: "any",
   maxDistanceFromAirportKm: null,
   maxHotelDistanceFromCenterKm: null,
   accommodationType: null,
@@ -45,7 +59,15 @@ export const DEFAULT_FILTERS: TripFilters = {
   arrivalStation: "",
   hotelStarsMin: 1,
   hotelStarsMax: 5,
-  trainPreference: "any",
+  freeCancellation: false,
+  breakfastIncluded: false,
+  parkingAvailable: false,
+  minHotelRating: null,
+  privateBathroom: false,
+  propertyType: "any",
+  onlinePayment: false,
+  elevator: false,
+  petFriendly: false,
 };
 
 export function countActiveFilters(f: TripFilters): number {
@@ -58,6 +80,7 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.returnDate) n++;
   if (f.numberOfNights !== DEFAULT_FILTERS.numberOfNights) n++;
   if (f.flightPreference !== "any") n++;
+  if (f.trainPreference !== "any") n++;
   if (f.maxDistanceFromAirportKm !== null) n++;
   if (f.maxHotelDistanceFromCenterKm !== null) n++;
   if (f.accommodationType !== null) n++;
@@ -66,7 +89,15 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.departureStation) n++;
   if (f.arrivalStation) n++;
   if (f.hotelStarsMin !== 1 || f.hotelStarsMax !== 5) n++;
-  if (f.trainPreference !== "any") n++;
+  if (f.freeCancellation) n++;
+  if (f.breakfastIncluded) n++;
+  if (f.parkingAvailable) n++;
+  if (f.minHotelRating !== null) n++;
+  if (f.privateBathroom) n++;
+  if (f.propertyType !== "any") n++;
+  if (f.onlinePayment) n++;
+  if (f.elevator) n++;
+  if (f.petFriendly) n++;
   return n;
 }
 
@@ -87,11 +118,16 @@ export function FilterBar({
   if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${t.filters.pets.toLowerCase()}`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
-  if (filters.maxDistanceFromAirportKm !== null) chips.push(`✈ ≤${filters.maxDistanceFromAirportKm}km`);
-  if (filters.maxHotelDistanceFromCenterKm !== null) chips.push(`🏨 ≤${filters.maxHotelDistanceFromCenterKm}km`);
-  if (filters.hotelStarsMin !== 1 || filters.hotelStarsMax !== 5) {
+  if (filters.trainPreference === "direct") chips.push(`🚂 ${t.filters.trainDirect}`);
+  if (filters.trainPreference === "with_stops") chips.push(`🚂 ${t.filters.trainWithChanges}`);
+  if (filters.hotelStarsMin !== 1 || filters.hotelStarsMax !== 5)
     chips.push(`${"⭐".repeat(filters.hotelStarsMin)}–${"⭐".repeat(filters.hotelStarsMax)}`);
-  }
+  if (filters.breakfastIncluded) chips.push(`🍳 ${t.filters.breakfastIncluded}`);
+  if (filters.freeCancellation) chips.push(`✅ ${t.filters.freeCancellation}`);
+  if (filters.parkingAvailable) chips.push(`🅿 ${t.filters.parkingAvailable}`);
+  if (filters.petFriendly) chips.push(`🐾 ${t.filters.petFriendly}`);
+  if (filters.minHotelRating !== null) chips.push(`⭐ ≥ ${filters.minHotelRating}/10`);
+  if (filters.propertyType !== "any") chips.push(filters.propertyType === "hotel" ? t.filters.hotelOnly : t.filters.apartmentOnly);
 
   return (
     <div className="w-full px-4 pt-3 pb-2">
@@ -155,6 +191,9 @@ export function FilterSheet({
   const set = <K extends keyof TripFilters>(key: K, val: TripFilters[K]) =>
     setDraft((prev) => ({ ...prev, [key]: val }));
 
+  const toggle = (key: keyof TripFilters) =>
+    setDraft((prev) => ({ ...prev, [key]: !prev[key] }));
+
   const handleApply = () => { onApply(draft); onClose(); };
   const handleReset = () => setDraft(DEFAULT_FILTERS);
 
@@ -201,18 +240,9 @@ export function FilterSheet({
                 className="flex-1 accent-primary" />
               <span className="font-bold text-sm w-20 text-right">€{draft.budget.toLocaleString()}</span>
             </div>
-            <p className="text-xs text-primary/70 font-medium mt-2 text-xs">
+            <p className="text-xs text-primary/70 font-medium mt-2">
               💡 {t.filters.budgetIncludes}
             </p>
-          </FilterSection>
-
-          {/* ── Stelle hotel ───────────────────────────────── */}
-          <FilterSection label={t.filters.hotelStars}>
-            <StarRangePicker
-              min={draft.hotelStarsMin}
-              max={draft.hotelStarsMax}
-              onChange={(min, max) => setDraft((prev) => ({ ...prev, hotelStarsMin: min, hotelStarsMax: max }))}
-            />
           </FilterSection>
 
           {/* ── Persone ────────────────────────────────────── */}
@@ -316,6 +346,87 @@ export function FilterSheet({
             />
           </FilterSection>
 
+          {/* ── Stelle hotel ───────────────────────────────── */}
+          <FilterSection label={t.filters.hotelStars}>
+            <StarRangePicker
+              min={draft.hotelStarsMin}
+              max={draft.hotelStarsMax}
+              onChange={(min, max) => setDraft((prev) => ({ ...prev, hotelStarsMin: min, hotelStarsMax: max }))}
+            />
+          </FilterSection>
+
+          {/* ── Tipo struttura ─────────────────────────────── */}
+          <FilterSection label={t.filters.propertyType}>
+            <div className="flex gap-2">
+              {(["any", "hotel", "apartment"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => set("propertyType", v)}
+                  className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
+                    draft.propertyType === v
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-foreground"
+                  }`}
+                >
+                  {v === "any" ? t.filters.anyAcc : v === "hotel" ? t.filters.hotelOnly : t.filters.apartmentOnly}
+                </button>
+              ))}
+            </div>
+          </FilterSection>
+
+          {/* ── Valutazione minima ─────────────────────────── */}
+          <FilterSection label={t.filters.ratingFilter}>
+            <div className="flex gap-2 flex-wrap">
+              {([null, 7, 8, 9] as const).map((v) => (
+                <button
+                  key={String(v)}
+                  onClick={() => set("minHotelRating", draft.minHotelRating === v ? null : v)}
+                  className={`px-4 py-2 rounded-xl border text-sm font-semibold transition-colors ${
+                    draft.minHotelRating === v && v !== null
+                      ? "border-primary bg-primary/10 text-primary"
+                      : v === null && draft.minHotelRating === null
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-foreground"
+                  }`}
+                >
+                  {v === null ? t.filters.anyFlight : `≥ ${v}/10`}
+                </button>
+              ))}
+            </div>
+          </FilterSection>
+
+          {/* ── Servizi hotel ──────────────────────────────── */}
+          <FilterSection label={t.filters.hotelFeatures}>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: "freeCancellation", emoji: "✅", label: t.filters.freeCancellation },
+                { key: "breakfastIncluded", emoji: "🍳", label: t.filters.breakfastIncluded },
+                { key: "parkingAvailable", emoji: "🅿️", label: t.filters.parkingAvailable },
+                { key: "privateBathroom", emoji: "🚿", label: t.filters.privateBathroom },
+                { key: "onlinePayment", emoji: "💳", label: t.filters.onlinePayment },
+                { key: "elevator", emoji: "🛗", label: t.filters.elevator },
+                { key: "petFriendly", emoji: "🐾", label: t.filters.petFriendly },
+              ] as { key: keyof TripFilters; emoji: string; label: string }[]).map(({ key, emoji, label }) => {
+                const active = !!draft[key];
+                return (
+                  <button
+                    key={key}
+                    onClick={() => toggle(key)}
+                    className={`flex items-center gap-2 px-3 py-3 rounded-xl border text-sm text-left transition-colors ${
+                      active
+                        ? "border-primary bg-primary/8 text-primary font-semibold"
+                        : "border-border bg-background text-foreground"
+                    }`}
+                  >
+                    <span className="text-base leading-none">{emoji}</span>
+                    <span className="flex-1 leading-tight text-xs">{label}</span>
+                    {active && <Check className="w-3.5 h-3.5 shrink-0 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+          </FilterSection>
+
           <div className="h-2" />
         </div>
 
@@ -349,17 +460,8 @@ function StarRangePicker({
         <span className="text-xs text-muted-foreground w-8 shrink-0">Min</span>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => handleStarClick(s, "min")}
-              className="transition-transform active:scale-90"
-            >
-              <Star
-                className={`w-7 h-7 transition-colors ${
-                  s <= min ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
-                }`}
-              />
+            <button key={s} type="button" onClick={() => handleStarClick(s, "min")} className="transition-transform active:scale-90">
+              <Star className={`w-7 h-7 transition-colors ${s <= min ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
             </button>
           ))}
         </div>
@@ -369,26 +471,15 @@ function StarRangePicker({
         <span className="text-xs text-muted-foreground w-8 shrink-0">Max</span>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => handleStarClick(s, "max")}
-              className="transition-transform active:scale-90"
-            >
-              <Star
-                className={`w-7 h-7 transition-colors ${
-                  s <= max ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"
-                }`}
-              />
+            <button key={s} type="button" onClick={() => handleStarClick(s, "max")} className="transition-transform active:scale-90">
+              <Star className={`w-7 h-7 transition-colors ${s <= max ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
             </button>
           ))}
         </div>
         <span className="text-xs font-semibold text-foreground ml-1">{max}★</span>
       </div>
       {(min !== 1 || max !== 5) && (
-        <p className="text-xs text-primary font-medium">
-          {min === max ? `${min} ★` : `${min} ★ – ${max} ★`}
-        </p>
+        <p className="text-xs text-primary font-medium">{min === max ? `${min} ★` : `${min} ★ – ${max} ★`}</p>
       )}
     </div>
   );

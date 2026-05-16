@@ -15,6 +15,8 @@ export * from './transportOptionType';
 export * from './tripPreferences';
 export * from './tripPreferencesAccommodationType';
 export * from './tripPreferencesFlightPreference';
+export * from './tripPreferencesPropertyType';
+export * from './tripPreferencesTrainPreference';
 export * from './tripStats';
 export * from './tripSuggestion';
 export * from './userPreferences';

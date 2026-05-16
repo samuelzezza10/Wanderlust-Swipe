@@ -63,7 +63,7 @@ router.post("/saved-trips", requireAuth, async (req: any, res) => {
       })
       .returning();
 
-    res.status(201).json({
+    return res.status(201).json({
       id: trip.id,
       clerkUserId: trip.clerkUserId,
       destination: trip.destination,
@@ -75,7 +75,7 @@ router.post("/saved-trips", requireAuth, async (req: any, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Error saving trip");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -91,7 +91,7 @@ router.get("/saved-trips/:id", requireAuth, async (req: any, res) => {
 
     if (!trip) return res.status(404).json({ error: "Not found" });
 
-    res.json({
+    return res.json({
       id: trip.id,
       clerkUserId: trip.clerkUserId,
       destination: trip.destination,
@@ -103,7 +103,7 @@ router.get("/saved-trips/:id", requireAuth, async (req: any, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "Error fetching saved trip");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -115,10 +115,10 @@ router.delete("/saved-trips/:id", requireAuth, async (req: any, res) => {
     await db
       .delete(savedTripsTable)
       .where(and(eq(savedTripsTable.id, id), eq(savedTripsTable.clerkUserId, req.userId)));
-    res.status(204).end();
+    return res.status(204).end();
   } catch (err) {
     req.log.error({ err }, "Error deleting saved trip");
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
