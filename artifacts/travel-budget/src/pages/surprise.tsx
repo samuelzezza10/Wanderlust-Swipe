@@ -151,6 +151,7 @@ export default function SurprisePage() {
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
+  const [paying, setPaying] = useState<Record<string, boolean>>({});
 
   const generateSurprise = useGenerateSurpriseTrips();
   const saveTrip = useSaveTrip();
@@ -205,8 +206,13 @@ export default function SurprisePage() {
   }
 
   function handleReveal(tripId: string) {
-    setRevealed((r) => ({ ...r, [tripId]: true }));
-    toast.success(t.surprise.revealed);
+    if (paying[tripId] || revealed[tripId]) return;
+    setPaying((p) => ({ ...p, [tripId]: true }));
+    setTimeout(() => {
+      setPaying((p) => ({ ...p, [tripId]: false }));
+      setRevealed((r) => ({ ...r, [tripId]: true }));
+      toast.success(t.surprise.revealed);
+    }, 1600);
   }
 
   function handleSave(trip: TripSuggestion) {
@@ -237,8 +243,27 @@ export default function SurprisePage() {
       </div>
 
       <div className="flex-1 overflow-y-auto pb-6">
+
+        {/* How it works banner */}
+        <div className="mx-4 mt-3 bg-gradient-to-br from-violet-500/10 to-orange-400/10 border border-violet-400/20 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-bold text-foreground">{t.surprise.howItWorksTitle}</p>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {t.surprise.howItWorksBadge}
+            </span>
+          </div>
+          <ol className="flex flex-col gap-2">
+            {[t.surprise.howItWorks1, t.surprise.howItWorks2, t.surprise.howItWorks3].map((step, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
         {/* Filter card */}
-        <div className="mx-4 -mt-4 bg-card rounded-2xl shadow-lg border p-4 flex flex-col gap-3">
+        <div className="mx-4 mt-3 bg-card rounded-2xl shadow-lg border p-4 flex flex-col gap-3">
 
           {/* Budget */}
           <div className="flex items-center justify-between">
@@ -411,6 +436,7 @@ export default function SurprisePage() {
           <div className="flex flex-col gap-4 mt-4 px-4">
             {trips.map((trip, idx) => {
               const isRevealed = revealed[trip.id];
+              const isPaying = paying[trip.id];
               const gradient = MYSTERY_GRADIENTS[idx % MYSTERY_GRADIENTS.length];
               const emoji = MYSTERY_EMOJIS[idx % MYSTERY_EMOJIS.length];
 
@@ -536,6 +562,11 @@ export default function SurprisePage() {
                           Booking
                         </Button>
                       </div>
+                    ) : isPaying ? (
+                      <Button disabled className="w-full gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {t.surprise.paying}
+                      </Button>
                     ) : (
                       <div className="flex flex-col gap-1">
                         <Button
