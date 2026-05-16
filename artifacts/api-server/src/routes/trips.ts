@@ -909,6 +909,10 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
 
     seenKeys.add(dedupKey);
     const { _features, ...tripOut } = trip;
+    // ── Defensive guard: NEVER return return-transport for one-way trips ──
+    if (tripType === "one_way") {
+      delete (tripOut as Record<string, unknown>).returnTransport;
+    }
     results.push(tripOut as typeof trip);
   }
 

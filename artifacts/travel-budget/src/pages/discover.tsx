@@ -387,6 +387,8 @@ export default function Discover() {
 
   const loadingMsgRef = useRef<string | null>(null);
   const noResultsMsgRef = useRef<string | null>(null);
+  // ── Race-condition guard: only accept results from the latest search ──
+  const searchGenRef = useRef(0);
   if (!loadingMsgRef.current) {
     const msgs = t.fun.loadingMessages;
     loadingMsgRef.current = msgs[Math.floor(Math.random() * msgs.length)];
@@ -445,9 +447,16 @@ export default function Discover() {
       return;
     }
 
+    // ── Stamp this search so stale responses are discarded ────────
+    const thisGen = ++searchGenRef.current;
+    // Clear stale results immediately — prevents old round-trip cards
+    // from remaining visible while the new one-way search loads
+    setTrips([]);
+
     const effectiveBudget = f.budget || prefs?.defaultBudget || 2000;
     const depLocation = f.departureAirport || f.departureStation || prefs?.defaultDepartureLocation || "Any";
     const arrLocation = f.arrivalAirport || f.arrivalStation || "Any";
+    const isOneWay = f.tripType === "one_way";
     loadingMsgRef.current = t.fun.loadingMessages[Math.floor(Math.random() * t.fun.loadingMessages.length)];
     generateTrips.mutate(
       {
@@ -457,7 +466,9 @@ export default function Discover() {
           numberOfChildren: f.numberOfChildren > 0 ? f.numberOfChildren : null,
           numberOfPets: f.numberOfPets > 0 ? f.numberOfPets : null,
           departureDate: f.departureDate || new Date().toISOString(),
-          returnDate: f.tripType === "one_way"
+          // Never send a meaningful returnDate for one-way — server ignores it
+          // but we pass a placeholder to satisfy the OpenAPI schema
+          returnDate: isOneWay
             ? new Date(Date.now() + f.numberOfNights * 86400000).toISOString()
             : (f.returnDate || new Date(Date.now() + f.numberOfNights * 86400000).toISOString()),
           departureLocation: depLocation,
@@ -486,7 +497,19 @@ export default function Discover() {
       },
       {
         onSuccess: (data) => {
-          setTrips(data);
+          // ── Discard stale response if a newer search was already fired ──
+          if (thisGen !== searchGenRef.current) return;
+
+          // ── Defensive: strip any return-transport from one-way results ──
+          const cleaned = isOneWay
+            ? data.map((trip) => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { returnTransport: _rt, ...rest } = trip as typeof trip & { returnTransport?: unknown };
+                return rest as typeof trip;
+              })
+            : data;
+
+          setTrips(cleaned);
           setCurrentIndex(0);
           setHistory([]);
           setHasSearched(true);
