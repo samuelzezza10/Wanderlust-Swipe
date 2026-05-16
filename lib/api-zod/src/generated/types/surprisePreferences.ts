@@ -33,4 +33,5 @@ export interface SurprisePreferences {
   /** @nullable */
   minHotelRating?: number | null;
   trainPreference?: SurprisePreferencesTrainPreference;
+  hotelAmenities?: string[];
 }

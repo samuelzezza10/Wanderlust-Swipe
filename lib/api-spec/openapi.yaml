@@ -256,6 +256,10 @@ components:
         trainPreference:
           type: string
           enum: [direct, with_stops, any]
+        hotelAmenities:
+          type: array
+          items:
+            type: string
 
     TripPreferences:
       type: object

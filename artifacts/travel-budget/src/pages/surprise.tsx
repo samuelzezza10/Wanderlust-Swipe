@@ -6,13 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dice6, Lock, Unlock, Plane, TrainFront, Hotel, Star,
   Users, Moon, Wallet, MapPin, ArrowLeft, Sparkles, Check,
-  ChevronRight, Loader2, RefreshCw,
+  ChevronRight, Loader2, RefreshCw, PawPrint, Coffee,
+  XCircle, Car, Bath, Building, Wifi, Baby,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
-import { DEFAULT_FILTERS, type TripFilters } from "@/components/filter-panel";
+import { type TripFilters } from "@/components/filter-panel";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -42,8 +43,11 @@ const MYSTERY_EMOJIS = ["🏝️", "🏔️", "🌆"];
 interface SurpriseFilters {
   budget: number;
   numberOfPeople: number;
+  numberOfChildren: number;
+  numberOfPets: number;
   numberOfNights: number;
-  departureLocation: string;
+  departureAirport: string;
+  departureStation: string;
   departureDate: string;
   returnDate: string;
   flightPreference: TripFilters["flightPreference"];
@@ -52,13 +56,23 @@ interface SurpriseFilters {
   hotelStarsMin: number | null;
   hotelStarsMax: number | null;
   minHotelRating: number | null;
+  freeCancellation: boolean;
+  breakfastIncluded: boolean;
+  parkingAvailable: boolean;
+  privateBathroom: boolean;
+  elevator: boolean;
+  petFriendly: boolean;
+  onlinePayment: boolean;
 }
 
 const DEFAULT_SURPRISE_FILTERS: SurpriseFilters = {
   budget: 2000,
   numberOfPeople: 2,
+  numberOfChildren: 0,
+  numberOfPets: 0,
   numberOfNights: 7,
-  departureLocation: "",
+  departureAirport: "",
+  departureStation: "",
   departureDate: "",
   returnDate: "",
   flightPreference: "any",
@@ -67,6 +81,13 @@ const DEFAULT_SURPRISE_FILTERS: SurpriseFilters = {
   hotelStarsMin: null,
   hotelStarsMax: null,
   minHotelRating: null,
+  freeCancellation: false,
+  breakfastIncluded: false,
+  parkingAvailable: false,
+  privateBathroom: false,
+  elevator: false,
+  petFriendly: false,
+  onlinePayment: false,
 };
 
 function StarRow({ stars }: { stars: number }) {
@@ -102,35 +123,64 @@ function CounterBtn({
   );
 }
 
+function AmenityToggle({
+  active, label, icon, onClick,
+}: { active: boolean; label: string; icon: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium border transition-all ${
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-background text-muted-foreground border-border hover:border-primary/50"
+      }`}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
 export default function SurprisePage() {
   const { t } = useI18n();
   const [, setLocation] = useLocation();
   const { isSignedIn } = useAuth();
   const { data: prefs } = useGetPreferences({ query: { enabled: !!isSignedIn, queryKey: ["preferences"] } });
 
-  const [filters, setFilters] = useState<SurpriseFilters>(() => ({
-    ...DEFAULT_SURPRISE_FILTERS,
-    budget: DEFAULT_FILTERS.budget,
-  }));
-
+  const [filters, setFilters] = useState<SurpriseFilters>(DEFAULT_SURPRISE_FILTERS);
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
-  const [paying, setPaying] = useState<Record<string, boolean>>({});
 
   const generateSurprise = useGenerateSurpriseTrips();
   const saveTrip = useSaveTrip();
 
-  const effectiveDep = filters.departureLocation || prefs?.defaultDepartureLocation || "Any";
+  const effectiveDep = filters.departureAirport || filters.departureStation || prefs?.defaultDepartureLocation || "Any";
+
+  function toggle<K extends keyof SurpriseFilters>(key: K) {
+    setFilters((f) => ({ ...f, [key]: !f[key] }));
+  }
 
   function handleGenerate() {
     const depDate = filters.departureDate || new Date().toISOString();
     const retDate = filters.returnDate || new Date(Date.now() + filters.numberOfNights * 86400000).toISOString();
+    const hotelAmenities = [
+      ...(filters.freeCancellation ? ["free_cancellation"] : []),
+      ...(filters.breakfastIncluded ? ["breakfast"] : []),
+      ...(filters.parkingAvailable ? ["parking"] : []),
+      ...(filters.privateBathroom ? ["private_bathroom"] : []),
+      ...(filters.elevator ? ["elevator"] : []),
+      ...(filters.petFriendly ? ["pet_friendly"] : []),
+      ...(filters.onlinePayment ? ["online_payment"] : []),
+    ];
     generateSurprise.mutate(
       {
         data: {
           budget: filters.budget,
           numberOfPeople: filters.numberOfPeople,
+          numberOfChildren: filters.numberOfChildren,
+          hasChildren: filters.numberOfChildren > 0,
+          hasPets: filters.numberOfPets > 0 || filters.petFriendly,
           numberOfNights: filters.numberOfNights,
           departureLocation: effectiveDep,
           departureDate: depDate,
@@ -141,13 +191,13 @@ export default function SurprisePage() {
           hotelStarsMin: filters.hotelStarsMin,
           hotelStarsMax: filters.hotelStarsMax,
           minHotelRating: filters.minHotelRating,
+          hotelAmenities,
         },
       },
       {
         onSuccess: (data) => {
           setTrips(data);
           setRevealed({});
-          setPaying({});
           setHasSearched(true);
         },
       }
@@ -155,13 +205,8 @@ export default function SurprisePage() {
   }
 
   function handleReveal(tripId: string) {
-    if (paying[tripId] || revealed[tripId]) return;
-    setPaying((p) => ({ ...p, [tripId]: true }));
-    setTimeout(() => {
-      setPaying((p) => ({ ...p, [tripId]: false }));
-      setRevealed((r) => ({ ...r, [tripId]: true }));
-      toast.success(t.surprise.revealed);
-    }, 1800);
+    setRevealed((r) => ({ ...r, [tripId]: true }));
+    toast.success(t.surprise.revealed);
   }
 
   function handleSave(trip: TripSuggestion) {
@@ -194,6 +239,7 @@ export default function SurprisePage() {
       <div className="flex-1 overflow-y-auto pb-6">
         {/* Filter card */}
         <div className="mx-4 -mt-4 bg-card rounded-2xl shadow-lg border p-4 flex flex-col gap-3">
+
           {/* Budget */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-medium">
@@ -226,16 +272,50 @@ export default function SurprisePage() {
             </div>
           </div>
 
-          {/* Departure */}
+          {/* Children + Pets */}
+          <div className="flex gap-4">
+            <div className="flex-1 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Baby className="w-4 h-4 text-primary" />
+                <span>{t.surprise.childrenLabel}</span>
+              </div>
+              <CounterBtn value={filters.numberOfChildren} min={0} max={8} onChange={(v) => setFilters(f => ({ ...f, numberOfChildren: v }))} />
+            </div>
+            <div className="w-px bg-border" />
+            <div className="flex-1 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <PawPrint className="w-4 h-4 text-primary" />
+                <span>{t.surprise.petsLabel}</span>
+              </div>
+              <CounterBtn value={filters.numberOfPets} min={0} max={4} onChange={(v) => setFilters(f => ({ ...f, numberOfPets: v, petFriendly: v > 0 ? true : f.petFriendly }))} />
+            </div>
+          </div>
+
+          {/* Departure airport */}
           <div>
-            <div className="flex items-center gap-1.5 text-sm font-medium mb-1">
-              <MapPin className="w-4 h-4 text-primary" />
-              <span>{t.surprise.fromLabel}</span>
+            <div className="flex items-center gap-1.5 text-sm font-medium mb-1.5">
+              <Plane className="w-4 h-4 text-primary" />
+              <span>{t.surprise.departureAirport}</span>
             </div>
             <LocationAutocomplete
-              value={filters.departureLocation}
-              onChange={(v) => setFilters(f => ({ ...f, departureLocation: v }))}
-              placeholder={prefs?.defaultDepartureLocation || "Roma, Milano, Parigi…"}
+              value={filters.departureAirport}
+              onChange={(v) => setFilters(f => ({ ...f, departureAirport: v }))}
+              placeholder={prefs?.defaultDepartureLocation || "Roma FCO, Milano MXP…"}
+              filter="airport"
+            />
+          </div>
+
+          {/* Departure station */}
+          <div>
+            <div className="flex items-center gap-1.5 text-sm font-medium mb-1.5">
+              <TrainFront className="w-4 h-4 text-primary" />
+              <span>{t.surprise.departureStation}</span>
+            </div>
+            <LocationAutocomplete
+              value={filters.departureStation}
+              onChange={(v) => setFilters(f => ({ ...f, departureStation: v }))}
+              placeholder="Roma Termini, Milano Centrale…"
+              filter="station"
             />
           </div>
 
@@ -264,6 +344,23 @@ export default function SurprisePage() {
                 }}
                 className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm"
               />
+            </div>
+          </div>
+
+          {/* Hotel amenities */}
+          <div>
+            <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+              <Building className="w-4 h-4 text-primary" />
+              {t.surprise.amenitiesLabel}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <AmenityToggle active={filters.petFriendly} label={t.surprise.petFriendly} icon={<PawPrint className="w-3 h-3" />} onClick={() => toggle("petFriendly")} />
+              <AmenityToggle active={filters.elevator} label={t.surprise.elevator} icon={<Building className="w-3 h-3" />} onClick={() => toggle("elevator")} />
+              <AmenityToggle active={filters.breakfastIncluded} label={t.surprise.breakfastIncluded} icon={<Coffee className="w-3 h-3" />} onClick={() => toggle("breakfastIncluded")} />
+              <AmenityToggle active={filters.freeCancellation} label={t.surprise.freeCancellation} icon={<XCircle className="w-3 h-3" />} onClick={() => toggle("freeCancellation")} />
+              <AmenityToggle active={filters.parkingAvailable} label={t.surprise.parkingAvailable} icon={<Car className="w-3 h-3" />} onClick={() => toggle("parkingAvailable")} />
+              <AmenityToggle active={filters.privateBathroom} label={t.surprise.privateBathroom} icon={<Bath className="w-3 h-3" />} onClick={() => toggle("privateBathroom")} />
+              <AmenityToggle active={filters.onlinePayment} label={t.surprise.onlinePayment} icon={<Wifi className="w-3 h-3" />} onClick={() => toggle("onlinePayment")} />
             </div>
           </div>
 
@@ -314,7 +411,6 @@ export default function SurprisePage() {
           <div className="flex flex-col gap-4 mt-4 px-4">
             {trips.map((trip, idx) => {
               const isRevealed = revealed[trip.id];
-              const isPaying = paying[trip.id];
               const gradient = MYSTERY_GRADIENTS[idx % MYSTERY_GRADIENTS.length];
               const emoji = MYSTERY_EMOJIS[idx % MYSTERY_EMOJIS.length];
 
@@ -363,7 +459,7 @@ export default function SurprisePage() {
                         <span className="text-2xl font-bold text-primary">€{trip.totalPrice.toLocaleString()}</span>
                         <span className="text-sm text-muted-foreground ml-1">/ {filters.numberOfPeople} {t.surprise.peopleLabel.toLowerCase()}</span>
                       </div>
-                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 text-xs">
+                      <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800 text-xs">
                         {t.surprise.budgetExceeded}
                       </Badge>
                     </div>
@@ -440,11 +536,6 @@ export default function SurprisePage() {
                           Booking
                         </Button>
                       </div>
-                    ) : isPaying ? (
-                      <Button disabled className="w-full gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        {t.surprise.paying}
-                      </Button>
                     ) : (
                       <div className="flex flex-col gap-1">
                         <Button

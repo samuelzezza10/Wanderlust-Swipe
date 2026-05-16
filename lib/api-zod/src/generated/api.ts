@@ -38,7 +38,8 @@ export const GenerateSurpriseTripsBody = zod.object({
   "hotelStarsMin": zod.number().nullish(),
   "hotelStarsMax": zod.number().nullish(),
   "minHotelRating": zod.number().nullish(),
-  "trainPreference": zod.enum(['direct', 'with_stops', 'any']).optional()
+  "trainPreference": zod.enum(['direct', 'with_stops', 'any']).optional(),
+  "hotelAmenities": zod.array(zod.string()).optional()
 })
 
 export const GenerateSurpriseTripsResponseItem = zod.object({

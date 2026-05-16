@@ -63,6 +63,7 @@ export interface SurprisePreferences {
   /** @nullable */
   minHotelRating?: number | null;
   trainPreference?: SurprisePreferencesTrainPreference;
+  hotelAmenities?: string[];
 }
 
 export type TripPreferencesFlightPreference = typeof TripPreferencesFlightPreference[keyof typeof TripPreferencesFlightPreference];
