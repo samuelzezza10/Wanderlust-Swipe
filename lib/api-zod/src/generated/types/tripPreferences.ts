@@ -5,6 +5,7 @@
  * TravelBudget API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { TripPreferencesAccommodationType } from './tripPreferencesAccommodationType';
 import type { TripPreferencesFlightPreference } from './tripPreferencesFlightPreference';
 
 export interface TripPreferences {
@@ -15,11 +16,18 @@ export interface TripPreferences {
   /** @nullable */
   numberOfChildren?: number | null;
   hasPets?: boolean;
+  /** @nullable */
+  numberOfPets?: number | null;
   departureDate: string;
   returnDate: string;
   departureLocation: string;
   arrivalLocation: string;
-  hotelDistanceKm?: number;
+  /** @nullable */
+  hotelDistanceKm?: number | null;
+  /** @nullable */
+  maxDistanceFromAirportKm?: number | null;
   numberOfNights: number;
   flightPreference?: TripPreferencesFlightPreference;
+  /** @nullable */
+  accommodationType?: TripPreferencesAccommodationType;
 }

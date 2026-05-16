@@ -18,6 +18,18 @@ export const TripPreferencesFlightPreference = {
   any: 'any',
 } as const;
 
+/**
+ * @nullable
+ */
+export type TripPreferencesAccommodationType = typeof TripPreferencesAccommodationType[keyof typeof TripPreferencesAccommodationType] | null;
+
+
+export const TripPreferencesAccommodationType = {
+  budget: 'budget',
+  standard: 'standard',
+  luxury: 'luxury',
+} as const;
+
 export interface TripPreferences {
   language?: string;
   budget: number;
@@ -26,13 +38,20 @@ export interface TripPreferences {
   /** @nullable */
   numberOfChildren?: number | null;
   hasPets?: boolean;
+  /** @nullable */
+  numberOfPets?: number | null;
   departureDate: string;
   returnDate: string;
   departureLocation: string;
   arrivalLocation: string;
-  hotelDistanceKm?: number;
+  /** @nullable */
+  hotelDistanceKm?: number | null;
+  /** @nullable */
+  maxDistanceFromAirportKm?: number | null;
   numberOfNights: number;
   flightPreference?: TripPreferencesFlightPreference;
+  /** @nullable */
+  accommodationType?: TripPreferencesAccommodationType;
 }
 
 export type TransportOptionType = typeof TransportOptionType[keyof typeof TransportOptionType];
@@ -76,6 +95,7 @@ export interface TripSuggestion {
   highlights?: string[];
   imageUrl: string;
   durationDays: number;
+  transportToHotelKm?: number;
   tags?: string[];
 }
 

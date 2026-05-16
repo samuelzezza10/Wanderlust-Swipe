@@ -13,6 +13,7 @@ export * from './savedTripInput';
 export * from './transportOption';
 export * from './transportOptionType';
 export * from './tripPreferences';
+export * from './tripPreferencesAccommodationType';
 export * from './tripPreferencesFlightPreference';
 export * from './tripStats';
 export * from './tripSuggestion';

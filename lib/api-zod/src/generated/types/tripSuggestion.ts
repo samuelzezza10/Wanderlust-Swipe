@@ -20,5 +20,6 @@ export interface TripSuggestion {
   highlights?: string[];
   imageUrl: string;
   durationDays: number;
+  transportToHotelKm?: number;
   tags?: string[];
 }

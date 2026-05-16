@@ -72,7 +72,17 @@ const DESTINATIONS = [
 
 const AIRLINES = ["Air France", "Ryanair", "Vueling", "EasyJet", "British Airways", "Lufthansa", "Emirates", "Qatar Airways"];
 const TRAINS = ["Eurostar", "TGV", "Thalys", "Renfe AVE", "Trenitalia"];
-const HOTELS = [
+const HOTELS_BUDGET = [
+  ["Hostel Central", "Budget Inn", "City Sleep"],
+  ["Backpacker Paradise", "Bali Budget Lodge", "Eco Hostel"],
+  ["Tokyo Budget Hotel", "Shinjuku Capsule", "Asakusa Inn"],
+  ["Santorini Guesthouse", "Aegean Budget Stay", "Oia Hostel"],
+  ["NYC Budget Inn", "Manhattan Hostel", "Brooklyn Bed & Breakfast"],
+  ["Lisbon Budget Stay", "Alfama Hostel", "Central Lisbon Inn"],
+  ["Maldives Guesthouse", "Island Budget Lodge", "Coral Hostel"],
+  ["Barcelona Hostel", "Gothic Budget Inn", "Barceloneta Hostel"],
+];
+const HOTELS_STANDARD = [
   ["Grand Hotel Metropole", "Boutique Lumière", "The Urban Lodge"],
   ["Sunset Paradise Resort", "Bali Eco Retreat", "Villa Lotus"],
   ["Tokyo Garden Hotel", "Shinjuku Grand", "Akihabara Inn"],
@@ -82,6 +92,17 @@ const HOTELS = [
   ["Overwater Paradise Villa", "Blue Lagoon Resort", "Coral Garden Lodge"],
   ["Barcelona Modernisme", "Gothic Quarter Inn", "Barceloneta Suites"],
 ];
+const HOTELS_LUXURY = [
+  ["Four Seasons Paris", "Le Bristol Paris", "Ritz Paris"],
+  ["Four Seasons Bali", "COMO Uma Ubud", "Amandari Resort"],
+  ["Park Hyatt Tokyo", "Aman Tokyo", "The Peninsula Tokyo"],
+  ["Grace Hotel Santorini", "Canaves Oia", "Mystique Hotel"],
+  ["The Mark NYC", "Mandarin Oriental NY", "Four Seasons Manhattan"],
+  ["Bairro Alto Hotel", "Memmo Alfama", "Four Seasons Ritz Lisbon"],
+  ["Soneva Jani", "Gili Lankanfushi", "Four Seasons Maldives"],
+  ["Hotel Arts Barcelona", "W Barcelona", "Mandarin Oriental Barcelona"],
+];
+
 const AMENITIES = [
   ["WiFi", "Pool", "Spa", "Restaurant", "Gym"],
   ["WiFi", "Beach Access", "Bar", "Concierge"],
@@ -93,15 +114,33 @@ function randomBetween(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+type AccommodationType = "budget" | "standard" | "luxury" | null;
+
 function generateTripSuggestion(
   destIndex: number,
   budget: number,
   numberOfPeople: number,
   numberOfNights: number,
   flightPreference: string,
+  accommodationType: AccommodationType,
   id: string,
 ) {
   const dest = DESTINATIONS[destIndex % DESTINATIONS.length];
+
+  // Determine stars based on accommodation type
+  let stars: number;
+  let hotelList: string[][];
+  if (accommodationType === "budget") {
+    stars = randomBetween(2, 3);
+    hotelList = HOTELS_BUDGET;
+  } else if (accommodationType === "luxury") {
+    stars = randomBetween(4, 5);
+    hotelList = HOTELS_LUXURY;
+  } else {
+    stars = randomBetween(3, 4);
+    hotelList = HOTELS_STANDARD;
+  }
+
   const pricePerPerson = Math.min(
     budget,
     randomBetween(Math.floor(budget * 0.4), Math.floor(budget * 0.9)),
@@ -118,13 +157,13 @@ function generateTripSuggestion(
   const durationStr = `${durationHours}h ${durationMins}m`;
 
   const transportPrice = Math.floor(pricePerPerson * 0.45);
-  const hotelIndex = destIndex % HOTELS.length;
-  const hotelNames = HOTELS[hotelIndex];
+  const hotelIdx = destIndex % hotelList.length;
+  const hotelNames = hotelList[hotelIdx];
   const hotelName = hotelNames[randomBetween(0, hotelNames.length - 1)];
-  const stars = randomBetween(3, 5);
   const pricePerNight = Math.floor((pricePerPerson * 0.55) / numberOfNights);
   const amenitySet = AMENITIES[randomBetween(0, AMENITIES.length - 1)];
   const distanceFromCenter = parseFloat((Math.random() * 4 + 0.5).toFixed(1));
+  const transportToHotelKm = parseFloat((Math.random() * 25 + 2).toFixed(1));
 
   const departureHour = randomBetween(6, 20);
   const arrivalHour = (departureHour + durationHours) % 24;
@@ -163,6 +202,7 @@ function generateTripSuggestion(
     highlights: dest.highlights,
     imageUrl: dest.imageUrl,
     durationDays: numberOfNights + 1,
+    transportToHotelKm,
     tags: dest.tags,
   };
 }
@@ -173,21 +213,58 @@ router.post("/trips/generate", (req, res) => {
     numberOfPeople = 2,
     numberOfNights = 7,
     flightPreference = "any",
+    hotelDistanceKm = null,
+    maxDistanceFromAirportKm = null,
+    accommodationType = null,
   } = req.body;
 
-  const suggestions = Array.from({ length: 8 }, (_, i) => {
-    const destIndex = i + randomBetween(0, 2);
+  // Generate a larger pool so filtering has more to work with
+  const poolSize = 24;
+  const pool = Array.from({ length: poolSize }, (_, i) => {
+    const destIndex = i % DESTINATIONS.length;
     return generateTripSuggestion(
       destIndex,
       budget,
       numberOfPeople,
       numberOfNights,
       flightPreference,
+      accommodationType as AccommodationType,
       `trip-${Date.now()}-${i}`,
     );
   });
 
-  res.json(suggestions);
+  // Strict filtering
+  const filtered = pool.filter((trip) => {
+    // Budget: totalPrice must not exceed budget × numberOfPeople
+    if (trip.totalPrice > budget * numberOfPeople) return false;
+
+    // Flight preference
+    if (flightPreference === "direct" && !trip.transport.isDirect) return false;
+    if (flightPreference === "with_stops" && trip.transport.isDirect) return false;
+
+    // Hotel distance from city centre
+    if (hotelDistanceKm != null && trip.hotel.distanceFromCenter > hotelDistanceKm) return false;
+
+    // Transport-to-hotel distance
+    if (maxDistanceFromAirportKm != null && trip.transportToHotelKm > maxDistanceFromAirportKm) return false;
+
+    // Accommodation type (stars)
+    if (accommodationType === "budget" && trip.hotel.stars > 3) return false;
+    if (accommodationType === "standard" && (trip.hotel.stars < 3 || trip.hotel.stars > 4)) return false;
+    if (accommodationType === "luxury" && trip.hotel.stars < 4) return false;
+
+    return true;
+  });
+
+  // Return up to 8 unique-destination results
+  const seen = new Set<string>();
+  const results = filtered.filter((t) => {
+    if (seen.has(t.destination)) return false;
+    seen.add(t.destination);
+    return true;
+  }).slice(0, 8);
+
+  res.json(results);
 });
 
 router.get("/trips/stats", async (req, res) => {

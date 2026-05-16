@@ -28,13 +28,16 @@ export const GenerateTripsBody = zod.object({
   "hasChildren": zod.boolean().optional(),
   "numberOfChildren": zod.number().nullish(),
   "hasPets": zod.boolean().optional(),
+  "numberOfPets": zod.number().nullish(),
   "departureDate": zod.string(),
   "returnDate": zod.string(),
   "departureLocation": zod.string(),
   "arrivalLocation": zod.string(),
-  "hotelDistanceKm": zod.number().optional(),
+  "hotelDistanceKm": zod.number().nullish(),
+  "maxDistanceFromAirportKm": zod.number().nullish(),
   "numberOfNights": zod.number(),
-  "flightPreference": zod.enum(['direct', 'with_stops', 'any']).optional()
+  "flightPreference": zod.enum(['direct', 'with_stops', 'any']).optional(),
+  "accommodationType": zod.union([zod.literal('budget'),zod.literal('standard'),zod.literal('luxury'),zod.literal(null)]).nullish()
 })
 
 export const GenerateTripsResponseItem = zod.object({
@@ -65,6 +68,7 @@ export const GenerateTripsResponseItem = zod.object({
   "highlights": zod.array(zod.string()).optional(),
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
+  "transportToHotelKm": zod.number().optional(),
   "tags": zod.array(zod.string()).optional()
 })
 export const GenerateTripsResponse = zod.array(GenerateTripsResponseItem)
@@ -109,6 +113,7 @@ export const GetSavedTripsResponseItem = zod.object({
   "highlights": zod.array(zod.string()).optional(),
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
+  "transportToHotelKm": zod.number().optional(),
   "tags": zod.array(zod.string()).optional()
 })
 })
@@ -147,6 +152,7 @@ export const SaveTripBody = zod.object({
   "highlights": zod.array(zod.string()).optional(),
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
+  "transportToHotelKm": zod.number().optional(),
   "tags": zod.array(zod.string()).optional()
 }),
   "destination": zod.string(),
@@ -199,6 +205,7 @@ export const GetSavedTripResponse = zod.object({
   "highlights": zod.array(zod.string()).optional(),
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
+  "transportToHotelKm": zod.number().optional(),
   "tags": zod.array(zod.string()).optional()
 })
 })
