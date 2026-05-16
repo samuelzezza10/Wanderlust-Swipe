@@ -10,7 +10,7 @@ const DESTINATIONS = [
     description: "The City of Light awaits with world-class cuisine, iconic landmarks, and unmatched romance.",
     highlights: ["Eiffel Tower", "Louvre Museum", "Notre-Dame Cathedral", "Montmartre"],
     tags: ["romantic", "culture", "food", "art"],
-    imageUrl: "/destinations/paris.jpg",
+    imageUrl: "/destinations/paris.png",
   },
   {
     destination: "Bali",
@@ -18,7 +18,7 @@ const DESTINATIONS = [
     description: "A tropical paradise blending lush rice terraces, ancient temples, and pristine beaches.",
     highlights: ["Ubud Rice Terraces", "Tanah Lot Temple", "Seminyak Beach", "Mount Batur"],
     tags: ["beach", "nature", "spiritual", "adventure"],
-    imageUrl: "/destinations/bali.jpg",
+    imageUrl: "/destinations/bali.png",
   },
   {
     destination: "Tokyo",
@@ -26,7 +26,7 @@ const DESTINATIONS = [
     description: "Where ancient tradition meets ultramodern innovation in the world's most dynamic city.",
     highlights: ["Shibuya Crossing", "Senso-ji Temple", "Tsukiji Market", "Akihabara"],
     tags: ["culture", "food", "technology", "shopping"],
-    imageUrl: "/destinations/tokyo.jpg",
+    imageUrl: "/destinations/tokyo.png",
   },
   {
     destination: "Santorini",
@@ -34,7 +34,7 @@ const DESTINATIONS = [
     description: "Iconic blue-domed churches, volcanic beaches, and spectacular Aegean sunsets.",
     highlights: ["Oia Village", "Akrotiri Ruins", "Red Beach", "Caldera Views"],
     tags: ["romantic", "scenic", "beach", "luxury"],
-    imageUrl: "/destinations/santorini.jpg",
+    imageUrl: "/destinations/santorini.png",
   },
   {
     destination: "New York",
@@ -42,7 +42,7 @@ const DESTINATIONS = [
     description: "The city that never sleeps — a vertical metropolis of culture, food, and limitless energy.",
     highlights: ["Central Park", "Times Square", "Brooklyn Bridge", "The Met"],
     tags: ["city", "culture", "food", "shopping"],
-    imageUrl: "/destinations/new-york.jpg",
+    imageUrl: "/destinations/new-york.png",
   },
   {
     destination: "Lisbon",
@@ -50,7 +50,7 @@ const DESTINATIONS = [
     description: "A sun-drenched city of colorful tiles, Fado music, and breathtaking hilltop views.",
     highlights: ["Alfama District", "Belem Tower", "Sintra Day Trip", "LX Factory"],
     tags: ["culture", "food", "scenic", "affordable"],
-    imageUrl: "/destinations/lisbon.jpg",
+    imageUrl: "/destinations/lisbon.png",
   },
   {
     destination: "Maldives",
@@ -58,7 +58,7 @@ const DESTINATIONS = [
     description: "Crystal-clear turquoise waters, overwater bungalows, and pristine coral reefs.",
     highlights: ["Overwater Bungalows", "Snorkeling", "Sunset Cruises", "Dolphin Watching"],
     tags: ["luxury", "beach", "romantic", "nature"],
-    imageUrl: "/destinations/maldives.jpg",
+    imageUrl: "/destinations/maldives.png",
   },
   {
     destination: "Barcelona",
@@ -66,7 +66,7 @@ const DESTINATIONS = [
     description: "Gaudí's architectural masterpieces, lively tapas bars, and sun-kissed Mediterranean beaches.",
     highlights: ["Sagrada Família", "Park Güell", "Las Ramblas", "Gothic Quarter"],
     tags: ["culture", "food", "beach", "architecture"],
-    imageUrl: "/destinations/barcelona.jpg",
+    imageUrl: "/destinations/barcelona.png",
   },
 ];
 

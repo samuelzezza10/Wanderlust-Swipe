@@ -1,0 +1,404 @@
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+
+export type Language = "en" | "it" | "es" | "fr" | "de";
+
+export const LANGUAGES: { code: Language; label: string; flag: string }[] = [
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "it", label: "Italiano", flag: "🇮🇹" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
+];
+
+type Translations = typeof en;
+
+const en = {
+  landing: {
+    title: "Wanderlust made effortless",
+    subtitle: "Swipe through curated trip suggestions like a glossy travel magazine. Find your next adventure on a whim.",
+    getStarted: "Get Started",
+    logIn: "Log In",
+    continueAsGuest: "Continue as Guest",
+  },
+  nav: {
+    discover: "Discover",
+    saved: "Saved",
+    profile: "Profile",
+    logOut: "Log out",
+  },
+  discover: {
+    loading: "Finding perfect getaways...",
+    seenAll: "You've seen them all!",
+    seenAllSub: "We can find more amazing destinations based on your preferences.",
+    generateMore: "Generate More Trips",
+    total: "Total",
+    like: "LIKE",
+    nope: "NOPE",
+    signUpToSave: "Sign up to save your favourite trips!",
+  },
+  saved: {
+    title: "Saved Trips",
+    loading: "Loading saved trips...",
+    empty: "No saved trips yet",
+    emptySub: "Head over to Discover and start swiping to build your dream itinerary.",
+    goToDiscover: "Go to Discover",
+    total: "total",
+    days: "days",
+  },
+  profile: {
+    title: "Profile",
+    traveler: "Traveler",
+    tripsSaved: "Trips Saved",
+    avgTripPrice: "Avg Trip Price",
+    settings: "Settings",
+    updatePreferences: "Update Travel Preferences",
+    notSet: "Not set",
+    privacyPolicy: "Privacy Policy",
+    loading: "Loading...",
+  },
+  onboarding: {
+    budget: "What's your budget?",
+    travelers: "Who's traveling?",
+    flight: "Flight preferences",
+    totalBudget: "Total budget (USD)",
+    departureCity: "Departure City",
+    numberOfPeople: "Number of People",
+    flightType: "Flight Type",
+    directOnly: "Direct only",
+    withStops: "With stops",
+    any: "Any",
+    back: "Back",
+    next: "Next",
+    complete: "Complete",
+  },
+  cookie: {
+    title: "We value your privacy",
+    description: 'We use cookies to enhance your browsing experience, serve personalized ads or content, and analyze our traffic. By clicking "Accept All", you consent to our use of cookies.',
+    decline: "Decline",
+    acceptAll: "Accept All",
+  },
+  notFound: {
+    title: "404 Page Not Found",
+    sub: "Did you forget to add the page to the router?",
+  },
+};
+
+const it: Translations = {
+  landing: {
+    title: "Viaggiare senza pensieri",
+    subtitle: "Scorri i suggerimenti di viaggio curati come una rivista patinata. Trova la tua prossima avventura d'impulso.",
+    getStarted: "Inizia ora",
+    logIn: "Accedi",
+    continueAsGuest: "Continua come ospite",
+  },
+  nav: {
+    discover: "Scopri",
+    saved: "Salvati",
+    profile: "Profilo",
+    logOut: "Esci",
+  },
+  discover: {
+    loading: "Cerchiamo le mete perfette...",
+    seenAll: "Hai visto tutto!",
+    seenAllSub: "Possiamo trovare altre destinazioni fantastiche in base alle tue preferenze.",
+    generateMore: "Genera altri viaggi",
+    total: "Totale",
+    like: "MI PIACE",
+    nope: "NO",
+    signUpToSave: "Registrati per salvare i tuoi viaggi preferiti!",
+  },
+  saved: {
+    title: "Viaggi salvati",
+    loading: "Caricamento viaggi salvati...",
+    empty: "Nessun viaggio salvato",
+    emptySub: "Vai su Scopri e inizia a scorrere per costruire il tuo itinerario dei sogni.",
+    goToDiscover: "Vai a Scopri",
+    total: "totale",
+    days: "giorni",
+  },
+  profile: {
+    title: "Profilo",
+    traveler: "Viaggiatore",
+    tripsSaved: "Viaggi salvati",
+    avgTripPrice: "Prezzo medio viaggio",
+    settings: "Impostazioni",
+    updatePreferences: "Aggiorna preferenze di viaggio",
+    notSet: "Non impostato",
+    privacyPolicy: "Informativa sulla privacy",
+    loading: "Caricamento...",
+  },
+  onboarding: {
+    budget: "Qual è il tuo budget?",
+    travelers: "Chi viaggia?",
+    flight: "Preferenze di volo",
+    totalBudget: "Budget totale (USD)",
+    departureCity: "Città di partenza",
+    numberOfPeople: "Numero di persone",
+    flightType: "Tipo di volo",
+    directOnly: "Solo diretto",
+    withStops: "Con scali",
+    any: "Qualsiasi",
+    back: "Indietro",
+    next: "Avanti",
+    complete: "Completa",
+  },
+  cookie: {
+    title: "La tua privacy è importante",
+    description: 'Utilizziamo i cookie per migliorare la navigazione, mostrare contenuti personalizzati e analizzare il traffico. Cliccando su "Accetta tutto", acconsenti all\'uso dei cookie.',
+    decline: "Rifiuta",
+    acceptAll: "Accetta tutto",
+  },
+  notFound: {
+    title: "404 Pagina non trovata",
+    sub: "Hai dimenticato di aggiungere la pagina al router?",
+  },
+};
+
+const es: Translations = {
+  landing: {
+    title: "Viajar sin esfuerzo",
+    subtitle: "Desliza sugerencias de viaje curadas como una revista de lujo. Encuentra tu próxima aventura.",
+    getStarted: "Empezar",
+    logIn: "Iniciar sesión",
+    continueAsGuest: "Continuar como invitado",
+  },
+  nav: {
+    discover: "Descubrir",
+    saved: "Guardados",
+    profile: "Perfil",
+    logOut: "Cerrar sesión",
+  },
+  discover: {
+    loading: "Buscando escapadas perfectas...",
+    seenAll: "¡Ya los has visto todos!",
+    seenAllSub: "Podemos encontrar más destinos increíbles según tus preferencias.",
+    generateMore: "Generar más viajes",
+    total: "Total",
+    like: "ME GUSTA",
+    nope: "NO",
+    signUpToSave: "¡Regístrate para guardar tus viajes favoritos!",
+  },
+  saved: {
+    title: "Viajes guardados",
+    loading: "Cargando viajes guardados...",
+    empty: "Aún no hay viajes guardados",
+    emptySub: "Ve a Descubrir y empieza a deslizar para crear tu itinerario soñado.",
+    goToDiscover: "Ir a Descubrir",
+    total: "total",
+    days: "días",
+  },
+  profile: {
+    title: "Perfil",
+    traveler: "Viajero",
+    tripsSaved: "Viajes guardados",
+    avgTripPrice: "Precio medio de viaje",
+    settings: "Ajustes",
+    updatePreferences: "Actualizar preferencias de viaje",
+    notSet: "No configurado",
+    privacyPolicy: "Política de privacidad",
+    loading: "Cargando...",
+  },
+  onboarding: {
+    budget: "¿Cuál es tu presupuesto?",
+    travelers: "¿Quién viaja?",
+    flight: "Preferencias de vuelo",
+    totalBudget: "Presupuesto total (USD)",
+    departureCity: "Ciudad de salida",
+    numberOfPeople: "Número de personas",
+    flightType: "Tipo de vuelo",
+    directOnly: "Solo directo",
+    withStops: "Con escalas",
+    any: "Cualquiera",
+    back: "Atrás",
+    next: "Siguiente",
+    complete: "Completar",
+  },
+  cookie: {
+    title: "Valoramos tu privacidad",
+    description: 'Usamos cookies para mejorar tu experiencia de navegación, mostrar contenido personalizado y analizar el tráfico. Al hacer clic en "Aceptar todo", aceptas el uso de cookies.',
+    decline: "Rechazar",
+    acceptAll: "Aceptar todo",
+  },
+  notFound: {
+    title: "404 Página no encontrada",
+    sub: "¿Olvidaste agregar la página al enrutador?",
+  },
+};
+
+const fr: Translations = {
+  landing: {
+    title: "Le voyage sans effort",
+    subtitle: "Faites défiler des suggestions de voyage soigneusement sélectionnées comme un magazine de luxe. Trouvez votre prochaine aventure.",
+    getStarted: "Commencer",
+    logIn: "Se connecter",
+    continueAsGuest: "Continuer en tant qu'invité",
+  },
+  nav: {
+    discover: "Découvrir",
+    saved: "Enregistrés",
+    profile: "Profil",
+    logOut: "Se déconnecter",
+  },
+  discover: {
+    loading: "Nous cherchons les meilleures escapades...",
+    seenAll: "Vous avez tout vu !",
+    seenAllSub: "Nous pouvons trouver d'autres destinations incroyables selon vos préférences.",
+    generateMore: "Générer plus de voyages",
+    total: "Total",
+    like: "J'AIME",
+    nope: "NON",
+    signUpToSave: "Inscrivez-vous pour sauvegarder vos voyages préférés !",
+  },
+  saved: {
+    title: "Voyages enregistrés",
+    loading: "Chargement des voyages enregistrés...",
+    empty: "Pas encore de voyages enregistrés",
+    emptySub: "Allez sur Découvrir et commencez à faire défiler pour créer votre itinéraire de rêve.",
+    goToDiscover: "Aller à Découvrir",
+    total: "total",
+    days: "jours",
+  },
+  profile: {
+    title: "Profil",
+    traveler: "Voyageur",
+    tripsSaved: "Voyages enregistrés",
+    avgTripPrice: "Prix moyen du voyage",
+    settings: "Paramètres",
+    updatePreferences: "Mettre à jour les préférences",
+    notSet: "Non défini",
+    privacyPolicy: "Politique de confidentialité",
+    loading: "Chargement...",
+  },
+  onboarding: {
+    budget: "Quel est votre budget ?",
+    travelers: "Qui voyage ?",
+    flight: "Préférences de vol",
+    totalBudget: "Budget total (USD)",
+    departureCity: "Ville de départ",
+    numberOfPeople: "Nombre de personnes",
+    flightType: "Type de vol",
+    directOnly: "Direct uniquement",
+    withStops: "Avec escales",
+    any: "Peu importe",
+    back: "Retour",
+    next: "Suivant",
+    complete: "Terminer",
+  },
+  cookie: {
+    title: "Nous respectons votre vie privée",
+    description: 'Nous utilisons des cookies pour améliorer votre expérience, personnaliser les contenus et analyser notre trafic. En cliquant sur "Tout accepter", vous consentez à l\'utilisation des cookies.',
+    decline: "Refuser",
+    acceptAll: "Tout accepter",
+  },
+  notFound: {
+    title: "404 Page introuvable",
+    sub: "Avez-vous oublié d'ajouter la page au routeur ?",
+  },
+};
+
+const de: Translations = {
+  landing: {
+    title: "Reisen leicht gemacht",
+    subtitle: "Wischen Sie durch kuratierte Reisevorschläge wie ein Luxus-Reisemagazin. Finden Sie Ihr nächstes Abenteuer.",
+    getStarted: "Loslegen",
+    logIn: "Anmelden",
+    continueAsGuest: "Als Gast fortfahren",
+  },
+  nav: {
+    discover: "Entdecken",
+    saved: "Gespeichert",
+    profile: "Profil",
+    logOut: "Abmelden",
+  },
+  discover: {
+    loading: "Wir suchen die perfekten Reiseziele...",
+    seenAll: "Sie haben alles gesehen!",
+    seenAllSub: "Wir können mehr tolle Reiseziele basierend auf Ihren Präferenzen finden.",
+    generateMore: "Mehr Reisen generieren",
+    total: "Gesamt",
+    like: "GEFÄLLT MIR",
+    nope: "NEIN",
+    signUpToSave: "Registrieren Sie sich, um Ihre Lieblingsreisen zu speichern!",
+  },
+  saved: {
+    title: "Gespeicherte Reisen",
+    loading: "Gespeicherte Reisen werden geladen...",
+    empty: "Noch keine gespeicherten Reisen",
+    emptySub: "Gehen Sie zu Entdecken und wischen Sie, um Ihren Traumreiseplan zu erstellen.",
+    goToDiscover: "Zu Entdecken gehen",
+    total: "gesamt",
+    days: "Tage",
+  },
+  profile: {
+    title: "Profil",
+    traveler: "Reisender",
+    tripsSaved: "Gespeicherte Reisen",
+    avgTripPrice: "Durchschnittspreis",
+    settings: "Einstellungen",
+    updatePreferences: "Reisepräferenzen aktualisieren",
+    notSet: "Nicht festgelegt",
+    privacyPolicy: "Datenschutzrichtlinie",
+    loading: "Laden...",
+  },
+  onboarding: {
+    budget: "Was ist Ihr Budget?",
+    travelers: "Wer reist?",
+    flight: "Flugpräferenzen",
+    totalBudget: "Gesamtbudget (USD)",
+    departureCity: "Abflugstadt",
+    numberOfPeople: "Anzahl der Personen",
+    flightType: "Flugart",
+    directOnly: "Nur Direktflüge",
+    withStops: "Mit Zwischenstopps",
+    any: "Egal",
+    back: "Zurück",
+    next: "Weiter",
+    complete: "Abschließen",
+  },
+  cookie: {
+    title: "Wir schätzen Ihre Privatsphäre",
+    description: 'Wir verwenden Cookies, um Ihr Surferlebnis zu verbessern, personalisierte Inhalte anzuzeigen und unseren Datenverkehr zu analysieren. Mit "Alle akzeptieren" stimmen Sie der Verwendung von Cookies zu.',
+    decline: "Ablehnen",
+    acceptAll: "Alle akzeptieren",
+  },
+  notFound: {
+    title: "404 Seite nicht gefunden",
+    sub: "Haben Sie vergessen, die Seite zum Router hinzuzufügen?",
+  },
+};
+
+const TRANSLATIONS: Record<Language, Translations> = { en, it, es, fr, de };
+
+interface LanguageContextValue {
+  lang: Language;
+  setLang: (l: Language) => void;
+  t: Translations;
+}
+
+const LanguageContext = createContext<LanguageContextValue>({
+  lang: "en",
+  setLang: () => {},
+  t: en,
+});
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Language>(() => {
+    const stored = localStorage.getItem("lang") as Language | null;
+    return stored && TRANSLATIONS[stored] ? stored : "en";
+  });
+
+  const setLang = (l: Language) => {
+    setLangState(l);
+    localStorage.setItem("lang", l);
+  };
+
+  return (
+    <LanguageContext.Provider value={{ lang, setLang, t: TRANSLATIONS[lang] }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+export function useI18n() {
+  return useContext(LanguageContext);
+}

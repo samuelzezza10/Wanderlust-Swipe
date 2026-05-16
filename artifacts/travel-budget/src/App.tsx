@@ -4,7 +4,9 @@ import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/sonner";
 import { queryClient } from "./lib/queryClient";
+import { LanguageProvider } from "./lib/i18n";
 
 import { Layout } from "./components/layout";
 import LandingPage from "./pages/landing";
@@ -120,10 +122,6 @@ function HomeRedirect() {
   );
 }
 
-function DiscoverPlaceholder() {
-  return <div className="p-8">Discover / Swipe Interface Coming Soon</div>;
-}
-
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
 
@@ -167,6 +165,7 @@ function ClerkProviderWithRoutes() {
             <Route component={NotFound} />
           </Switch>
         </Layout>
+        <Toaster />
       </QueryClientProvider>
     </ClerkProvider>
   );
@@ -175,7 +174,9 @@ function ClerkProviderWithRoutes() {
 export default function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
+      <LanguageProvider>
+        <ClerkProviderWithRoutes />
+      </LanguageProvider>
     </WouterRouter>
   );
 }

@@ -2,15 +2,16 @@ import { useGetSavedTrips } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Plane, Hotel, Calendar } from "lucide-react";
-import { format } from "date-fns";
+import { useI18n } from "@/lib/i18n";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function Saved() {
   const { data: savedTrips, isLoading } = useGetSavedTrips();
+  const { t } = useI18n();
 
   if (isLoading) {
-    return <div className="p-8 text-center text-muted-foreground">Loading saved trips...</div>;
+    return <div className="p-8 text-center text-muted-foreground">{t.saved.loading}</div>;
   }
 
   if (!savedTrips?.length) {
@@ -19,12 +20,10 @@ export default function Saved() {
         <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
           <Plane className="w-10 h-10 text-muted-foreground" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">No saved trips yet</h2>
-        <p className="text-muted-foreground mb-8 max-w-sm">
-          Head over to Discover and start swiping to build your dream itinerary.
-        </p>
+        <h2 className="text-2xl font-bold mb-2">{t.saved.empty}</h2>
+        <p className="text-muted-foreground mb-8 max-w-sm">{t.saved.emptySub}</p>
         <Link href="/discover" className="text-primary font-medium hover:underline">
-          Go to Discover
+          {t.saved.goToDiscover}
         </Link>
       </div>
     );
@@ -32,8 +31,8 @@ export default function Saved() {
 
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto w-full">
-      <h1 className="text-3xl font-bold mb-8">Saved Trips</h1>
-      
+      <h1 className="text-3xl font-bold mb-8">{t.saved.title}</h1>
+
       <div className="grid gap-6">
         {savedTrips.map((saved) => (
           <Link key={saved.id} href={`/saved/${saved.id}`}>
@@ -41,7 +40,7 @@ export default function Saved() {
               <div className="flex flex-col sm:flex-row h-full">
                 <div className="w-full sm:w-48 h-48 sm:h-auto relative shrink-0">
                   <img
-                    src={`${basePath}${saved.imageUrl.startsWith('/') ? '' : '/'}${saved.imageUrl}`}
+                    src={`${basePath}${saved.imageUrl.startsWith("/") ? "" : "/"}${saved.imageUrl}`}
                     alt={saved.destination}
                     className="w-full h-full object-cover"
                   />
@@ -54,14 +53,14 @@ export default function Saved() {
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">${saved.totalPrice}</div>
-                      <div className="text-xs text-muted-foreground">total</div>
+                      <div className="text-xs text-muted-foreground">{t.saved.total}</div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-auto grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
-                      <span>{saved.tripData.durationDays} days</span>
+                      <span>{saved.tripData.durationDays} {t.saved.days}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Plane className="w-4 h-4" />

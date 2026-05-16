@@ -1,31 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useGenerateTrips, useSaveTrip, useGetPreferences } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { MapPin, Plane, Hotel, Check, X, RotateCcw } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
 import type { TripSuggestion } from "@workspace/api-client-react";
+import { useI18n } from "@/lib/i18n";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function Discover() {
   const { isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
+  const { t } = useI18n();
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [history, setHistory] = useState<number[]>([]);
 
   const { data: prefs } = useGetPreferences({
-    query: { enabled: !!isSignedIn, queryKey: ["preferences"] }
+    query: { enabled: !!isSignedIn, queryKey: ["preferences"] },
   });
 
   const generateTrips = useGenerateTrips();
   const saveTrip = useSaveTrip();
-
-  useEffect(() => {
-    loadTrips();
-  }, [prefs]);
 
   const loadTrips = () => {
     generateTrips.mutate(
@@ -51,6 +50,11 @@ export default function Discover() {
     );
   };
 
+  // Load trips on first render
+  useState(() => {
+    loadTrips();
+  });
+
   const handleSwipe = (direction: "left" | "right") => {
     if (currentIndex >= trips.length) return;
 
@@ -67,8 +71,12 @@ export default function Discover() {
           },
         });
       } else {
-        setLocation("/sign-up");
-        return;
+        toast(t.discover.signUpToSave, {
+          action: {
+            label: t.landing.getStarted,
+            onClick: () => setLocation("/sign-up"),
+          },
+        });
       }
     }
 
@@ -87,9 +95,9 @@ export default function Discover() {
   if (generateTrips.isPending && trips.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center">
+        <div className="flex flex-col items-center">
           <Plane className="w-12 h-12 text-muted-foreground mb-4 animate-bounce" />
-          <p className="text-muted-foreground font-medium">Finding perfect getaways...</p>
+          <p className="text-muted-foreground font-medium">{t.discover.loading}</p>
         </div>
       </div>
     );
@@ -101,12 +109,10 @@ export default function Discover() {
         <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
           <MapPin className="w-10 h-10 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">You've seen them all!</h2>
-        <p className="text-muted-foreground mb-8 max-w-sm">
-          We can find more amazing destinations based on your preferences.
-        </p>
+        <h2 className="text-2xl font-bold mb-2">{t.discover.seenAll}</h2>
+        <p className="text-muted-foreground mb-8 max-w-sm">{t.discover.seenAllSub}</p>
         <Button onClick={loadTrips} size="lg" disabled={generateTrips.isPending}>
-          Generate More Trips
+          {t.discover.generateMore}
         </Button>
       </div>
     );
@@ -125,6 +131,9 @@ export default function Discover() {
                 isTop={isTop}
                 index={i}
                 onSwipe={handleSwipe}
+                likeLabel={t.discover.like}
+                nopeLabel={t.discover.nope}
+                totalLabel={t.discover.total}
               />
             );
           })}
@@ -162,15 +171,31 @@ export default function Discover() {
   );
 }
 
-function TripCard({ trip, isTop, index, onSwipe }: any) {
+function TripCard({
+  trip,
+  isTop,
+  index,
+  onSwipe,
+  likeLabel,
+  nopeLabel,
+  totalLabel,
+}: {
+  trip: TripSuggestion;
+  isTop: boolean;
+  index: number;
+  onSwipe: (dir: "left" | "right") => void;
+  likeLabel: string;
+  nopeLabel: string;
+  totalLabel: string;
+}) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
-  
+
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [0, -100], [0, 1]);
 
-  const handleDragEnd = (event: any, info: any) => {
+  const handleDragEnd = (_event: any, info: any) => {
     if (info.offset.x > 100) {
       onSwipe("right");
     } else if (info.offset.x < -100) {
@@ -178,12 +203,21 @@ function TripCard({ trip, isTop, index, onSwipe }: any) {
     }
   };
 
+  const imgSrc = (() => {
+    const raw = trip.imageUrl ?? "";
+    const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
+    // Replace .jpg/.jpeg with .png to match actual files
+    const fixed = withSlash.replace(/\.(jpg|jpeg)$/i, ".png");
+    return `${basePath}${fixed}`;
+  })();
+
   return (
     <motion.div
       className="absolute inset-0 w-full h-full bg-card rounded-3xl shadow-xl overflow-hidden border border-border"
       style={{
         x: isTop ? x : 0,
         rotate: isTop ? rotate : 0,
+        opacity: isTop ? opacity : 1,
         zIndex: index,
         scale: 1 - (2 - index) * 0.05,
         y: (2 - index) * 10,
@@ -197,25 +231,25 @@ function TripCard({ trip, isTop, index, onSwipe }: any) {
     >
       <div className="relative h-full w-full">
         <img
-          src={`${basePath}${trip.imageUrl.startsWith('/') ? '' : '/'}${trip.imageUrl}`}
+          src={imgSrc}
           alt={trip.destination}
           className="w-full h-full object-cover pointer-events-none"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 pointer-events-none" />
-        
+
         {isTop && (
           <>
             <motion.div
               style={{ opacity: likeOpacity }}
               className="absolute top-8 left-8 border-4 border-green-500 text-green-500 font-bold text-4xl px-4 py-2 rounded-xl rotate-[-15deg] pointer-events-none"
             >
-              LIKE
+              {likeLabel}
             </motion.div>
             <motion.div
               style={{ opacity: nopeOpacity }}
               className="absolute top-8 right-8 border-4 border-danger text-danger font-bold text-4xl px-4 py-2 rounded-xl rotate-[15deg] pointer-events-none"
             >
-              NOPE
+              {nopeLabel}
             </motion.div>
           </>
         )}
@@ -223,7 +257,7 @@ function TripCard({ trip, isTop, index, onSwipe }: any) {
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none">
           <h2 className="text-3xl font-bold mb-1">{trip.destination}</h2>
           <p className="text-white/80 font-medium mb-4">{trip.country}</p>
-          
+
           <div className="flex gap-4 mb-4">
             <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
               <Plane className="w-4 h-4" />
@@ -234,11 +268,11 @@ function TripCard({ trip, isTop, index, onSwipe }: any) {
               <span>${trip.hotel.pricePerNight}/nt</span>
             </div>
           </div>
-          
+
           <div className="flex items-end justify-between">
             <p className="text-sm text-white/80 line-clamp-2 pr-4">{trip.description}</p>
             <div className="text-right shrink-0">
-              <p className="text-xs text-white/70 uppercase tracking-wider font-bold">Total</p>
+              <p className="text-xs text-white/70 uppercase tracking-wider font-bold">{totalLabel}</p>
               <p className="text-2xl font-bold">${trip.totalPrice}</p>
             </div>
           </div>
