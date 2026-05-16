@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
   Clock, Star, Navigation, Wifi, ArrowRight, SlidersHorizontal,
-  Share2, MessageCircle, Facebook, Copy, TrainFront,
+  Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -505,6 +505,7 @@ export default function Discover() {
                     totalLabel={t.discover.total}
                     caption={hashCaption(trip.id, t.fun.captions)}
                     departureFrom={filters.departureAirport || filters.departureStation}
+                    budget={filters.budget}
                   />
                 );
               })}
@@ -545,6 +546,7 @@ export default function Discover() {
         trip={detailTrip}
         onClose={() => setDetailTrip(null)}
         isSignedIn={!!isSignedIn}
+        budget={filters.budget}
         onSave={() => {
           if (detailTrip) {
             if (isSignedIn) {
@@ -566,7 +568,7 @@ export default function Discover() {
 /* ─── Trip Card ─────────────────────────────────────────────────────────── */
 function TripCard({
   trip, isTop, index, onSwipe, onInfo, onShare,
-  likeLabel, nopeLabel, totalLabel, caption, departureFrom,
+  likeLabel, nopeLabel, totalLabel, caption, departureFrom, budget,
 }: {
   trip: TripSuggestion;
   isTop: boolean;
@@ -579,7 +581,9 @@ function TripCard({
   totalLabel: string;
   caption: string;
   departureFrom?: string;
+  budget?: number;
 }) {
+  const { t } = useI18n();
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
@@ -587,6 +591,11 @@ function TripCard({
   const nopeOpacity = useTransform(x, [0, -100], [0, 1]);
 
   const roundTripTransport = trip.transport.price + (trip.returnTransport?.price ?? 0);
+  const savings = budget && budget > 0 ? budget - trip.totalPrice : 0;
+  const savingsMsg = savings > 10
+    ? t.fun.savingsMessages[trip.id.charCodeAt(trip.id.length - 1) % t.fun.savingsMessages.length]
+      .replace("{amount}", `€${savings}`)
+    : null;
 
   return (
     <motion.div
@@ -653,6 +662,12 @@ function TripCard({
         )}
 
         <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
+          {savingsMsg && isTop && (
+            <div className="mb-2.5 inline-flex items-center gap-1.5 bg-green-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+              <span>💰</span>
+              <span>{savingsMsg}</span>
+            </div>
+          )}
           <h2 className="text-3xl font-bold mb-0.5">{trip.destination}</h2>
           <p className="text-white/80 font-medium mb-3">{trip.country}</p>
           <div className="flex gap-2.5 mb-3">
@@ -725,13 +740,14 @@ function TransportBlock({ label, transport, t }: { label: string; transport: Non
 
 /* ─── Trip Detail Sheet ──────────────────────────────────────────────────── */
 function TripDetailSheet({
-  trip, onClose, isSignedIn, onSave, onShare,
+  trip, onClose, isSignedIn, onSave, onShare, budget,
 }: {
   trip: TripSuggestion | null;
   onClose: () => void;
   isSignedIn: boolean;
   onSave: () => void;
   onShare: () => void;
+  budget?: number;
 }) {
   const { t } = useI18n();
 
@@ -864,6 +880,67 @@ function TripDetailSheet({
                   <Hotel className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
                   <p className="text-lg font-bold">${trip.hotelTotalCost ?? trip.hotel.pricePerNight}</p>
                   <p className="text-xs text-muted-foreground">{t.tripDetail.totalHotel}</p>
+                </div>
+              </section>
+
+              {/* Savings banner */}
+              {(() => {
+                const savings = budget && budget > 0 ? budget - trip.totalPrice : 0;
+                if (savings <= 10) return null;
+                const msgs = t.fun.savingsMessages;
+                const msg = msgs[trip.id.charCodeAt(trip.id.length - 1) % msgs.length].replace("{amount}", `€${savings}`);
+                return (
+                  <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-2xl px-4 py-3">
+                    <span className="text-2xl">💰</span>
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">{msg}</p>
+                  </div>
+                );
+              })()}
+
+              {/* Booking links */}
+              <section className="bg-muted/40 rounded-2xl p-4">
+                <p className="font-bold text-base mb-1">{t.tripDetail.bookTitle}</p>
+                <p className="text-xs text-muted-foreground mb-3">{t.tripDetail.bookSubtitle}</p>
+                <div className="flex flex-col gap-2">
+                  <a
+                    href={`https://www.booking.com/searchresults.html?aid=travelbudget_fake001&ss=${encodeURIComponent(trip.destination)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 bg-[#003580] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#00245a] transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Hotel className="w-4 h-4" />
+                      {t.tripDetail.bookHotel}
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                  </a>
+                  {trip.transport.type === "train" ? (
+                    <a
+                      href={`https://www.omio.com/?utm_source=travelbudget&utm_campaign=aff_fake001&destination=${encodeURIComponent(trip.destination)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-3 bg-[#00a861] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#008a4f] transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <TrainFront className="w-4 h-4" />
+                        {t.tripDetail.bookTransport}
+                      </span>
+                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                    </a>
+                  ) : (
+                    <a
+                      href={`https://www.skyscanner.it/transport/flights/results/?utm_source=travelbudget&affiliateId=fake001&destination=${encodeURIComponent(trip.destination)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-3 bg-[#0770e3] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#0558b0] transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Plane className="w-4 h-4" />
+                        {t.tripDetail.bookFlight}
+                      </span>
+                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                    </a>
+                  )}
                 </div>
               </section>
 

@@ -75,6 +75,11 @@ const en = {
     returnJourney: "Return",
     totalHotel: "Hotel total",
     saveTrip: "Save trip",
+    bookTitle: "Book your trip",
+    bookSubtitle: "Affiliate links — no extra cost for you",
+    bookHotel: "Hotel on Booking",
+    bookTransport: "Transport on Omio",
+    bookFlight: "Flights on Skyscanner",
   },
   saved: {
     title: "Saved Trips",
@@ -206,6 +211,13 @@ const en = {
       "Your next story starts here 📖",
       "Sun, sea & surprisingly affordable ☀️",
     ],
+    savingsMessages: [
+      "Psst… you're pocketing {amount}! 🎉",
+      "Your wallet is throwing a party: {amount} saved! 💃",
+      "Look at you, {amount} richer than your budget! 🐷",
+      "Who said travel was expensive? {amount} left over! 💪",
+      "You just outsmarted the travel industry by {amount}! 🤓",
+    ],
   },
 };
 
@@ -272,6 +284,11 @@ const it: Translations = {
     returnJourney: "Ritorno",
     totalHotel: "Totale hotel",
     saveTrip: "Salva viaggio",
+    bookTitle: "Prenota il viaggio",
+    bookSubtitle: "Link affiliati — nessun costo extra per te",
+    bookHotel: "Hotel su Booking",
+    bookTransport: "Trasporto su Omio",
+    bookFlight: "Voli su Skyscanner",
   },
   saved: {
     title: "Viaggi salvati",
@@ -403,6 +420,13 @@ const it: Translations = {
       "La tua prossima storia inizia qui 📖",
       "Sole, mare e prezzi quasi accessibili ☀️",
     ],
+    savingsMessages: [
+      "Psst… risparmi {amount}! 🎉",
+      "Il tuo portafoglio balla di gioia: {amount} risparmiati! 💃",
+      "Guarda un po': {amount} in più nel borsello! 🐷",
+      "Chi ha detto che viaggiare costa? Avanzano {amount}! 💪",
+      "Hai fregato l'industria del turismo di {amount}! 🤓",
+    ],
   },
 };
 
@@ -469,6 +493,11 @@ const es: Translations = {
     returnJourney: "Vuelta",
     totalHotel: "Hotel total",
     saveTrip: "Guardar viaje",
+    bookTitle: "Reserva tu viaje",
+    bookSubtitle: "Links de afiliado — sin coste extra para ti",
+    bookHotel: "Hotel en Booking",
+    bookTransport: "Transporte en Omio",
+    bookFlight: "Vuelos en Skyscanner",
   },
   saved: {
     title: "Viajes guardados",
@@ -600,6 +629,13 @@ const es: Translations = {
       "Tu próxima historia empieza aquí 📖",
       "Sol, mar y precios sorprendentemente asequibles ☀️",
     ],
+    savingsMessages: [
+      "¡Psst… te ahorras {amount}! 🎉",
+      "¡Tu cartera está bailando: {amount} ahorrados! 💃",
+      "¡Mira qué bien: {amount} de vuelta al bolsillo! 🐷",
+      "¿Quién dijo que viajar era caro? ¡Sobran {amount}! 💪",
+      "¡Le has ganado al turismo por {amount}! 🤓",
+    ],
   },
 };
 
@@ -666,6 +702,11 @@ const fr: Translations = {
     returnJourney: "Retour",
     totalHotel: "Total hôtel",
     saveTrip: "Sauvegarder",
+    bookTitle: "Réservez votre voyage",
+    bookSubtitle: "Liens affiliés — aucun frais supplémentaire pour vous",
+    bookHotel: "Hôtel sur Booking",
+    bookTransport: "Transport sur Omio",
+    bookFlight: "Vols sur Skyscanner",
   },
   saved: {
     title: "Voyages enregistrés",
@@ -797,6 +838,13 @@ const fr: Translations = {
       "Votre prochaine histoire commence ici 📖",
       "Soleil, mer et prix étonnamment abordables ☀️",
     ],
+    savingsMessages: [
+      "Psst… vous économisez {amount} ! 🎉",
+      "Votre portefeuille fait la fête : {amount} d'économies ! 💃",
+      "Voilà {amount} de retour dans vos poches ! 🐷",
+      "Qui a dit que voyager coûtait cher ? Il reste {amount} ! 💪",
+      "Vous avez battu l'industrie du tourisme de {amount} ! 🤓",
+    ],
   },
 };
 
@@ -863,6 +911,11 @@ const de: Translations = {
     returnJourney: "Rückflug",
     totalHotel: "Hotel gesamt",
     saveTrip: "Reise speichern",
+    bookTitle: "Reise buchen",
+    bookSubtitle: "Affiliate-Links — keine Extrakosten für Sie",
+    bookHotel: "Hotel auf Booking",
+    bookTransport: "Transport auf Omio",
+    bookFlight: "Flüge auf Skyscanner",
   },
   saved: {
     title: "Gespeicherte Reisen",
@@ -993,6 +1046,13 @@ const de: Translations = {
       "Fluchtplan: aktiviert 🚀",
       "Ihre nächste Geschichte beginnt hier 📖",
       "Sonne, Meer und überraschend erschwinglich ☀️",
+    ],
+    savingsMessages: [
+      "Psst… Sie sparen {amount}! 🎉",
+      "Ihr Portemonnaie feiert: {amount} gespart! 💃",
+      "Schau an: {amount} zurück in der Tasche! 🐷",
+      "Wer sagt, Reisen sei teuer? {amount} übrig! 💪",
+      "Sie haben die Reisebranche um {amount} überlistet! 🤓",
     ],
   },
 };
