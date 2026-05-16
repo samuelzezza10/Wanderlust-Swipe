@@ -252,3 +252,9 @@ export interface TripStats {
   mostRecentTrip?: string | null;
 }
 
+export interface UsageStats {
+  searchCount: number;
+  isPremium: boolean;
+  freeLimit: number;
+}
+

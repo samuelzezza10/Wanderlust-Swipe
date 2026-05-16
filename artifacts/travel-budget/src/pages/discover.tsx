@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { useGenerateTrips, useSaveTrip, useGetPreferences } from "@workspace/api-client-react";
+import { useGenerateTrips, useSaveTrip, useGetPreferences, useGetUsage } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
   Clock, Star, Navigation, Wifi, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
+  Crown, Zap, Sparkles,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -214,6 +215,102 @@ function ShareModal({
   );
 }
 
+/* ─── Premium Upgrade Modal ─────────────────────────────────────────────── */
+function PremiumUpgradeModal({
+  open,
+  onClose,
+  isGuest,
+  t,
+  onSignUp,
+}: {
+  open: boolean;
+  onClose: () => void;
+  isGuest: boolean;
+  t: ReturnType<typeof useI18n>["t"];
+  onSignUp: () => void;
+}) {
+  if (!open) return null;
+  const benefits = [t.premium.benefit1, t.premium.benefit2, t.premium.benefit3];
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col justify-end">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 28, stiffness: 300 }}
+        className="relative bg-background rounded-t-3xl px-6 pb-10 pt-6 shadow-2xl"
+      >
+        {/* Handle bar */}
+        <div className="w-10 h-1 rounded-full bg-muted-foreground/30 mx-auto mb-6" />
+
+        {/* Crown icon */}
+        <div className="flex justify-center mb-4">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-primary flex items-center justify-center shadow-lg">
+            <Crown className="w-10 h-10 text-white" />
+          </div>
+        </div>
+
+        <h2 className="text-2xl font-black text-center mb-1">{t.premium.title}</h2>
+        <p className="text-sm text-muted-foreground text-center mb-6">
+          {isGuest ? t.premium.guestSubtitle : t.premium.subtitle}
+        </p>
+
+        {/* Benefits */}
+        <div className="space-y-3 mb-6">
+          {benefits.map((b, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                {i === 0 ? <Zap className="w-3.5 h-3.5 text-primary" /> :
+                 i === 1 ? <SlidersHorizontal className="w-3.5 h-3.5 text-primary" /> :
+                           <Sparkles className="w-3.5 h-3.5 text-primary" />}
+              </div>
+              <span className="text-sm font-medium">{b}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Price CTA */}
+        <button
+          onClick={() => {
+            toast(t.premium.cta, { description: "Coming soon — we'll notify you!" });
+            onClose();
+          }}
+          className="w-full bg-gradient-to-r from-primary to-orange-500 text-white font-bold py-4 rounded-2xl text-base shadow-[0_4px_20px_rgba(30,75,204,0.35)] hover:opacity-90 active:scale-95 transition-all mb-3"
+        >
+          {t.premium.cta} — {t.premium.price}
+        </button>
+        <p className="text-center text-xs text-muted-foreground mb-4">{t.premium.ctaSub}</p>
+
+        {/* Guest: also show sign up option */}
+        {isGuest && (
+          <button
+            onClick={onSignUp}
+            className="w-full border border-border text-foreground font-semibold py-3 rounded-2xl text-sm hover:bg-muted/50 active:scale-95 transition-all"
+          >
+            {t.premium.orSignUp}
+          </button>
+        )}
+
+        {/* Close */}
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-muted flex items-center justify-center"
+        >
+          <X className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </motion.div>
+    </div>
+  );
+}
+
 /* ─── Pre-search state ──────────────────────────────────────────────────── */
 function PreSearchState({ onOpenFilters, t }: { onOpenFilters: () => void; t: ReturnType<typeof useI18n>["t"] }) {
   return (
@@ -256,6 +353,8 @@ function PreSearchState({ onOpenFilters, t }: { onOpenFilters: () => void; t: Re
   );
 }
 
+const GUEST_SEARCH_LIMIT = 5;
+
 /* ─── Main page ─────────────────────────────────────────────────────────── */
 export default function Discover() {
   const { isSignedIn } = useAuth();
@@ -270,6 +369,10 @@ export default function Discover() {
   const [shareTrip, setShareTrip] = useState<TripSuggestion | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<TripFilters>(DEFAULT_FILTERS);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [guestCount, setGuestCount] = useState(() =>
+    parseInt(localStorage.getItem("guestSearchCount") ?? "0")
+  );
 
   // Welcome splash — show once per session
   const [showSplash, setShowSplash] = useState(() => {
@@ -296,6 +399,10 @@ export default function Discover() {
     query: { enabled: !!isSignedIn, queryKey: ["preferences"] },
   });
 
+  const { data: usage, refetch: refetchUsage } = useGetUsage({
+    query: { enabled: !!isSignedIn, queryKey: ["usage"] },
+  });
+
   // Initialise filter state from saved user preferences (runs once when prefs first load)
   const prefsInitializedRef = useRef(false);
   useEffect(() => {
@@ -317,6 +424,18 @@ export default function Discover() {
   const saveTrip = useSaveTrip();
 
   function loadTrips(f: TripFilters) {
+    // ── Freemium gate ──────────────────────────────────────────────
+    if (!isSignedIn) {
+      const currentGuestCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0");
+      if (currentGuestCount >= GUEST_SEARCH_LIMIT) {
+        setShowPremiumModal(true);
+        return;
+      }
+    } else if (usage && !usage.isPremium && usage.searchCount >= usage.freeLimit) {
+      setShowPremiumModal(true);
+      return;
+    }
+
     const effectiveBudget = f.budget || prefs?.defaultBudget || 2000;
     const depLocation = f.departureAirport || f.departureStation || prefs?.defaultDepartureLocation || "Any";
     const arrLocation = f.arrivalAirport || f.arrivalStation || "Any";
@@ -359,6 +478,20 @@ export default function Discover() {
           setCurrentIndex(0);
           setHistory([]);
           setHasSearched(true);
+          // Track guest searches
+          if (!isSignedIn) {
+            const newCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0") + 1;
+            localStorage.setItem("guestSearchCount", String(newCount));
+            setGuestCount(newCount);
+          } else {
+            refetchUsage();
+          }
+        },
+        onError: (err: unknown) => {
+          const status = (err as { status?: number })?.status ?? (err as { response?: { status?: number } })?.response?.status;
+          if (status === 403) {
+            setShowPremiumModal(true);
+          }
         },
       }
     );
@@ -418,14 +551,32 @@ export default function Discover() {
     );
   }
 
+  /* ── Usage badge (shared across branches) ── */
+  const usageRemaining = isSignedIn
+    ? (usage && !usage.isPremium && usage.searchCount > 0 ? usage.freeLimit - usage.searchCount : null)
+    : (guestCount > 0 ? GUEST_SEARCH_LIMIT - guestCount : null);
+
+  const UsageBadge = usageRemaining !== null ? (
+    <div className="flex justify-center mt-1 mb-0.5 px-4">
+      <div className="flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-3 py-1 text-xs text-primary font-medium">
+        <Sparkles className="w-3 h-3 shrink-0" />
+        <span>{usageRemaining} {t.premium.searchesLeft}</span>
+      </div>
+    </div>
+  ) : null;
+
   /* ── Pre-search (no filters applied yet) ── */
   if (!hasSearched) {
     return (
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
+        {UsageBadge}
         <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
         <PreSearchState onOpenFilters={() => setFilterOpen(true)} t={t} />
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
+        <AnimatePresence>
+          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+        </AnimatePresence>
       </div>
     );
   }
@@ -437,6 +588,7 @@ export default function Discover() {
     return (
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
+        {UsageBadge}
         <div className="flex-1 flex items-center justify-center flex-col p-6 text-center">
           {isNoDirectTrain ? (
             <>
@@ -473,6 +625,9 @@ export default function Discover() {
           )}
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
+        <AnimatePresence>
+          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+        </AnimatePresence>
       </div>
     );
   }
@@ -482,6 +637,7 @@ export default function Discover() {
     return (
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
+        {UsageBadge}
         <div className="flex-1 flex items-center justify-center flex-col p-4 text-center">
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
             <MapPin className="w-10 h-10 text-primary" />
@@ -493,6 +649,9 @@ export default function Discover() {
           </Button>
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
+        <AnimatePresence>
+          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+        </AnimatePresence>
       </div>
     );
   }
@@ -580,6 +739,10 @@ export default function Discover() {
       />
 
       <ShareModal trip={shareTrip} onClose={() => setShareTrip(null)} />
+
+      <AnimatePresence>
+        <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+      </AnimatePresence>
     </>
   );
 }

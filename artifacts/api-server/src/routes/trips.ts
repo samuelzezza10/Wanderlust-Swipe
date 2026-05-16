@@ -791,7 +791,9 @@ router.post("/trips/surprise", (req, res) => {
   return res.json(results);
 });
 
-router.post("/trips/generate", (req, res) => {
+const FREE_SEARCH_LIMIT = 20;
+
+router.post("/trips/generate", async (req, res) => {
   const {
     budget = 2000,
     numberOfPeople = 2,
@@ -809,6 +811,36 @@ router.post("/trips/generate", (req, res) => {
     hotelStarsMin = null,
     hotelStarsMax = null,
   } = req.body;
+
+  // ─── Freemium: check search limit for authenticated users ──────
+  const auth = getAuth(req);
+  const userId = auth?.userId;
+
+  if (userId) {
+    try {
+      const { db, userPreferencesTable } = await import("@workspace/db");
+      const { eq } = await import("drizzle-orm");
+
+      const [prefs] = await db
+        .select()
+        .from(userPreferencesTable)
+        .where(eq(userPreferencesTable.clerkUserId, userId));
+
+      const count = prefs?.tripSearchCount ?? 0;
+      const premium = prefs?.isPremium ?? false;
+
+      if (!premium && count >= FREE_SEARCH_LIMIT) {
+        return res.status(403).json({
+          error: "limit_reached",
+          searchCount: count,
+          isPremium: false,
+          freeLimit: FREE_SEARCH_LIMIT,
+        });
+      }
+    } catch (err) {
+      req.log.warn({ err }, "Error checking search limit — allowing request");
+    }
+  }
 
   // ─── Strict destination match ─────────────────────────────────
   const matchedDest = matchDestination(arrivalLocation as string);
@@ -868,6 +900,23 @@ router.post("/trips/generate", (req, res) => {
     seenKeys.add(dedupKey);
     const { _features, ...tripOut } = trip;
     results.push(tripOut as typeof trip);
+  }
+
+  // ─── Freemium: increment search count (fire-and-forget) ───────
+  if (userId && results.length > 0) {
+    Promise.all([import("@workspace/db"), import("drizzle-orm")])
+      .then(([{ db, userPreferencesTable }, { eq }]) =>
+        db.select({ count: userPreferencesTable.tripSearchCount })
+          .from(userPreferencesTable)
+          .where(eq(userPreferencesTable.clerkUserId, userId!))
+          .then(([row]) => {
+            if (!row) return;
+            return db.update(userPreferencesTable)
+              .set({ tripSearchCount: (row.count ?? 0) + 1 })
+              .where(eq(userPreferencesTable.clerkUserId, userId!));
+          })
+      )
+      .catch(() => {});
   }
 
   return res.json(results);

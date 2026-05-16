@@ -23,5 +23,6 @@ export * from './tripPreferencesPropertyType';
 export * from './tripPreferencesTrainPreference';
 export * from './tripStats';
 export * from './tripSuggestion';
+export * from './usageStats';
 export * from './userPreferences';
 export * from './userPreferencesInput';

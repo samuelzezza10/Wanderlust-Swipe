@@ -389,3 +389,13 @@ export const GetTripStatsResponse = zod.object({
 })
 
 
+/**
+ * @summary Get search usage for the current user
+ */
+export const GetUsageResponse = zod.object({
+  "searchCount": zod.number(),
+  "isPremium": zod.boolean(),
+  "freeLimit": zod.number()
+})
+
+

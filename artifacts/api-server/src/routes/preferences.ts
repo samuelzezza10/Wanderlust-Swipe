@@ -99,4 +99,29 @@ router.put("/preferences", requireAuth, async (req: any, res) => {
   }
 });
 
+router.get("/usage", async (req: any, res) => {
+  const auth = getAuth(req);
+  const userId = auth?.userId;
+
+  if (!userId) {
+    return res.json({ searchCount: 0, isPremium: false, freeLimit: 20 });
+  }
+
+  try {
+    const [prefs] = await db
+      .select()
+      .from(userPreferencesTable)
+      .where(eq(userPreferencesTable.clerkUserId, userId));
+
+    return res.json({
+      searchCount: prefs?.tripSearchCount ?? 0,
+      isPremium: prefs?.isPremium ?? false,
+      freeLimit: 20,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Error fetching usage");
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

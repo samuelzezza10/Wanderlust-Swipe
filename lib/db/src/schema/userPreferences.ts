@@ -12,6 +12,8 @@ export const userPreferencesTable = pgTable("user_preferences", {
   defaultFlightPreference: text("default_flight_preference"),
   cookieConsent: boolean("cookie_consent").default(false).notNull(),
   onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
+  tripSearchCount: integer("trip_search_count").default(0).notNull(),
+  isPremium: boolean("is_premium").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

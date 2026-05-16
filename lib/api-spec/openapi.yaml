@@ -186,6 +186,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/TripStats"
 
+  /usage:
+    get:
+      operationId: getUsage
+      tags: [preferences]
+      summary: Get search usage for the current user
+      responses:
+        "200":
+          description: Usage info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageStats"
+
 components:
   schemas:
     HealthStatus:
@@ -517,3 +530,17 @@ components:
           type: number
         mostRecentTrip:
           type: ["string", "null"]
+
+    UsageStats:
+      type: object
+      required:
+        - searchCount
+        - isPremium
+        - freeLimit
+      properties:
+        searchCount:
+          type: integer
+        isPremium:
+          type: boolean
+        freeLimit:
+          type: integer
