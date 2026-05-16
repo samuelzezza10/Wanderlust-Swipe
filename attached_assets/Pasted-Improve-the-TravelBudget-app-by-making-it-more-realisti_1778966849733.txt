@@ -1,0 +1,92 @@
+Improve the TravelBudget app by making it more realistic, fun, and strictly budget-controlled, while maintaining the Tinder + Booking hybrid experience.
+
+⸻
+
+1. ROUND TRIP LOGIC (IMPORTANT)
+
+* Always handle trips as round-trip (outbound + return)
+* If transport is flight or train, generate:
+    * outbound journey (departure → destination)
+    * return journey (destination → departure)
+* Show total duration including both directions
+* Apply round-trip pricing logic for transport
+
+⸻
+
+2. HOTEL LOGIC
+
+* Hotels are booked per night
+* Multiply price by number of nights
+* Always include total hotel cost separately
+
+⸻
+
+3. STRICT BUDGET RULE (CRITICAL)
+
+* The total trip cost (transport + hotel) MUST NEVER exceed user budget
+* If a generated trip exceeds budget:
+    * DO NOT show it
+    * DO NOT partially show it
+    * regenerate or discard it
+
+⸻
+
+4. FUNNY & DYNAMIC MESSAGES
+
+Add playful messages in different situations:
+
+While loading results:
+
+* “Searching the best escapes for your wallet…”
+* “Checking if your budget can survive this trip…”
+* “Finding flights that won’t ruin your life…”
+
+If no trips match:
+
+* “No trips found… your budget is a bit shy 😅”
+* “Try increasing your budget, or lowering your dreams 😄”
+* “Even our algorithm cried trying to fit this budget”
+
+If budget is too low:
+
+* “Budget too low for this adventure 😭”
+* “This budget can only afford imagination travel ✈️💭”
+
+⸻
+
+5. TINDER + BOOKING EXPERIENCE
+
+* Keep swipe system (right = like, left = skip)
+* Cards must show:
+    * outbound + return transport
+    * hotel info
+    * total price (always under budget)
+* Add smooth animations and feedback reactions
+
+⸻
+
+6. CARD PERSONALITY
+
+Each card should feel alive:
+
+* Add short funny captions like:
+    * “Perfect weekend escape 😎”
+    * “Luxury but still legal for your budget 💸”
+    * “Budget-friendly chaos trip 😂”
+
+⸻
+
+7. FILTER ENFORCEMENT
+
+* All filters must be strictly enforced
+* No result can violate budget, dates, or constraints
+
+⸻
+
+IMPORTANT RULES
+
+* Budget is absolute and must NEVER be exceeded
+* Always ensure round-trip logic is applied
+* Keep app stable and functional
+* Do not break existing swipe or saved trips system
+* Focus on realism + fun UX + strict constraints

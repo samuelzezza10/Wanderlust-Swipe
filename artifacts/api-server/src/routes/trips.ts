@@ -72,12 +72,13 @@ const DESTINATIONS = [
 
 const AIRLINES = ["Air France", "Ryanair", "Vueling", "EasyJet", "British Airways", "Lufthansa", "Emirates", "Qatar Airways"];
 const TRAINS = ["Eurostar", "TGV", "Thalys", "Renfe AVE", "Trenitalia"];
+
 const HOTELS_BUDGET = [
   ["Hostel Central", "Budget Inn", "City Sleep"],
   ["Backpacker Paradise", "Bali Budget Lodge", "Eco Hostel"],
   ["Tokyo Budget Hotel", "Shinjuku Capsule", "Asakusa Inn"],
   ["Santorini Guesthouse", "Aegean Budget Stay", "Oia Hostel"],
-  ["NYC Budget Inn", "Manhattan Hostel", "Brooklyn Bed & Breakfast"],
+  ["NYC Budget Inn", "Manhattan Hostel", "Brooklyn B&B"],
   ["Lisbon Budget Stay", "Alfama Hostel", "Central Lisbon Inn"],
   ["Maldives Guesthouse", "Island Budget Lodge", "Coral Hostel"],
   ["Barcelona Hostel", "Gothic Budget Inn", "Barceloneta Hostel"],
@@ -111,12 +112,17 @@ const AMENITIES = [
 ];
 
 function randomBetween(min: number, max: number) {
+  if (min >= max) return min;
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function fmt(h: number, m: number) {
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
 type AccommodationType = "budget" | "standard" | "luxury" | null;
 
-function generateTripSuggestion(
+function generateTrip(
   destIndex: number,
   budget: number,
   numberOfPeople: number,
@@ -127,67 +133,109 @@ function generateTripSuggestion(
 ) {
   const dest = DESTINATIONS[destIndex % DESTINATIONS.length];
 
-  // Determine stars based on accommodation type
+  // ─── Accommodation tier ───────────────────────────────────────
   let stars: number;
   let hotelList: string[][];
+  let hotelShare: number; // fraction of per-person budget for hotel
+
   if (accommodationType === "budget") {
     stars = randomBetween(2, 3);
     hotelList = HOTELS_BUDGET;
+    hotelShare = 0.28;
   } else if (accommodationType === "luxury") {
     stars = randomBetween(4, 5);
     hotelList = HOTELS_LUXURY;
+    hotelShare = 0.55;
   } else {
     stars = randomBetween(3, 4);
     hotelList = HOTELS_STANDARD;
+    hotelShare = 0.42;
   }
 
-  const pricePerPerson = Math.min(
-    budget,
-    randomBetween(Math.floor(budget * 0.4), Math.floor(budget * 0.9)),
-  );
-  const totalPrice = pricePerPerson * numberOfPeople;
+  // ─── Hotel cost (strictly within budget share) ────────────────
+  const hotelBudgetTotal = Math.floor(budget * hotelShare);
+  const maxPerNight = Math.max(25, Math.floor(hotelBudgetTotal / numberOfNights));
+  const minPerNight = Math.max(15, Math.floor(maxPerNight * 0.55));
+  const pricePerNight = randomBetween(minPerNight, maxPerNight);
+  const hotelTotalPerPerson = pricePerNight * numberOfNights;
 
+  // ─── Transport: round-trip ────────────────────────────────────
+  const transportBudgetPerPerson = budget - hotelTotalPerPerson;
+  if (transportBudgetPerPerson < 40) return null;
+
+  const maxOutbound = Math.floor(transportBudgetPerPerson * 0.52);
+  const minOutbound = Math.max(20, Math.floor(transportBudgetPerPerson * 0.30));
+  if (maxOutbound < minOutbound) return null;
+
+  const outboundPrice = randomBetween(minOutbound, maxOutbound);
+  // Return leg: 80–115% of outbound price
+  const returnPrice = Math.floor(outboundPrice * (0.80 + Math.random() * 0.35));
+
+  const totalTransportPerPerson = outboundPrice + returnPrice;
+  const totalPerPerson = totalTransportPerPerson + hotelTotalPerPerson;
+
+  // ─── STRICT budget check ──────────────────────────────────────
+  if (totalPerPerson > budget) return null;
+
+  const totalPrice = Math.round(totalPerPerson * numberOfPeople);
+  const hotelTotalCost = Math.round(hotelTotalPerPerson * numberOfPeople);
+
+  // ─── Transport type ───────────────────────────────────────────
   const isFlightDest = ["Paris", "Bali", "Tokyo", "Santorini", "New York", "Maldives"].includes(dest.destination);
-  const useTrainRandom = Math.random() > 0.6 && !isFlightDest;
-  const useTransportType = useTrainRandom ? "train" : "flight";
+  const useTrainRandom = Math.random() > 0.65 && !isFlightDest;
+  const transportType = useTrainRandom ? "train" : "flight";
 
   const isDirect = flightPreference === "direct" || (flightPreference !== "with_stops" && Math.random() > 0.4);
-  const durationHours = randomBetween(1, 12);
-  const durationMins = randomBetween(0, 59);
-  const durationStr = `${durationHours}h ${durationMins}m`;
+  const isReturnDirect = flightPreference === "direct" || (flightPreference !== "with_stops" && Math.random() > 0.4);
 
-  const transportPrice = Math.floor(pricePerPerson * 0.45);
+  const getCompany = () =>
+    transportType === "train"
+      ? TRAINS[randomBetween(0, TRAINS.length - 1)]
+      : AIRLINES[randomBetween(0, AIRLINES.length - 1)];
+
+  // Outbound
+  const outDurH = randomBetween(1, 14);
+  const outDurM = randomBetween(0, 59);
+  const outDepH = randomBetween(5, 22);
+  const outArrH = (outDepH + outDurH) % 24;
+
+  // Return
+  const retDurH = randomBetween(1, 14);
+  const retDurM = randomBetween(0, 59);
+  const retDepH = randomBetween(5, 22);
+  const retArrH = (retDepH + retDurH) % 24;
+
+  // ─── Hotel details ────────────────────────────────────────────
   const hotelIdx = destIndex % hotelList.length;
   const hotelNames = hotelList[hotelIdx];
   const hotelName = hotelNames[randomBetween(0, hotelNames.length - 1)];
-  const pricePerNight = Math.floor((pricePerPerson * 0.55) / numberOfNights);
   const amenitySet = AMENITIES[randomBetween(0, AMENITIES.length - 1)];
-  const distanceFromCenter = parseFloat((Math.random() * 4 + 0.5).toFixed(1));
-  const transportToHotelKm = parseFloat((Math.random() * 25 + 2).toFixed(1));
-
-  const departureHour = randomBetween(6, 20);
-  const arrivalHour = (departureHour + durationHours) % 24;
-  const fmt = (h: number) => `${String(h).padStart(2, "0")}:${String(randomBetween(0, 59)).padStart(2, "0")}`;
-
-  const company =
-    useTransportType === "train"
-      ? TRAINS[randomBetween(0, TRAINS.length - 1)]
-      : AIRLINES[randomBetween(0, AIRLINES.length - 1)];
+  const distanceFromCenter = parseFloat((Math.random() * 4 + 0.3).toFixed(1));
+  const transportToHotelKm = parseFloat((Math.random() * 28 + 2).toFixed(1));
 
   return {
     id,
     destination: dest.destination,
     country: dest.country,
     totalPrice,
-    pricePerPerson,
+    pricePerPerson: totalPerPerson,
     transport: {
-      type: useTransportType,
-      company,
-      duration: durationStr,
-      price: transportPrice,
+      type: transportType,
+      company: getCompany(),
+      duration: `${outDurH}h ${outDurM}m`,
+      price: outboundPrice,
       isDirect,
-      departureTime: fmt(departureHour),
-      arrivalTime: fmt(arrivalHour),
+      departureTime: fmt(outDepH, randomBetween(0, 59)),
+      arrivalTime: fmt(outArrH, randomBetween(0, 59)),
+    },
+    returnTransport: {
+      type: transportType,
+      company: getCompany(),
+      duration: `${retDurH}h ${retDurM}m`,
+      price: returnPrice,
+      isDirect: isReturnDirect,
+      departureTime: fmt(retDepH, randomBetween(0, 59)),
+      arrivalTime: fmt(retArrH, randomBetween(0, 59)),
     },
     hotel: {
       name: hotelName,
@@ -198,6 +246,7 @@ function generateTripSuggestion(
       rating: parseFloat((3.5 + Math.random() * 1.5).toFixed(1)),
       imageUrl: null,
     },
+    hotelTotalCost,
     description: dest.description,
     highlights: dest.highlights,
     imageUrl: dest.imageUrl,
@@ -218,51 +267,40 @@ router.post("/trips/generate", (req, res) => {
     accommodationType = null,
   } = req.body;
 
-  // Generate a larger pool so filtering has more to work with
-  const poolSize = 24;
-  const pool = Array.from({ length: poolSize }, (_, i) => {
-    const destIndex = i % DESTINATIONS.length;
-    return generateTripSuggestion(
+  const seen = new Set<string>();
+  const results: ReturnType<typeof generateTrip>[] = [];
+  let attempts = 0;
+  const MAX_ATTEMPTS = 80;
+
+  while (results.length < 8 && attempts < MAX_ATTEMPTS) {
+    const destIndex = attempts % DESTINATIONS.length;
+    attempts++;
+
+    const trip = generateTrip(
       destIndex,
       budget,
       numberOfPeople,
       numberOfNights,
       flightPreference,
       accommodationType as AccommodationType,
-      `trip-${Date.now()}-${i}`,
+      `trip-${Date.now()}-${attempts}`,
     );
-  });
 
-  // Strict filtering
-  const filtered = pool.filter((trip) => {
-    // Budget: totalPrice must not exceed budget × numberOfPeople
-    if (trip.totalPrice > budget * numberOfPeople) return false;
+    if (!trip) continue;
+    if (seen.has(trip.destination)) continue;
 
-    // Flight preference
-    if (flightPreference === "direct" && !trip.transport.isDirect) return false;
-    if (flightPreference === "with_stops" && trip.transport.isDirect) return false;
+    // ─── Apply additional strict filters ─────────────────────────
+    if (flightPreference === "direct" && !trip.transport.isDirect) continue;
+    if (flightPreference === "with_stops" && trip.transport.isDirect) continue;
+    if (hotelDistanceKm != null && trip.hotel.distanceFromCenter > hotelDistanceKm) continue;
+    if (maxDistanceFromAirportKm != null && trip.transportToHotelKm > maxDistanceFromAirportKm) continue;
+    if (accommodationType === "budget" && trip.hotel.stars > 3) continue;
+    if (accommodationType === "standard" && (trip.hotel.stars < 3 || trip.hotel.stars > 4)) continue;
+    if (accommodationType === "luxury" && trip.hotel.stars < 4) continue;
 
-    // Hotel distance from city centre
-    if (hotelDistanceKm != null && trip.hotel.distanceFromCenter > hotelDistanceKm) return false;
-
-    // Transport-to-hotel distance
-    if (maxDistanceFromAirportKm != null && trip.transportToHotelKm > maxDistanceFromAirportKm) return false;
-
-    // Accommodation type (stars)
-    if (accommodationType === "budget" && trip.hotel.stars > 3) return false;
-    if (accommodationType === "standard" && (trip.hotel.stars < 3 || trip.hotel.stars > 4)) return false;
-    if (accommodationType === "luxury" && trip.hotel.stars < 4) return false;
-
-    return true;
-  });
-
-  // Return up to 8 unique-destination results
-  const seen = new Set<string>();
-  const results = filtered.filter((t) => {
-    if (seen.has(t.destination)) return false;
-    seen.add(t.destination);
-    return true;
-  }).slice(0, 8);
+    seen.add(trip.destination);
+    results.push(trip);
+  }
 
   res.json(results);
 });
@@ -272,13 +310,7 @@ router.get("/trips/stats", async (req, res) => {
   const userId = auth?.userId;
 
   if (!userId) {
-    return res.json({
-      totalSaved: 0,
-      totalSpent: 0,
-      topDestinations: [],
-      averagePrice: 0,
-      mostRecentTrip: null,
-    });
+    return res.json({ totalSaved: 0, totalSpent: 0, topDestinations: [], averagePrice: 0, mostRecentTrip: null });
   }
 
   try {
@@ -300,13 +332,7 @@ router.get("/trips/stats", async (req, res) => {
 
     res.json({ totalSaved, totalSpent, topDestinations, averagePrice, mostRecentTrip });
   } catch {
-    res.json({
-      totalSaved: 0,
-      totalSpent: 0,
-      topDestinations: [],
-      averagePrice: 0,
-      mostRecentTrip: null,
-    });
+    res.json({ totalSaved: 0, totalSpent: 0, topDestinations: [], averagePrice: 0, mostRecentTrip: null });
   }
 });
 

@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { useGenerateTrips, useSaveTrip, useGetPreferences } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
@@ -29,6 +29,12 @@ function getImgSrc(imageUrl: string) {
   return `${basePath}${fixed}`;
 }
 
+function hashCaption(id: string, arr: string[]): string {
+  if (!arr.length) return "";
+  const hash = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return arr[hash % arr.length];
+}
+
 export default function Discover() {
   const { isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
@@ -42,6 +48,18 @@ export default function Discover() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [filters, setFilters] = useState<TripFilters>(DEFAULT_FILTERS);
 
+  // Fix a random message for the session (doesn't change on re-render)
+  const loadingMsgRef = useRef<string | null>(null);
+  const noResultsMsgRef = useRef<string | null>(null);
+  if (!loadingMsgRef.current) {
+    const msgs = t.fun.loadingMessages;
+    loadingMsgRef.current = msgs[Math.floor(Math.random() * msgs.length)];
+  }
+  if (!noResultsMsgRef.current) {
+    const msgs = t.fun.noResultsMessages;
+    noResultsMsgRef.current = msgs[Math.floor(Math.random() * msgs.length)];
+  }
+
   const { data: prefs } = useGetPreferences({
     query: { enabled: !!isSignedIn, queryKey: ["preferences"] },
   });
@@ -49,11 +67,9 @@ export default function Discover() {
   const generateTrips = useGenerateTrips();
   const saveTrip = useSaveTrip();
 
-  // Initial auto-load on first mount
   const didAutoLoad = useRef(false);
   if (!didAutoLoad.current) {
     didAutoLoad.current = true;
-    // Defer to after render
     setTimeout(() => loadTrips(DEFAULT_FILTERS), 0);
   }
 
@@ -124,23 +140,18 @@ export default function Discover() {
     }
   };
 
-  /* ── Loading ── */
+  /* ── Loading (initial) ── */
   if (generateTrips.isPending && !hasSearched) {
     return (
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center">
-            <Plane className="w-12 h-12 text-muted-foreground mb-4 animate-bounce" />
-            <p className="text-muted-foreground font-medium">{t.discover.loading}</p>
+          <div className="flex flex-col items-center gap-3 px-8 text-center">
+            <Plane className="w-14 h-14 text-primary mb-1 animate-bounce" />
+            <p className="text-muted-foreground font-medium">{loadingMsgRef.current}</p>
           </div>
         </div>
-        <FilterSheet
-          open={filterOpen}
-          filters={filters}
-          onClose={() => setFilterOpen(false)}
-          onApply={handleApplyFilters}
-        />
+        <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
       </div>
     );
   }
@@ -151,22 +162,16 @@ export default function Discover() {
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         <div className="flex-1 flex items-center justify-center flex-col p-6 text-center">
-          <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
-            <SlidersHorizontal className="w-10 h-10 text-muted-foreground" />
-          </div>
+          <div className="text-6xl mb-4">😭</div>
           <h2 className="text-xl font-bold mb-2">{t.filters.noResults}</h2>
-          <p className="text-muted-foreground mb-8 max-w-xs text-sm">{t.filters.noResultsSub}</p>
+          <p className="text-base text-muted-foreground mb-2 max-w-xs">{noResultsMsgRef.current}</p>
+          <p className="text-sm text-muted-foreground/70 mb-8 max-w-xs">{t.filters.noResultsSub}</p>
           <Button onClick={() => setFilterOpen(true)} variant="outline" className="gap-2">
             <SlidersHorizontal className="w-4 h-4" />
             {t.filters.edit}
           </Button>
         </div>
-        <FilterSheet
-          open={filterOpen}
-          filters={filters}
-          onClose={() => setFilterOpen(false)}
-          onApply={handleApplyFilters}
-        />
+        <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
       </div>
     );
   }
@@ -186,12 +191,7 @@ export default function Discover() {
             {t.discover.generateMore}
           </Button>
         </div>
-        <FilterSheet
-          open={filterOpen}
-          filters={filters}
-          onClose={() => setFilterOpen(false)}
-          onApply={handleApplyFilters}
-        />
+        <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
       </div>
     );
   }
@@ -204,9 +204,9 @@ export default function Discover() {
 
         {generateTrips.isPending ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center">
-              <Plane className="w-12 h-12 text-muted-foreground mb-4 animate-bounce" />
-              <p className="text-muted-foreground font-medium">{t.discover.loading}</p>
+            <div className="flex flex-col items-center gap-3 px-8 text-center">
+              <Plane className="w-14 h-14 text-primary mb-1 animate-bounce" />
+              <p className="text-muted-foreground font-medium">{loadingMsgRef.current}</p>
             </div>
           </div>
         ) : (
@@ -227,6 +227,7 @@ export default function Discover() {
                       likeLabel={t.discover.like}
                       nopeLabel={t.discover.nope}
                       totalLabel={t.discover.total}
+                      caption={hashCaption(trip.id, t.fun.captions)}
                     />
                   );
                 })}
@@ -260,12 +261,7 @@ export default function Discover() {
         )}
       </div>
 
-      <FilterSheet
-        open={filterOpen}
-        filters={filters}
-        onClose={() => setFilterOpen(false)}
-        onApply={handleApplyFilters}
-      />
+      <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
 
       <TripDetailSheet
         trip={detailTrip}
@@ -296,7 +292,7 @@ export default function Discover() {
 /* ─── Trip Card ─────────────────────────────────────────────────────────── */
 function TripCard({
   trip, isTop, index, onSwipe, onInfo,
-  likeLabel, nopeLabel, totalLabel,
+  likeLabel, nopeLabel, totalLabel, caption,
 }: {
   trip: TripSuggestion;
   isTop: boolean;
@@ -306,12 +302,15 @@ function TripCard({
   likeLabel: string;
   nopeLabel: string;
   totalLabel: string;
+  caption: string;
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
   const likeOpacity = useTransform(x, [0, 100], [0, 1]);
   const nopeOpacity = useTransform(x, [0, -100], [0, 1]);
+
+  const roundTripTransport = trip.transport.price + (trip.returnTransport?.price ?? 0);
 
   return (
     <motion.div
@@ -326,7 +325,7 @@ function TripCard({
       }}
       drag={isTop ? "x" : false}
       dragConstraints={{ left: 0, right: 0 }}
-      onDragEnd={(_: any, info: any) => {
+      onDragEnd={(_: unknown, info: { offset: { x: number } }) => {
         if (info.offset.x > 100) onSwipe("right");
         else if (info.offset.x < -100) onSwipe("left");
       }}
@@ -340,55 +339,107 @@ function TripCard({
           alt={trip.destination}
           className="w-full h-full object-cover pointer-events-none"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/85 pointer-events-none" />
 
         {isTop && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onInfo(); }}
-            className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors z-10"
-          >
-            <Info className="w-4 h-4" />
-          </button>
+          <>
+            {/* Fun caption pill */}
+            <div className="absolute top-4 left-4 bg-black/55 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-full pointer-events-none max-w-[60%] truncate">
+              {caption}
+            </div>
+            {/* Info button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onInfo(); }}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition-colors z-10"
+            >
+              <Info className="w-4 h-4" />
+            </button>
+          </>
         )}
 
         {isTop && (
           <>
             <motion.div
               style={{ opacity: likeOpacity }}
-              className="absolute top-8 left-8 border-4 border-green-500 text-green-500 font-bold text-4xl px-4 py-2 rounded-xl rotate-[-15deg] pointer-events-none"
+              className="absolute top-16 left-6 border-4 border-green-400 text-green-400 font-black text-3xl px-4 py-2 rounded-xl rotate-[-15deg] pointer-events-none"
             >
               {likeLabel}
             </motion.div>
             <motion.div
               style={{ opacity: nopeOpacity }}
-              className="absolute top-8 right-8 border-4 border-red-500 text-red-500 font-bold text-4xl px-4 py-2 rounded-xl rotate-[15deg] pointer-events-none"
+              className="absolute top-16 right-6 border-4 border-red-400 text-red-400 font-black text-3xl px-4 py-2 rounded-xl rotate-[15deg] pointer-events-none"
             >
               {nopeLabel}
             </motion.div>
           </>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-white pointer-events-none">
-          <h2 className="text-3xl font-bold mb-1">{trip.destination}</h2>
-          <p className="text-white/80 font-medium mb-4">{trip.country}</p>
-          <div className="flex gap-4 mb-4">
-            <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
-              <Plane className="w-4 h-4" /><span>${trip.transport.price}</span>
+        <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
+          <h2 className="text-3xl font-bold mb-0.5">{trip.destination}</h2>
+          <p className="text-white/80 font-medium mb-3">{trip.country}</p>
+          <div className="flex gap-2.5 mb-3">
+            {/* Round-trip transport price */}
+            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
+              <Plane className="w-3.5 h-3.5" />
+              <span className="text-[11px] opacity-80">↕</span>
+              <span>${roundTripTransport}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
-              <Hotel className="w-4 h-4" /><span>${trip.hotel.pricePerNight}/nt</span>
+            {/* Hotel per night */}
+            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
+              <Hotel className="w-3.5 h-3.5" /><span>${trip.hotel.pricePerNight}/nt</span>
             </div>
           </div>
           <div className="flex items-end justify-between">
-            <p className="text-sm text-white/80 line-clamp-2 pr-4">{trip.description}</p>
+            <p className="text-sm text-white/80 line-clamp-2 pr-4 leading-relaxed">{trip.description}</p>
             <div className="text-right shrink-0">
-              <p className="text-xs text-white/70 uppercase tracking-wider font-bold">{totalLabel}</p>
-              <p className="text-2xl font-bold">${trip.totalPrice}</p>
+              <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
+              <p className="text-2xl font-black">${trip.totalPrice}</p>
             </div>
           </div>
         </div>
       </div>
     </motion.div>
+  );
+}
+
+/* ─── Transport block (reused for outbound + return) ─────────────────────── */
+function TransportBlock({
+  label, transport, t,
+}: {
+  label: string;
+  transport: NonNullable<TripSuggestion["returnTransport"]>;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{label}</p>
+      <div className="space-y-2 text-sm">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold">{transport.company}</span>
+          <span className="font-medium">${transport.price}<span className="text-muted-foreground text-xs"> /p</span></span>
+        </div>
+        <div className="flex items-center">
+          <div className="text-center min-w-[56px]">
+            <p className="text-xs text-muted-foreground">{t.tripDetail.departure}</p>
+            <p className="font-bold text-base">{transport.departureTime}</p>
+          </div>
+          <div className="flex flex-col items-center gap-0.5 flex-1 px-2">
+            <p className="text-xs text-muted-foreground">{transport.duration}</p>
+            <div className="flex items-center gap-1 w-full">
+              <div className="h-px flex-1 bg-border" />
+              <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+            </div>
+            <Badge variant={transport.isDirect ? "default" : "outline"} className="text-[10px] px-2 py-0">
+              {transport.isDirect ? t.tripDetail.direct : t.tripDetail.withStops}
+            </Badge>
+          </div>
+          <div className="text-center min-w-[56px]">
+            <p className="text-xs text-muted-foreground">{t.tripDetail.arrival}</p>
+            <p className="font-bold text-base">{transport.arrivalTime}</p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -408,9 +459,10 @@ function TripDetailSheet({
       <SheetContent side="bottom" className="h-[90dvh] p-0 rounded-t-3xl overflow-hidden flex flex-col">
         {trip && (
           <>
+            {/* Hero image */}
             <div className="relative h-52 shrink-0">
               <img src={getImgSrc(trip.imageUrl)} alt={trip.destination} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/70" />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/75" />
               <div className="absolute bottom-4 left-5 right-5 text-white">
                 <div className="flex items-end justify-between">
                   <div>
@@ -422,18 +474,20 @@ function TripDetailSheet({
                   <div className="text-right">
                     <p className="text-xs text-white/70 uppercase tracking-wider">{t.tripDetail.totalCost}</p>
                     <p className="text-2xl font-bold">${trip.totalPrice}</p>
-                    <p className="text-xs text-white/70">{t.tripDetail.perPerson}</p>
+                    <p className="text-xs text-white/60">{t.tripDetail.perPerson}</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+              {/* Overview */}
               <section>
                 <h3 className="font-bold text-base mb-2">{t.tripDetail.overview}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{trip.description}</p>
               </section>
 
+              {/* Highlights */}
               {trip.highlights && trip.highlights.length > 0 && (
                 <section>
                   <h3 className="font-bold text-base mb-3">{t.tripDetail.highlights}</h3>
@@ -445,50 +499,38 @@ function TripDetailSheet({
                 </section>
               )}
 
-              <section className="bg-muted/40 rounded-2xl p-4">
-                <h3 className="font-bold text-base mb-3 flex items-center gap-2">
+              {/* Transport: outbound + return */}
+              <section className="bg-muted/40 rounded-2xl p-4 space-y-4">
+                <h3 className="font-bold text-base flex items-center gap-2">
                   <Plane className="w-4 h-4 text-primary" />
                   {trip.transport.type === "train" ? t.tripDetail.train : t.tripDetail.flight}
                 </h3>
-                <div className="space-y-2.5 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">{trip.transport.company}</span>
-                    <span className="font-medium">${trip.transport.price}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">{t.tripDetail.departure}</p>
-                      <p className="font-bold text-base">{trip.transport.departureTime}</p>
-                    </div>
-                    <div className="flex flex-col items-center gap-0.5 flex-1 px-3">
-                      <p className="text-xs text-muted-foreground">{trip.transport.duration}</p>
-                      <div className="flex items-center gap-1 w-full">
-                        <div className="h-px flex-1 bg-border" />
-                        <ArrowRight className="w-3 h-3 text-muted-foreground" />
-                      </div>
-                      <Badge variant={trip.transport.isDirect ? "default" : "outline"} className="text-[10px] px-2 py-0">
-                        {trip.transport.isDirect ? t.tripDetail.direct : t.tripDetail.withStops}
-                      </Badge>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">{t.tripDetail.arrival}</p>
-                      <p className="font-bold text-base">{trip.transport.arrivalTime}</p>
-                    </div>
-                  </div>
-                </div>
+                <TransportBlock label={t.tripDetail.outbound} transport={trip.transport} t={t} />
+                {trip.returnTransport && (
+                  <>
+                    <div className="border-t border-border" />
+                    <TransportBlock label={t.tripDetail.returnJourney} transport={trip.returnTransport} t={t} />
+                  </>
+                )}
               </section>
 
+              {/* Hotel */}
               <section className="bg-muted/40 rounded-2xl p-4">
                 <h3 className="font-bold text-base mb-3 flex items-center gap-2">
                   <Hotel className="w-4 h-4 text-primary" />
                   {t.tripDetail.hotel}
                 </h3>
                 <div className="space-y-2.5 text-sm">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <span className="font-semibold">{trip.hotel.name}</span>
-                    <span className="font-medium">${trip.hotel.pricePerNight}{t.tripDetail.perNight}</span>
+                    <div className="text-right shrink-0">
+                      <p className="font-medium">${trip.hotel.pricePerNight}{t.tripDetail.perNight}</p>
+                      {trip.hotelTotalCost != null && (
+                        <p className="text-xs text-muted-foreground">{t.tripDetail.totalHotel}: ${trip.hotelTotalCost}</p>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                       {trip.hotel.stars} {t.tripDetail.stars}
@@ -517,6 +559,7 @@ function TripDetailSheet({
                 </div>
               </section>
 
+              {/* Stats row */}
               <section className="flex gap-3">
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
                   <Clock className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
@@ -525,19 +568,20 @@ function TripDetailSheet({
                 </div>
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
                   <Plane className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                  <p className="text-lg font-bold">${trip.transport.price}</p>
-                  <p className="text-xs text-muted-foreground">{t.tripDetail.flight}</p>
+                  <p className="text-lg font-bold">${trip.transport.price + (trip.returnTransport?.price ?? 0)}</p>
+                  <p className="text-xs text-muted-foreground">{t.tripDetail.flight} ↕</p>
                 </div>
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
                   <Hotel className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                  <p className="text-lg font-bold">${trip.hotel.pricePerNight}</p>
-                  <p className="text-xs text-muted-foreground">{t.tripDetail.perNight.replace("/ ", "")}</p>
+                  <p className="text-lg font-bold">${trip.hotelTotalCost ?? trip.hotel.pricePerNight}</p>
+                  <p className="text-xs text-muted-foreground">{t.tripDetail.totalHotel}</p>
                 </div>
               </section>
 
+              {/* CTA */}
               <Button size="lg" className="w-full" onClick={onSave}>
                 {isSignedIn ? (
-                  <><Check className="w-4 h-4 mr-2" /> Salva viaggio</>
+                  <><Check className="w-4 h-4 mr-2" />{t.tripDetail.saveTrip}</>
                 ) : (
                   <>{t.tripDetail.signUpCta} <ArrowRight className="w-4 h-4 ml-2" /></>
                 )}

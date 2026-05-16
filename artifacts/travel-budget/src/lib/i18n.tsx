@@ -58,6 +58,10 @@ const en = {
     close: "Close",
     flight: "Flight",
     train: "Train",
+    outbound: "Outbound",
+    returnJourney: "Return",
+    totalHotel: "Hotel total",
+    saveTrip: "Save trip",
   },
   saved: {
     title: "Saved Trips",
@@ -134,6 +138,31 @@ const en = {
     persons: "persons",
     perPerson: "per person",
   },
+  fun: {
+    loadingMessages: [
+      "Searching the best escapes for your wallet…",
+      "Checking if your budget can survive this trip…",
+      "Finding flights that won't ruin your life…",
+      "Negotiating with airlines on your behalf…",
+      "Convincing hotels to lower their prices…",
+    ],
+    noResultsMessages: [
+      "No trips found… your budget is a bit shy 😅",
+      "Even our algorithm cried trying to fit this budget 😭",
+      "Try increasing your budget, or lowering your dreams 😄",
+      "This budget can only afford imagination travel ✈️💭",
+    ],
+    captions: [
+      "Perfect weekend escape 😎",
+      "Luxury but still legal for your budget 💸",
+      "Budget-friendly chaos trip 😂",
+      "Your wallet said yes — barely 💚",
+      "Adventure awaits, bank account permitting ✈️",
+      "Escape plan: activated 🚀",
+      "Your next story starts here 📖",
+      "Sun, sea & surprisingly affordable ☀️",
+    ],
+  },
 };
 
 const it: Translations = {
@@ -182,6 +211,10 @@ const it: Translations = {
     close: "Chiudi",
     flight: "Volo",
     train: "Treno",
+    outbound: "Andata",
+    returnJourney: "Ritorno",
+    totalHotel: "Totale hotel",
+    saveTrip: "Salva viaggio",
   },
   saved: {
     title: "Viaggi salvati",
@@ -258,6 +291,31 @@ const it: Translations = {
     persons: "persone",
     perPerson: "a persona",
   },
+  fun: {
+    loadingMessages: [
+      "Cerchiamo le migliori fughe per il tuo portafoglio…",
+      "Verifichiamo se il tuo budget sopravvive al viaggio…",
+      "Trovando voli che non ti rovinano la vita…",
+      "Trattiamo con le compagnie aeree per te…",
+      "Convinciamo gli hotel ad abbassare i prezzi…",
+    ],
+    noResultsMessages: [
+      "Nessun viaggio trovato… il tuo budget è un po' timido 😅",
+      "Anche il nostro algoritmo ha pianto cercando di rientrare nel budget 😭",
+      "Aumenta il budget o abbassa le aspettative 😄",
+      "Con questo budget puoi solo sognare di viaggiare ✈️💭",
+    ],
+    captions: [
+      "Fuga perfetta per il weekend 😎",
+      "Lusso ma ancora legale per il tuo budget 💸",
+      "Viaggio caotico ed economico 😂",
+      "Il tuo portafoglio ha detto sì — per poco 💚",
+      "Avventura in attesa, conto corrente permettendo ✈️",
+      "Piano di fuga attivato 🚀",
+      "La tua prossima storia inizia qui 📖",
+      "Sole, mare e prezzi quasi accessibili ☀️",
+    ],
+  },
 };
 
 const es: Translations = {
@@ -306,6 +364,10 @@ const es: Translations = {
     close: "Cerrar",
     flight: "Vuelo",
     train: "Tren",
+    outbound: "Ida",
+    returnJourney: "Vuelta",
+    totalHotel: "Hotel total",
+    saveTrip: "Guardar viaje",
   },
   saved: {
     title: "Viajes guardados",
@@ -382,6 +444,31 @@ const es: Translations = {
     persons: "personas",
     perPerson: "por persona",
   },
+  fun: {
+    loadingMessages: [
+      "Buscando las mejores escapadas para tu bolsillo…",
+      "Comprobando si tu presupuesto sobrevive al viaje…",
+      "Encontrando vuelos que no arruinarán tu vida…",
+      "Negociando con las aerolíneas en tu nombre…",
+      "Convenciendo a los hoteles de bajar sus precios…",
+    ],
+    noResultsMessages: [
+      "No se encontraron viajes… tu presupuesto es un poco tímido 😅",
+      "Hasta nuestro algoritmo lloró intentando ajustar este presupuesto 😭",
+      "Aumenta el presupuesto o baja las expectativas 😄",
+      "Con este presupuesto solo puedes viajar con la imaginación ✈️💭",
+    ],
+    captions: [
+      "Escapada de fin de semana perfecta 😎",
+      "Lujo pero todavía legal para tu presupuesto 💸",
+      "Viaje caótico y económico 😂",
+      "Tu cartera dijo que sí — por poco 💚",
+      "La aventura espera, cuenta bancaria mediante ✈️",
+      "Plan de fuga: activado 🚀",
+      "Tu próxima historia empieza aquí 📖",
+      "Sol, mar y precios sorprendentemente asequibles ☀️",
+    ],
+  },
 };
 
 const fr: Translations = {
@@ -430,6 +517,10 @@ const fr: Translations = {
     close: "Fermer",
     flight: "Vol",
     train: "Train",
+    outbound: "Aller",
+    returnJourney: "Retour",
+    totalHotel: "Total hôtel",
+    saveTrip: "Sauvegarder",
   },
   saved: {
     title: "Voyages enregistrés",
@@ -506,6 +597,31 @@ const fr: Translations = {
     persons: "personnes",
     perPerson: "par personne",
   },
+  fun: {
+    loadingMessages: [
+      "Recherche des meilleures escapades pour votre portefeuille…",
+      "Vérification si votre budget survive à ce voyage…",
+      "Trouver des vols qui ne ruineront pas votre vie…",
+      "Négociation avec les compagnies aériennes en votre nom…",
+      "Convaincre les hôtels de baisser leurs prix…",
+    ],
+    noResultsMessages: [
+      "Aucun voyage trouvé… votre budget est un peu timide 😅",
+      "Même notre algorithme a pleuré en essayant de respecter ce budget 😭",
+      "Augmentez votre budget ou revoyez vos rêves à la baisse 😄",
+      "Ce budget ne peut payer que des voyages imaginaires ✈️💭",
+    ],
+    captions: [
+      "Escapade de week-end parfaite 😎",
+      "Luxe mais encore légal pour votre budget 💸",
+      "Voyage chaotique et économique 😂",
+      "Votre portefeuille a dit oui — de justesse 💚",
+      "L'aventure attend, compte bancaire permettant ✈️",
+      "Plan d'évasion : activé 🚀",
+      "Votre prochaine histoire commence ici 📖",
+      "Soleil, mer et prix étonnamment abordables ☀️",
+    ],
+  },
 };
 
 const de: Translations = {
@@ -554,6 +670,10 @@ const de: Translations = {
     close: "Schließen",
     flight: "Flug",
     train: "Zug",
+    outbound: "Hinflug",
+    returnJourney: "Rückflug",
+    totalHotel: "Hotel gesamt",
+    saveTrip: "Reise speichern",
   },
   saved: {
     title: "Gespeicherte Reisen",
@@ -629,6 +749,31 @@ const de: Translations = {
     anyAcc: "Keine Präferenz",
     persons: "Personen",
     perPerson: "pro Person",
+  },
+  fun: {
+    loadingMessages: [
+      "Wir suchen die besten Fluchten für Ihr Portemonnaie…",
+      "Prüfen ob Ihr Budget diese Reise überlebt…",
+      "Flüge finden, die Ihr Leben nicht ruinieren…",
+      "Wir verhandeln mit Airlines in Ihrem Namen…",
+      "Hotels überzeugen, ihre Preise zu senken…",
+    ],
+    noResultsMessages: [
+      "Keine Reisen gefunden… Ihr Budget ist etwas schüchtern 😅",
+      "Selbst unser Algorithmus weinte beim Versuch, dieses Budget einzuhalten 😭",
+      "Erhöhen Sie das Budget oder senken Sie die Erwartungen 😄",
+      "Mit diesem Budget können Sie nur in der Fantasie reisen ✈️💭",
+    ],
+    captions: [
+      "Perfekte Wochenend-Flucht 😎",
+      "Luxus aber noch legal für Ihr Budget 💸",
+      "Günstiger Chaos-Trip 😂",
+      "Ihr Geldbeutel hat ja gesagt — knapp 💚",
+      "Abenteuer wartet, Bankkonto erlaubt ✈️",
+      "Fluchtplan: aktiviert 🚀",
+      "Ihre nächste Geschichte beginnt hier 📖",
+      "Sonne, Meer und überraschend erschwinglich ☀️",
+    ],
   },
 };
 

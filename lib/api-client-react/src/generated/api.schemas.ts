@@ -96,6 +96,8 @@ export interface TripSuggestion {
   imageUrl: string;
   durationDays: number;
   transportToHotelKm?: number;
+  hotelTotalCost?: number;
+  returnTransport?: TransportOption;
   tags?: string[];
 }
 

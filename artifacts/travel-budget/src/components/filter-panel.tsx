@@ -68,35 +68,46 @@ export function FilterBar({
   chips.push(`${filters.numberOfNights} ${t.filters.nights.toLowerCase()}`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
-  if (filters.maxDistanceFromAirportKm !== null) chips.push(`✈→🏨 ≤${filters.maxDistanceFromAirportKm}km`);
-  if (filters.maxHotelDistanceFromCenterKm !== null) chips.push(`🏨→🏙 ≤${filters.maxHotelDistanceFromCenterKm}km`);
+  if (filters.maxDistanceFromAirportKm !== null) chips.push(`✈ ≤${filters.maxDistanceFromAirportKm}km`);
+  if (filters.maxHotelDistanceFromCenterKm !== null) chips.push(`🏨 ≤${filters.maxHotelDistanceFromCenterKm}km`);
   if (filters.accommodationType === "budget") chips.push(t.filters.budgetAcc);
   if (filters.accommodationType === "standard") chips.push(t.filters.standardAcc);
   if (filters.accommodationType === "luxury") chips.push(t.filters.luxuryAcc);
 
   return (
-    <div className="w-full px-4 pt-3 pb-1">
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onEdit}
-          className="flex items-center gap-1.5 shrink-0 bg-primary text-primary-foreground rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors"
-        >
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          {t.filters.title}
+    <div className="w-full px-4 pt-3 pb-2">
+      {/* Prominent filter button */}
+      <button
+        onClick={onEdit}
+        className="w-full flex items-center justify-between gap-3 bg-primary text-primary-foreground rounded-2xl px-5 py-3.5 shadow-[0_4px_16px_rgba(0,0,0,0.18)] hover:bg-primary/90 active:scale-[0.98] transition-all"
+      >
+        <div className="flex items-center gap-2.5">
+          <SlidersHorizontal className="w-5 h-5" />
+          <span className="font-bold text-base">{t.filters.title}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Quick summary */}
+          <span className="text-primary-foreground/80 text-sm">
+            €{filters.budget.toLocaleString()} · {filters.numberOfPeople}p · {filters.numberOfNights}n
+          </span>
           {activeCount > 0 && (
-            <span className="ml-0.5 bg-primary-foreground text-primary rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
+            <span className="bg-white text-primary rounded-full min-w-[22px] h-[22px] flex items-center justify-center text-xs font-bold px-1">
               {activeCount}
             </span>
           )}
-        </button>
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide flex-1 min-w-0">
-          {chips.map((chip, i) => (
-            <Badge key={i} variant="secondary" className="shrink-0 text-xs px-2.5 py-1 font-medium">
+        </div>
+      </button>
+
+      {/* Chips row for non-default filters */}
+      {chips.length > 3 && (
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mt-2 pb-0.5">
+          {chips.slice(3).map((chip, i) => (
+            <Badge key={i} variant="secondary" className="shrink-0 text-xs px-2.5 py-1 font-medium whitespace-nowrap">
               {chip}
             </Badge>
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

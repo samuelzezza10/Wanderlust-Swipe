@@ -69,6 +69,16 @@ export const GenerateTripsResponseItem = zod.object({
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
   "transportToHotelKm": zod.number().optional(),
+  "hotelTotalCost": zod.number().optional(),
+  "returnTransport": zod.object({
+  "type": zod.enum(['flight', 'train']),
+  "company": zod.string(),
+  "duration": zod.string(),
+  "price": zod.number(),
+  "isDirect": zod.boolean(),
+  "departureTime": zod.string().optional(),
+  "arrivalTime": zod.string().optional()
+}).optional(),
   "tags": zod.array(zod.string()).optional()
 })
 export const GenerateTripsResponse = zod.array(GenerateTripsResponseItem)
@@ -114,6 +124,16 @@ export const GetSavedTripsResponseItem = zod.object({
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
   "transportToHotelKm": zod.number().optional(),
+  "hotelTotalCost": zod.number().optional(),
+  "returnTransport": zod.object({
+  "type": zod.enum(['flight', 'train']),
+  "company": zod.string(),
+  "duration": zod.string(),
+  "price": zod.number(),
+  "isDirect": zod.boolean(),
+  "departureTime": zod.string().optional(),
+  "arrivalTime": zod.string().optional()
+}).optional(),
   "tags": zod.array(zod.string()).optional()
 })
 })
@@ -153,6 +173,16 @@ export const SaveTripBody = zod.object({
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
   "transportToHotelKm": zod.number().optional(),
+  "hotelTotalCost": zod.number().optional(),
+  "returnTransport": zod.object({
+  "type": zod.enum(['flight', 'train']),
+  "company": zod.string(),
+  "duration": zod.string(),
+  "price": zod.number(),
+  "isDirect": zod.boolean(),
+  "departureTime": zod.string().optional(),
+  "arrivalTime": zod.string().optional()
+}).optional(),
   "tags": zod.array(zod.string()).optional()
 }),
   "destination": zod.string(),
@@ -206,6 +236,16 @@ export const GetSavedTripResponse = zod.object({
   "imageUrl": zod.string(),
   "durationDays": zod.number(),
   "transportToHotelKm": zod.number().optional(),
+  "hotelTotalCost": zod.number().optional(),
+  "returnTransport": zod.object({
+  "type": zod.enum(['flight', 'train']),
+  "company": zod.string(),
+  "duration": zod.string(),
+  "price": zod.number(),
+  "isDirect": zod.boolean(),
+  "departureTime": zod.string().optional(),
+  "arrivalTime": zod.string().optional()
+}).optional(),
   "tags": zod.array(zod.string()).optional()
 })
 })

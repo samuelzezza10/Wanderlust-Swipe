@@ -258,6 +258,10 @@ components:
           type: integer
         transportToHotelKm:
           type: number
+        hotelTotalCost:
+          type: number
+        returnTransport:
+          $ref: "#/components/schemas/TransportOption"
         tags:
           type: array
           items:
