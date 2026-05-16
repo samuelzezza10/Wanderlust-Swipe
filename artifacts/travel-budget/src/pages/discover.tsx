@@ -6,13 +6,14 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
-  Clock, Star, Navigation, Wifi, ArrowRight, SlidersHorizontal,
+  Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
-  Crown, Zap, Sparkles,
+  Crown, Zap, Sparkles, RefreshCw,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { TripSuggestion } from "@workspace/api-client-react";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -420,10 +421,18 @@ export default function Discover() {
     }
   }, [prefs]);
 
+  const { isOnline, checkConnectivity } = useOnlineStatus();
+
   const generateTrips = useGenerateTrips();
   const saveTrip = useSaveTrip();
 
   function loadTrips(f: TripFilters) {
+    // ── Offline gate ───────────────────────────────────────────────
+    if (!isOnline) {
+      toast.error(t.offline.searchDisabled);
+      return;
+    }
+
     // ── Freemium gate ──────────────────────────────────────────────
     if (!isSignedIn) {
       const currentGuestCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0");
@@ -571,8 +580,31 @@ export default function Discover() {
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         {UsageBadge}
-        <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
-        <PreSearchState onOpenFilters={() => setFilterOpen(true)} t={t} />
+        {isOnline ? (
+          <>
+            <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
+            <PreSearchState onOpenFilters={() => setFilterOpen(true)} t={t} />
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <motion.div
+              animate={{ scale: [1, 1.08, 1] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6"
+            >
+              <WifiOff className="w-10 h-10 text-orange-500" />
+            </motion.div>
+            <h2 className="text-xl font-bold mb-2">{t.offline.title}</h2>
+            <p className="text-sm text-muted-foreground mb-8 max-w-xs leading-relaxed">{t.offline.noCache}</p>
+            <button
+              onClick={checkConnectivity}
+              className="flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary/90 active:scale-95 transition-all"
+            >
+              <RefreshCw className="w-4 h-4" />
+              {t.offline.reconnected.replace("! 🚀", "?")}
+            </button>
+          </div>
+        )}
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>
           <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
@@ -644,9 +676,22 @@ export default function Discover() {
           </div>
           <h2 className="text-2xl font-bold mb-2">{t.discover.seenAll}</h2>
           <p className="text-muted-foreground mb-8 max-w-sm">{t.discover.seenAllSub}</p>
-          <Button onClick={() => loadTrips(filters)} size="lg" disabled={generateTrips.isPending}>
-            {t.discover.generateMore}
-          </Button>
+          {!isOnline ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2 text-sm text-orange-500 font-medium mb-2">
+                <WifiOff className="w-4 h-4" />
+                <span>{t.offline.searchDisabled}</span>
+              </div>
+              <Button onClick={checkConnectivity} variant="outline" size="lg" className="gap-2">
+                <RefreshCw className="w-4 h-4" />
+                {t.offline.banner}
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => loadTrips(filters)} size="lg" disabled={generateTrips.isPending}>
+              {t.discover.generateMore}
+            </Button>
+          )}
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>

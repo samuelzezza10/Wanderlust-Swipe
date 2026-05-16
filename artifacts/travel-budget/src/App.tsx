@@ -5,8 +5,11 @@ import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { queryClient } from "./lib/queryClient";
-import { LanguageProvider } from "./lib/i18n";
+import { LanguageProvider, useI18n } from "./lib/i18n";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
+import { OfflineBanner } from "./components/offline-banner";
 
 import { Layout } from "./components/layout";
 import LandingPage from "./pages/landing";
@@ -111,6 +114,21 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function NetworkStatusManager() {
+  const { isOnline, checkConnectivity } = useOnlineStatus();
+  const { t } = useI18n();
+  const prevOnlineRef = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (prevOnlineRef.current === false && isOnline) {
+      toast.success(t.offline.reconnected, { duration: 3000 });
+    }
+    prevOnlineRef.current = isOnline;
+  }, [isOnline, t.offline.reconnected]);
+
+  return <OfflineBanner isOnline={isOnline} onRetry={checkConnectivity} />;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -153,6 +171,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <NetworkStatusManager />
         <Layout>
           <Switch>
             <Route path="/" component={HomeRedirect} />
