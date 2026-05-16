@@ -561,6 +561,8 @@ function createDynamicDestination(cityName: string): DestinationData {
 }
 
 /* ─── Trip generator ─────────────────────────────────────────────────────── */
+// The function has two COMPLETELY SEPARATE code paths — one-way never
+// allocates, computes, or returns any return-journey variable whatsoever.
 
 function generateTrip(
   dest: DestinationData,
@@ -575,7 +577,7 @@ function generateTrip(
   id: string,
   tripType: "one_way" | "round_trip" = "round_trip",
 ) {
-  // ─── Budget is always TOTAL for the whole trip ────────────────
+  // ─── Budget ───────────────────────────────────────────────────
   const budgetPerPerson = Math.floor(budget / numberOfPeople);
 
   // ─── Accommodation tier ───────────────────────────────────────
@@ -601,38 +603,21 @@ function generateTrip(
     tier = "standard";
   }
 
-  // ─── Hotel cost (based on per-person budget share) ────────────
+  // ─── Hotel cost ───────────────────────────────────────────────
   const hotelBudgetPerPerson = Math.floor(budgetPerPerson * hotelShare);
   const maxPerNight = Math.max(25, Math.floor(hotelBudgetPerPerson / numberOfNights));
   const minPerNight = Math.max(15, Math.floor(maxPerNight * 0.55));
   const pricePerNight = randomBetween(minPerNight, maxPerNight);
   const hotelTotalPerPerson = pricePerNight * numberOfNights;
+  const hotelTotalCost = Math.round(hotelTotalPerPerson * numberOfPeople);
 
-  // ─── Transport cost (per person) ─────────────────────────────
-  const isOneWay = tripType === "one_way";
+  // ─── Transport budget ─────────────────────────────────────────
   const transportBudgetPerPerson = budgetPerPerson - hotelTotalPerPerson;
   if (transportBudgetPerPerson < 40) return null;
 
-  // One-way: only one leg, so more budget headroom for outbound
-  const maxOutbound = Math.floor(transportBudgetPerPerson * (isOneWay ? 0.88 : 0.52));
-  const minOutbound = Math.max(20, Math.floor(transportBudgetPerPerson * (isOneWay ? 0.48 : 0.30)));
-  if (maxOutbound < minOutbound) return null;
-
-  const outboundPrice = randomBetween(minOutbound, maxOutbound);
-  const returnPrice = isOneWay ? 0 : Math.floor(outboundPrice * (0.80 + Math.random() * 0.35));
-  const totalTransportPerPerson = outboundPrice + returnPrice;
-  const totalPerPerson = totalTransportPerPerson + hotelTotalPerPerson;
-
-  // ─── STRICT budget check: total price MUST NOT exceed budget ──
-  const totalPrice = Math.round(totalPerPerson * numberOfPeople);
-  const hotelTotalCost = Math.round(hotelTotalPerPerson * numberOfPeople);
-  if (totalPrice > budget) return null;
-
   // ─── Transport type — flight vs train ─────────────────────────
-  // Train not available for islands / overseas; flight always available
-  const trainPossible = !dest.flightRequired && trainPreference !== "direct"; // never force "direct train" for overseas
+  const trainPossible = !dest.flightRequired && trainPreference !== "direct";
   const useTrainRandom = trainPossible && Math.random() > 0.55;
-
   let transportType: "flight" | "train";
   if (flightPreference !== "any" || dest.flightRequired) {
     transportType = "flight";
@@ -642,29 +627,21 @@ function generateTrip(
     transportType = useTrainRandom ? "train" : "flight";
   }
 
-  const isDirect = flightPreference === "direct" || trainPreference === "direct" ||
-    ((flightPreference !== "with_stops" && trainPreference !== "with_stops") && Math.random() > 0.4);
-  const isReturnDirect = flightPreference === "direct" || trainPreference === "direct" ||
-    ((flightPreference !== "with_stops" && trainPreference !== "with_stops") && Math.random() > 0.4);
-
   const getCompany = () =>
     transportType === "train"
       ? TRAINS[randomBetween(0, TRAINS.length - 1)]
       : AIRLINES[randomBetween(0, AIRLINES.length - 1)];
 
-  // Outbound
+  const isDirect = flightPreference === "direct" || trainPreference === "direct" ||
+    ((flightPreference !== "with_stops" && trainPreference !== "with_stops") && Math.random() > 0.4);
+
+  // ─── Outbound journey (used by both modes) ────────────────────
   const outDurH = randomBetween(1, transportType === "train" ? 8 : 14);
   const outDurM = randomBetween(0, 59);
   const outDepH = randomBetween(5, 22);
   const outArrH = (outDepH + outDurH) % 24;
 
-  // Return
-  const retDurH = randomBetween(1, transportType === "train" ? 8 : 14);
-  const retDurM = randomBetween(0, 59);
-  const retDepH = randomBetween(5, 22);
-  const retArrH = (retDepH + retDurH) % 24;
-
-  // ─── Hotel ────────────────────────────────────────────────────
+  // ─── Hotel shared data ────────────────────────────────────────
   const hotelName = hotelList[randomBetween(0, hotelList.length - 1)];
   const { amenities: amenitySet, features } = generateHotelFeatures(tier);
   const distanceFromCenter = parseFloat((Math.random() * 4 + 0.3).toFixed(1));
@@ -674,19 +651,75 @@ function generateTrip(
   const rating = parseFloat((ratingMin + Math.random() * (ratingMax - ratingMin)).toFixed(1));
 
   const fromCity = departureCity || "origin";
-  const company = getCompany();
+  const hotel = { name: hotelName, stars, pricePerNight, distanceFromCenter, amenities: amenitySet, rating, imageUrl: null };
+  const sharedFields = {
+    id, destination: dest.destination, country: dest.country, departureCity: fromCity,
+    hotel, hotelTotalCost, description: dest.description, highlights: dest.highlights,
+    imageUrl: dest.imageUrl, durationDays: numberOfNights + 1, transportToHotelKm,
+    tags: dest.tags, _features: features,
+  };
+
+  // ══════════════════════════════════════════════════════════════
+  // ONE-WAY PATH — return journey variables are NEVER computed
+  // ══════════════════════════════════════════════════════════════
+  if (tripType === "one_way") {
+    const maxOut = Math.floor(transportBudgetPerPerson * 0.88);
+    const minOut = Math.max(20, Math.floor(transportBudgetPerPerson * 0.48));
+    if (maxOut < minOut) return null;
+
+    const outboundPrice = randomBetween(minOut, maxOut);
+    const totalPerPerson = outboundPrice + hotelTotalPerPerson;
+    const totalPrice = Math.round(totalPerPerson * numberOfPeople);
+    if (totalPrice > budget) return null;
+
+    return {
+      ...sharedFields,
+      tripType: "one_way" as const,
+      totalPrice,
+      pricePerPerson: totalPerPerson,
+      transport: {
+        type: transportType,
+        company: getCompany(),
+        duration: `${outDurH}h ${outDurM}m`,
+        price: outboundPrice,
+        isDirect,
+        departureTime: fmt(outDepH, randomBetween(0, 59)),
+        arrivalTime: fmt(outArrH, randomBetween(0, 59)),
+        from: fromCity,
+        to: dest.destination,
+      },
+      // returnTransport is intentionally absent — never generated for one-way
+    };
+  }
+
+  // ══════════════════════════════════════════════════════════════
+  // ROUND-TRIP PATH — outbound + return both computed here only
+  // ══════════════════════════════════════════════════════════════
+  const maxOut = Math.floor(transportBudgetPerPerson * 0.52);
+  const minOut = Math.max(20, Math.floor(transportBudgetPerPerson * 0.30));
+  if (maxOut < minOut) return null;
+
+  const outboundPrice = randomBetween(minOut, maxOut);
+  const returnPrice = Math.floor(outboundPrice * (0.80 + Math.random() * 0.35));
+  const totalPerPerson = outboundPrice + returnPrice + hotelTotalPerPerson;
+  const totalPrice = Math.round(totalPerPerson * numberOfPeople);
+  if (totalPrice > budget) return null;
+
+  const isReturnDirect = flightPreference === "direct" || trainPreference === "direct" ||
+    ((flightPreference !== "with_stops" && trainPreference !== "with_stops") && Math.random() > 0.4);
+  const retDurH = randomBetween(1, transportType === "train" ? 8 : 14);
+  const retDurM = randomBetween(0, 59);
+  const retDepH = randomBetween(5, 22);
+  const retArrH = (retDepH + retDurH) % 24;
 
   return {
-    id,
-    destination: dest.destination,
-    country: dest.country,
-    departureCity: fromCity,
-    tripType,
+    ...sharedFields,
+    tripType: "round_trip" as const,
     totalPrice,
     pricePerPerson: totalPerPerson,
     transport: {
       type: transportType,
-      company,
+      company: getCompany(),
       duration: `${outDurH}h ${outDurM}m`,
       price: outboundPrice,
       isDirect,
@@ -695,36 +728,17 @@ function generateTrip(
       from: fromCity,
       to: dest.destination,
     },
-    ...(isOneWay ? {} : {
-      returnTransport: {
-        type: transportType,
-        company: getCompany(),
-        duration: `${retDurH}h ${retDurM}m`,
-        price: returnPrice,
-        isDirect: isReturnDirect,
-        departureTime: fmt(retDepH, randomBetween(0, 59)),
-        arrivalTime: fmt(retArrH, randomBetween(0, 59)),
-        from: dest.destination,
-        to: fromCity,
-      },
-    }),
-    hotel: {
-      name: hotelName,
-      stars,
-      pricePerNight,
-      distanceFromCenter,
-      amenities: amenitySet,
-      rating,
-      imageUrl: null,
+    returnTransport: {
+      type: transportType,
+      company: getCompany(),
+      duration: `${retDurH}h ${retDurM}m`,
+      price: returnPrice,
+      isDirect: isReturnDirect,
+      departureTime: fmt(retDepH, randomBetween(0, 59)),
+      arrivalTime: fmt(retArrH, randomBetween(0, 59)),
+      from: dest.destination,
+      to: fromCity,
     },
-    hotelTotalCost,
-    description: dest.description,
-    highlights: dest.highlights,
-    imageUrl: dest.imageUrl,
-    durationDays: numberOfNights + 1,
-    transportToHotelKm,
-    tags: dest.tags,
-    _features: features,
   };
 }
 

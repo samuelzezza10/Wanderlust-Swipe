@@ -538,6 +538,15 @@ export default function Discover() {
   }
 
   const handleApplyFilters = (newFilters: TripFilters) => {
+    // If the trip type changed, wipe ALL existing trip data from memory
+    // before the new search fires — prevents any round-trip data from
+    // surviving in state when the user switches to one-way (or vice versa).
+    if (newFilters.tripType !== filters.tripType) {
+      setTrips([]);
+      setCurrentIndex(0);
+      setHistory([]);
+      setHasSearched(false);
+    }
     setFilters(newFilters);
     loadTrips(newFilters);
   };
