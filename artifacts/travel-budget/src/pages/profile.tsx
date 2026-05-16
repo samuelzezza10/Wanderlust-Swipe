@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/react";
 import { useGetPreferences, useGetTripStats } from "@workspace/api-client-react";
 import { Link } from "wouter";
-import { Settings, Shield, Award, Map } from "lucide-react";
+import { Settings, Shield, Award, Map, FileText } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 export default function Profile() {
@@ -62,6 +62,21 @@ export default function Profile() {
             </div>
           </div>
         </Link>
+
+        <Link href="/terms">
+          <div className="flex items-center justify-between p-4 bg-card border rounded-xl hover:border-primary transition-colors cursor-pointer group">
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <div className="font-medium">{t.profile.termsOfService}</div>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      <div className="mt-8 pt-6 border-t flex gap-4 justify-center text-xs text-muted-foreground">
+        <Link href="/privacy" className="hover:text-foreground transition-colors">{t.legal.privacyPolicy}</Link>
+        <span>·</span>
+        <Link href="/terms" className="hover:text-foreground transition-colors">{t.legal.termsOfService}</Link>
       </div>
     </div>
   );

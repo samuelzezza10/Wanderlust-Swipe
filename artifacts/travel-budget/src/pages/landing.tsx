@@ -39,6 +39,12 @@ export default function LandingPage() {
           <Link href="/discover">{t.landing.continueAsGuest}</Link>
         </Button>
       </div>
+
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-4 text-xs text-muted-foreground/60">
+        <Link href="/privacy" className="hover:text-muted-foreground transition-colors">{t.legal.privacyPolicy}</Link>
+        <span>·</span>
+        <Link href="/terms" className="hover:text-muted-foreground transition-colors">{t.legal.termsOfService}</Link>
+      </div>
     </div>
   );
 }

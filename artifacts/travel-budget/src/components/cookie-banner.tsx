@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useSavePreferences } from "@workspace/api-client-react";
 import { useAuth } from "@clerk/react";
@@ -32,7 +33,11 @@ export function CookieBanner() {
     <div className="fixed bottom-[72px] md:bottom-4 left-4 right-4 md:left-auto md:right-8 md:w-96 bg-card p-4 rounded-xl shadow-xl border border-border z-50 flex flex-col gap-3">
       <h3 className="font-bold text-sm">{t.cookie.title}</h3>
       <p className="text-xs text-muted-foreground">{t.cookie.description}</p>
-      <div className="flex items-center gap-2 justify-end mt-2">
+      <div className="flex gap-3 text-xs text-muted-foreground">
+        <Link href="/privacy" className="hover:text-foreground underline underline-offset-2 transition-colors">{t.legal.privacyPolicy}</Link>
+        <Link href="/terms" className="hover:text-foreground underline underline-offset-2 transition-colors">{t.legal.termsOfService}</Link>
+      </div>
+      <div className="flex items-center gap-2 justify-end">
         <Button variant="outline" size="sm" onClick={() => handleConsent(false)} data-testid="button-cookie-decline">
           {t.cookie.decline}
         </Button>

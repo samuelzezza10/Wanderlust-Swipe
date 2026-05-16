@@ -1,0 +1,96 @@
+Improve the TravelBudget app by adding legal protection, disclaimers, and user safety information throughout the platform.
+
+⸻
+
+1. TERMS, PRIVACY, AND COOKIE PAGES
+
+Create:
+
+* Terms of Service page
+* Privacy Policy page
+* Cookie Consent Banner
+
+These pages must be accessible from:
+
+* login page
+* footer
+* user profile/settings
+
+⸻
+
+2. PRICE & AVAILABILITY DISCLAIMERS (CRITICAL)
+
+Clearly explain that:
+
+* prices may change at any moment
+* flights, trains, and hotels may become unavailable
+* displayed trips are estimates only
+* final prices are confirmed only during booking
+
+Add disclaimer text near travel cards and booking sections.
+
+Example texts:
+
+* “Prices and availability may change in real time.”
+* “Final booking prices are confirmed only during reservation.”
+* “Some hotels or transport options may sell out quickly.”
+
+⸻
+
+3. THIRD-PARTY PROVIDER DISCLAIMER
+
+Explain that travel information may come from external providers.
+
+Example:
+
+* “Some travel information is provided by third-party services and may change without notice.”
+
+⸻
+
+4. LIABILITY LIMITATION
+
+Add protection statements explaining:
+
+* TravelBudget does not guarantee availability
+* TravelBudget is not responsible for provider errors, price changes, delays, cancellations, or outdated information
+* Users are responsible for verifying final booking details before purchasing
+
+Example:
+
+* “TravelBudget is not responsible for temporary inaccuracies, provider updates, or pricing changes.”
+
+⸻
+
+5. BOOKING SAFETY
+
+If bookings redirect to external providers:
+
+* clearly explain that bookings are completed on partner websites
+* TravelBudget acts as a discovery and comparison platform
+
+⸻
+
+6. USER ACCOUNT & PRIVACY
+
+Explain:
+
+* user email and preferences are stored securely
+* cookies/session data may be used for login persistence and personalization
+
+⸻
+
+7. UX RULES
+
+* Legal text must look clean and professional
+* Do NOT overwhelm users with giant warning popups
+* Keep app modern and user-friendly
+* Add subtle disclaimer sections near trip details
+
+⸻
+
+IMPORTANT
+
+* Do NOT break current functionality
+* Keep swipe system and saved trips intact
+* Focus on making the app feel professional, trustworthy, and legally safer
+* Never show blank pages or missing legal information

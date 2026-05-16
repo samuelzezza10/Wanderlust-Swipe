@@ -18,6 +18,7 @@ import Saved from "./pages/saved";
 import SavedDetail from "./pages/saved-detail";
 import Profile from "./pages/profile";
 import PrivacyPolicy from "./pages/privacy";
+import TermsOfService from "./pages/terms";
 import NotFound from "./pages/not-found";
 
 const clerkPubKey = publishableKeyFromHost(
@@ -162,6 +163,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/saved/:id" component={SavedDetail} />
             <Route path="/profile" component={Profile} />
             <Route path="/privacy" component={PrivacyPolicy} />
+            <Route path="/terms" component={TermsOfService} />
             <Route component={NotFound} />
           </Switch>
         </Layout>

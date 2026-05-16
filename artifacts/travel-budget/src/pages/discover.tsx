@@ -897,6 +897,11 @@ function TripDetailSheet({
                 );
               })()}
 
+              {/* Price disclaimer */}
+              <p className="text-[11px] text-muted-foreground/70 leading-relaxed px-1">
+                ⚠️ {t.legal.priceDisclaimer}
+              </p>
+
               {/* Booking links */}
               <section className="bg-muted/40 rounded-2xl p-4">
                 <p className="font-bold text-base mb-1">{t.tripDetail.bookTitle}</p>
