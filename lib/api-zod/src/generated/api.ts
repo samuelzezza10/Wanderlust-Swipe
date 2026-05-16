@@ -18,6 +18,74 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * Generate up to 3 mystery trip suggestions with random destinations within budget
+ * @summary Generate surprise trip suggestions
+ */
+export const GenerateSurpriseTripsBody = zod.object({
+  "language": zod.string().optional(),
+  "budget": zod.number(),
+  "numberOfPeople": zod.number(),
+  "hasChildren": zod.boolean().optional(),
+  "numberOfChildren": zod.number().nullish(),
+  "hasPets": zod.boolean().optional(),
+  "numberOfPets": zod.number().nullish(),
+  "departureDate": zod.string(),
+  "returnDate": zod.string(),
+  "departureLocation": zod.string(),
+  "numberOfNights": zod.number(),
+  "flightPreference": zod.enum(['direct', 'with_stops', 'any']).optional(),
+  "accommodationType": zod.union([zod.literal('budget'),zod.literal('standard'),zod.literal('luxury'),zod.literal(null)]).nullish(),
+  "hotelStarsMin": zod.number().nullish(),
+  "hotelStarsMax": zod.number().nullish(),
+  "minHotelRating": zod.number().nullish(),
+  "trainPreference": zod.enum(['direct', 'with_stops', 'any']).optional()
+})
+
+export const GenerateSurpriseTripsResponseItem = zod.object({
+  "id": zod.string(),
+  "destination": zod.string(),
+  "country": zod.string().optional(),
+  "totalPrice": zod.number(),
+  "pricePerPerson": zod.number().optional(),
+  "transport": zod.object({
+  "type": zod.enum(['flight', 'train']),
+  "company": zod.string(),
+  "duration": zod.string(),
+  "price": zod.number(),
+  "isDirect": zod.boolean(),
+  "departureTime": zod.string().optional(),
+  "arrivalTime": zod.string().optional()
+}),
+  "hotel": zod.object({
+  "name": zod.string(),
+  "stars": zod.number(),
+  "pricePerNight": zod.number(),
+  "distanceFromCenter": zod.number(),
+  "amenities": zod.array(zod.string()),
+  "rating": zod.number().optional(),
+  "imageUrl": zod.string().nullish()
+}),
+  "description": zod.string(),
+  "highlights": zod.array(zod.string()).optional(),
+  "imageUrl": zod.string(),
+  "durationDays": zod.number(),
+  "transportToHotelKm": zod.number().optional(),
+  "hotelTotalCost": zod.number().optional(),
+  "returnTransport": zod.object({
+  "type": zod.enum(['flight', 'train']),
+  "company": zod.string(),
+  "duration": zod.string(),
+  "price": zod.number(),
+  "isDirect": zod.boolean(),
+  "departureTime": zod.string().optional(),
+  "arrivalTime": zod.string().optional()
+}).optional(),
+  "tags": zod.array(zod.string()).optional()
+})
+export const GenerateSurpriseTripsResponse = zod.array(GenerateSurpriseTripsResponseItem)
+
+
+/**
  * Generate mock trip suggestions based on user preferences
  * @summary Generate trip suggestions
  */

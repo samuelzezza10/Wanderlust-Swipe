@@ -23,6 +23,7 @@ import type {
   HealthStatus,
   SavedTrip,
   SavedTripInput,
+  SurprisePreferences,
   TripPreferences,
   TripStats,
   TripSuggestion,
@@ -119,6 +120,78 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGenerateSurpriseTripsUrl = () => {
+
+
+
+
+  return `/api/trips/surprise`
+}
+
+/**
+ * Generate up to 3 mystery trip suggestions with random destinations within budget
+ * @summary Generate surprise trip suggestions
+ */
+export const generateSurpriseTrips = async (surprisePreferences: SurprisePreferences, options?: RequestInit): Promise<TripSuggestion[]> => {
+
+  return customFetch<TripSuggestion[]>(getGenerateSurpriseTripsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      surprisePreferences,)
+  }
+);}
+
+
+
+
+export const getGenerateSurpriseTripsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateSurpriseTrips>>, TError,{data: BodyType<SurprisePreferences>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateSurpriseTrips>>, TError,{data: BodyType<SurprisePreferences>}, TContext> => {
+
+const mutationKey = ['generateSurpriseTrips'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateSurpriseTrips>>, {data: BodyType<SurprisePreferences>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateSurpriseTrips(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateSurpriseTripsMutationResult = NonNullable<Awaited<ReturnType<typeof generateSurpriseTrips>>>
+    export type GenerateSurpriseTripsMutationBody = BodyType<SurprisePreferences>
+    export type GenerateSurpriseTripsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate surprise trip suggestions
+ */
+export const useGenerateSurpriseTrips = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateSurpriseTrips>>, TError,{data: BodyType<SurprisePreferences>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateSurpriseTrips>>,
+        TError,
+        {data: BodyType<SurprisePreferences>},
+        TContext
+      > => {
+      return useMutation(getGenerateSurpriseTripsMutationOptions(options));
+    }
 
 export const getGenerateTripsUrl = () => {
 

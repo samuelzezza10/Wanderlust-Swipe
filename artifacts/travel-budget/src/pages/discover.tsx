@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
   Clock, Star, Navigation, Wifi, ArrowRight, SlidersHorizontal,
-  Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink,
+  Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -406,6 +406,7 @@ export default function Discover() {
     return (
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
+        <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
         <PreSearchState onOpenFilters={() => setFilterOpen(true)} t={t} />
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
       </div>
@@ -484,6 +485,7 @@ export default function Discover() {
     <>
       <div className="flex-1 flex flex-col">
         <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
+        <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} compact />
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
           <div className="relative w-full max-w-sm aspect-[3/4]">
@@ -970,5 +972,48 @@ function TripDetailSheet({
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/* ─── Surprise Banner ───────────────────────────────────────────────────── */
+function SurpriseBanner({
+  onPress, t, compact = false,
+}: {
+  onPress: () => void;
+  t: ReturnType<typeof useI18n>["t"];
+  compact?: boolean;
+}) {
+  if (compact) {
+    return (
+      <button
+        onClick={onPress}
+        className="mx-3 my-1.5 flex items-center gap-2 bg-gradient-to-r from-primary/10 to-orange-400/10 border border-primary/20 rounded-xl px-3 py-2 hover:opacity-80 active:scale-98 transition-all text-left"
+      >
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shrink-0">
+          <Dice6 className="w-3.5 h-3.5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-foreground truncate">{t.surprise.title}</p>
+          <p className="text-[10px] text-muted-foreground truncate">{t.surprise.buttonSub}</p>
+        </div>
+        <ArrowRight className="w-3.5 h-3.5 text-primary shrink-0" />
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={onPress}
+      className="mx-4 my-2 flex items-center gap-3 bg-gradient-to-r from-primary/10 via-violet-500/10 to-orange-400/10 border border-primary/25 rounded-2xl px-4 py-3 hover:opacity-80 active:scale-98 transition-all text-left"
+    >
+      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-orange-400 flex items-center justify-center shrink-0 shadow-sm">
+        <Dice6 className="w-5 h-5 text-white" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm text-foreground">{t.surprise.title}</p>
+        <p className="text-xs text-muted-foreground">{t.surprise.buttonSub}</p>
+      </div>
+      <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+    </button>
   );
 }

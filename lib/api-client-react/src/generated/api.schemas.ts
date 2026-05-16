@@ -9,6 +9,62 @@ export interface HealthStatus {
   status: string;
 }
 
+export type SurprisePreferencesFlightPreference = typeof SurprisePreferencesFlightPreference[keyof typeof SurprisePreferencesFlightPreference];
+
+
+export const SurprisePreferencesFlightPreference = {
+  direct: 'direct',
+  with_stops: 'with_stops',
+  any: 'any',
+} as const;
+
+/**
+ * @nullable
+ */
+export type SurprisePreferencesAccommodationType = typeof SurprisePreferencesAccommodationType[keyof typeof SurprisePreferencesAccommodationType] | null;
+
+
+export const SurprisePreferencesAccommodationType = {
+  budget: 'budget',
+  standard: 'standard',
+  luxury: 'luxury',
+} as const;
+
+export type SurprisePreferencesTrainPreference = typeof SurprisePreferencesTrainPreference[keyof typeof SurprisePreferencesTrainPreference];
+
+
+export const SurprisePreferencesTrainPreference = {
+  direct: 'direct',
+  with_stops: 'with_stops',
+  any: 'any',
+} as const;
+
+export interface SurprisePreferences {
+  language?: string;
+  budget: number;
+  numberOfPeople: number;
+  hasChildren?: boolean;
+  /** @nullable */
+  numberOfChildren?: number | null;
+  hasPets?: boolean;
+  /** @nullable */
+  numberOfPets?: number | null;
+  departureDate: string;
+  returnDate: string;
+  departureLocation: string;
+  numberOfNights: number;
+  flightPreference?: SurprisePreferencesFlightPreference;
+  /** @nullable */
+  accommodationType?: SurprisePreferencesAccommodationType;
+  /** @nullable */
+  hotelStarsMin?: number | null;
+  /** @nullable */
+  hotelStarsMax?: number | null;
+  /** @nullable */
+  minHotelRating?: number | null;
+  trainPreference?: SurprisePreferencesTrainPreference;
+}
+
 export type TripPreferencesFlightPreference = typeof TripPreferencesFlightPreference[keyof typeof TripPreferencesFlightPreference];
 
 

@@ -723,6 +723,74 @@ function generateTrip(
 
 /* ─── Route ──────────────────────────────────────────────────────────────── */
 
+router.post("/trips/surprise", (req, res) => {
+  const {
+    budget = 2000,
+    numberOfPeople = 2,
+    numberOfNights = 7,
+    flightPreference = "any",
+    trainPreference = "any",
+    departureLocation = "Any",
+    accommodationType = null,
+    propertyType = "any",
+    hotelStarsMin = null,
+    hotelStarsMax = null,
+    minHotelRating = null,
+  } = req.body;
+
+  const cleanDeparture = extractCityName(departureLocation as string);
+
+  // Pick 3 diverse random destinations from different countries/regions
+  const shuffled = [...DESTINATIONS].sort(() => Math.random() - 0.5);
+  const picked: DestinationData[] = [];
+  const usedCountries = new Set<string>();
+
+  for (const dest of shuffled) {
+    if (picked.length >= 3) break;
+    if (!usedCountries.has(dest.country)) {
+      picked.push(dest);
+      usedCountries.add(dest.country);
+    }
+  }
+  // Fill remaining slots with any unused destination
+  for (const dest of shuffled) {
+    if (picked.length >= 3) break;
+    if (!picked.includes(dest)) picked.push(dest);
+  }
+
+  const results: ReturnType<typeof generateTrip>[] = [];
+
+  for (const dest of picked) {
+    let found = false;
+    for (let attempt = 0; attempt < 150 && !found; attempt++) {
+      const trip = generateTrip(
+        dest,
+        cleanDeparture,
+        budget,
+        numberOfPeople,
+        numberOfNights,
+        flightPreference,
+        trainPreference,
+        accommodationType as AccommodationType,
+        propertyType,
+        `surprise-${Date.now()}-${attempt}`,
+      );
+
+      if (!trip) continue;
+      if (trip.totalPrice > budget) continue;
+      if (hotelStarsMin != null && trip.hotel.stars < hotelStarsMin) continue;
+      if (hotelStarsMax != null && trip.hotel.stars > hotelStarsMax) continue;
+      if (minHotelRating != null && trip.hotel.rating < minHotelRating) continue;
+
+      const { _features, ...tripOut } = trip;
+      results.push(tripOut as typeof trip);
+      found = true;
+    }
+  }
+
+  return res.json(results);
+});
+
 router.post("/trips/generate", (req, res) => {
   const {
     budget = 2000,

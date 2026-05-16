@@ -31,6 +31,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  /trips/surprise:
+    post:
+      operationId: generateSurpriseTrips
+      tags: [trips]
+      summary: Generate surprise trip suggestions
+      description: Generate up to 3 mystery trip suggestions with random destinations within budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SurprisePreferences"
+      responses:
+        "200":
+          description: List of up to 3 surprise trip suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripSuggestion"
+
   /trips/generate:
     post:
       operationId: generateTrips
@@ -173,6 +195,54 @@ components:
           type: string
       required:
         - status
+
+    SurprisePreferences:
+      type: object
+      required:
+        - budget
+        - numberOfPeople
+        - departureDate
+        - returnDate
+        - departureLocation
+        - numberOfNights
+      properties:
+        language:
+          type: string
+        budget:
+          type: number
+        numberOfPeople:
+          type: integer
+        hasChildren:
+          type: boolean
+        numberOfChildren:
+          type: ["integer", "null"]
+        hasPets:
+          type: boolean
+        numberOfPets:
+          type: ["integer", "null"]
+        departureDate:
+          type: string
+        returnDate:
+          type: string
+        departureLocation:
+          type: string
+        numberOfNights:
+          type: integer
+        flightPreference:
+          type: string
+          enum: [direct, with_stops, any]
+        accommodationType:
+          type: ["string", "null"]
+          enum: [budget, standard, luxury, null]
+        hotelStarsMin:
+          type: ["integer", "null"]
+        hotelStarsMax:
+          type: ["integer", "null"]
+        minHotelRating:
+          type: ["number", "null"]
+        trainPreference:
+          type: string
+          enum: [direct, with_stops, any]
 
     TripPreferences:
       type: object
