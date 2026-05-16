@@ -1,0 +1,38 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "rqC2CBEXgQgh9ihypwHzu"
+uri = "file://artifacts/travel-budget/public/destinations/paris.png"
+type = "image"
+title = "Eiffel tower at sunset"
+
+[[generated]]
+id = "JVDTqOXSZmTINqqE-ASnx"
+uri = "file://artifacts/travel-budget/public/destinations/bali.png"
+type = "image"
+title = "Lush rice terraces in Bali"
+
+[[generated]]
+id = "eiYIGpUSsFHn_R8ANrmu3"
+uri = "file://artifacts/travel-budget/public/destinations/tokyo.png"
+type = "image"
+title = "Neon streets of Tokyo"
+
+[[generated]]
+id = "bUPGxjAQfn9dfgd5LE_Px"
+uri = "file://artifacts/travel-budget/public/destinations/santorini.png"
+type = "image"
+title = "White houses of Santorini"
+
+[[generated]]
+id = "Dduup2JKSlFLBq_UaDXka"
+uri = "file://artifacts/travel-budget/public/destinations/new-york.png"
+type = "image"
+title = "New York skyline at dusk"
+
+[[generated]]
+id = "5y6qqseKYy1QlSENVAjSK"
+uri = "file://artifacts/travel-budget/public/destinations/lisbon.png"
+type = "image"
+title = "Colorful streets of Lisbon"

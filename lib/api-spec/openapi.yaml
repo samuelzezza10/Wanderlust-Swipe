@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: TravelBudget API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: trips
+    description: Trip suggestions
+  - name: saved-trips
+    description: Saved/liked trips
+  - name: preferences
+    description: User preferences and onboarding
 paths:
   /healthz:
     get:
@@ -24,6 +30,140 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /trips/generate:
+    post:
+      operationId: generateTrips
+      tags: [trips]
+      summary: Generate trip suggestions
+      description: Generate mock trip suggestions based on user preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripPreferences"
+      responses:
+        "200":
+          description: List of generated trip suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TripSuggestion"
+
+  /saved-trips:
+    get:
+      operationId: getSavedTrips
+      tags: [saved-trips]
+      summary: Get all saved/liked trips for the current user
+      responses:
+        "200":
+          description: List of saved trips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedTrip"
+    post:
+      operationId: saveTrip
+      tags: [saved-trips]
+      summary: Save a liked trip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavedTripInput"
+      responses:
+        "201":
+          description: Trip saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedTrip"
+
+  /saved-trips/{id}:
+    get:
+      operationId: getSavedTrip
+      tags: [saved-trips]
+      summary: Get a single saved trip by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Saved trip detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedTrip"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteSavedTrip
+      tags: [saved-trips]
+      summary: Remove a saved trip
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /preferences:
+    get:
+      operationId: getPreferences
+      tags: [preferences]
+      summary: Get user preferences
+      responses:
+        "200":
+          description: User preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferences"
+        "404":
+          description: No preferences set yet
+    put:
+      operationId: savePreferences
+      tags: [preferences]
+      summary: Save or update user preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPreferencesInput"
+      responses:
+        "200":
+          description: Preferences saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPreferences"
+
+  /trips/stats:
+    get:
+      operationId: getTripStats
+      tags: [trips]
+      summary: Get trip statistics for the current user
+      responses:
+        "200":
+          description: Trip stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TripStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +174,245 @@ components:
       required:
         - status
 
+    TripPreferences:
+      type: object
+      required:
+        - budget
+        - numberOfPeople
+        - departureDate
+        - returnDate
+        - departureLocation
+        - arrivalLocation
+        - numberOfNights
+      properties:
+        language:
+          type: string
+        budget:
+          type: number
+        numberOfPeople:
+          type: integer
+        hasChildren:
+          type: boolean
+        numberOfChildren:
+          type: ["integer", "null"]
+        hasPets:
+          type: boolean
+        departureDate:
+          type: string
+        returnDate:
+          type: string
+        departureLocation:
+          type: string
+        arrivalLocation:
+          type: string
+        hotelDistanceKm:
+          type: number
+        numberOfNights:
+          type: integer
+        flightPreference:
+          type: string
+          enum: [direct, with_stops, any]
+
+    TripSuggestion:
+      type: object
+      required:
+        - id
+        - destination
+        - totalPrice
+        - transport
+        - hotel
+        - description
+        - imageUrl
+        - durationDays
+      properties:
+        id:
+          type: string
+        destination:
+          type: string
+        country:
+          type: string
+        totalPrice:
+          type: number
+        pricePerPerson:
+          type: number
+        transport:
+          $ref: "#/components/schemas/TransportOption"
+        hotel:
+          $ref: "#/components/schemas/HotelOption"
+        description:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        imageUrl:
+          type: string
+        durationDays:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+
+    TransportOption:
+      type: object
+      required:
+        - type
+        - company
+        - duration
+        - price
+        - isDirect
+      properties:
+        type:
+          type: string
+          enum: [flight, train]
+        company:
+          type: string
+        duration:
+          type: string
+        price:
+          type: number
+        isDirect:
+          type: boolean
+        departureTime:
+          type: string
+        arrivalTime:
+          type: string
+
+    HotelOption:
+      type: object
+      required:
+        - name
+        - stars
+        - pricePerNight
+        - distanceFromCenter
+        - amenities
+      properties:
+        name:
+          type: string
+        stars:
+          type: integer
+        pricePerNight:
+          type: number
+        distanceFromCenter:
+          type: number
+        amenities:
+          type: array
+          items:
+            type: string
+        rating:
+          type: number
+        imageUrl:
+          type: ["string", "null"]
+
+    SavedTripInput:
+      type: object
+      required:
+        - tripData
+        - destination
+        - totalPrice
+        - imageUrl
+      properties:
+        tripData:
+          $ref: "#/components/schemas/TripSuggestion"
+        destination:
+          type: string
+        totalPrice:
+          type: number
+        imageUrl:
+          type: string
+        shareToken:
+          type: ["string", "null"]
+
+    SavedTrip:
+      type: object
+      required:
+        - id
+        - destination
+        - totalPrice
+        - imageUrl
+        - createdAt
+        - tripData
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        destination:
+          type: string
+        totalPrice:
+          type: number
+        imageUrl:
+          type: string
+        shareToken:
+          type: string
+        createdAt:
+          type: string
+        tripData:
+          $ref: "#/components/schemas/TripSuggestion"
+
+    UserPreferencesInput:
+      type: object
+      properties:
+        language:
+          type: string
+        defaultBudget:
+          type: ["number", "null"]
+        defaultNumberOfPeople:
+          type: ["integer", "null"]
+        defaultDepartureLocation:
+          type: ["string", "null"]
+        defaultFlightPreference:
+          type: ["string", "null"]
+        cookieConsent:
+          type: boolean
+        onboardingCompleted:
+          type: boolean
+
+    UserPreferences:
+      type: object
+      required:
+        - id
+        - clerkUserId
+      properties:
+        id:
+          type: integer
+        clerkUserId:
+          type: string
+        language:
+          type: string
+        defaultBudget:
+          type: ["number", "null"]
+        defaultNumberOfPeople:
+          type: ["integer", "null"]
+        defaultDepartureLocation:
+          type: ["string", "null"]
+        defaultFlightPreference:
+          type: ["string", "null"]
+        cookieConsent:
+          type: boolean
+        onboardingCompleted:
+          type: boolean
+        createdAt:
+          type: string
+
+    TripStats:
+      type: object
+      required:
+        - totalSaved
+        - totalSpent
+        - topDestinations
+        - averagePrice
+      properties:
+        totalSaved:
+          type: integer
+        totalSpent:
+          type: number
+        topDestinations:
+          type: array
+          items:
+            type: string
+        averagePrice:
+          type: number
+        mostRecentTrip:
+          type: ["string", "null"]
