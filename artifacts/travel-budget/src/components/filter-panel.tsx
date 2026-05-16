@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SlidersHorizontal, X, Minus, Plus } from "lucide-react";
+import { SlidersHorizontal, X, Minus, Plus, ChevronRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { LocationAutocomplete } from "@/components/location-autocomplete";
 
 export interface TripFilters {
   budget: number;
@@ -17,6 +18,10 @@ export interface TripFilters {
   maxDistanceFromAirportKm: number | null;
   maxHotelDistanceFromCenterKm: number | null;
   accommodationType: "budget" | "standard" | "luxury" | null;
+  departureAirport: string;
+  arrivalAirport: string;
+  departureStation: string;
+  arrivalStation: string;
 }
 
 export const DEFAULT_FILTERS: TripFilters = {
@@ -31,6 +36,10 @@ export const DEFAULT_FILTERS: TripFilters = {
   maxDistanceFromAirportKm: null,
   maxHotelDistanceFromCenterKm: null,
   accommodationType: null,
+  departureAirport: "",
+  arrivalAirport: "",
+  departureStation: "",
+  arrivalStation: "",
 };
 
 export function countActiveFilters(f: TripFilters): number {
@@ -46,10 +55,14 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.maxDistanceFromAirportKm !== null) n++;
   if (f.maxHotelDistanceFromCenterKm !== null) n++;
   if (f.accommodationType !== null) n++;
+  if (f.departureAirport) n++;
+  if (f.arrivalAirport) n++;
+  if (f.departureStation) n++;
+  if (f.arrivalStation) n++;
   return n;
 }
 
-/* ─── Active filter chips shown above the deck ─────────────────────────── */
+/* ─── Elegant filter bar ────────────────────────────────────────────────── */
 export function FilterBar({
   filters,
   onEdit,
@@ -60,12 +73,12 @@ export function FilterBar({
   const { t } = useI18n();
   const activeCount = countActiveFilters(filters);
 
+  const departure =
+    filters.departureAirport || filters.departureStation || "";
+
   const chips: string[] = [];
-  chips.push(`€${filters.budget.toLocaleString()}`);
-  chips.push(`${filters.numberOfPeople} ${t.filters.persons}`);
   if (filters.numberOfChildren > 0) chips.push(`${filters.numberOfChildren} ${t.filters.children.toLowerCase()}`);
   if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${t.filters.pets.toLowerCase()}`);
-  chips.push(`${filters.numberOfNights} ${t.filters.nights.toLowerCase()}`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
   if (filters.maxDistanceFromAirportKm !== null) chips.push(`✈ ≤${filters.maxDistanceFromAirportKm}km`);
@@ -76,32 +89,39 @@ export function FilterBar({
 
   return (
     <div className="w-full px-4 pt-3 pb-2">
-      {/* Prominent filter button */}
       <button
         onClick={onEdit}
-        className="w-full flex items-center justify-between gap-3 bg-primary text-primary-foreground rounded-2xl px-5 py-3.5 shadow-[0_4px_16px_rgba(0,0,0,0.18)] hover:bg-primary/90 active:scale-[0.98] transition-all"
+        className="w-full flex items-center gap-3 bg-white rounded-2xl px-4 py-3 shadow-[0_2px_12px_rgba(30,75,204,0.12)] border border-border hover:shadow-[0_4px_18px_rgba(30,75,204,0.18)] active:scale-[0.98] transition-all"
       >
-        <div className="flex items-center gap-2.5">
-          <SlidersHorizontal className="w-5 h-5" />
-          <span className="font-bold text-base">{t.filters.title}</span>
+        {/* Blue icon box */}
+        <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <SlidersHorizontal className="w-4 h-4 text-primary" />
         </div>
-        <div className="flex items-center gap-2">
-          {/* Quick summary */}
-          <span className="text-primary-foreground/80 text-sm">
-            €{filters.budget.toLocaleString()} · {filters.numberOfPeople}p · {filters.numberOfNights}n
+
+        {/* Label + summary */}
+        <div className="flex-1 min-w-0 text-left">
+          <p className="font-bold text-sm text-foreground leading-tight">{t.filters.title}</p>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">
+            {departure
+              ? `${departure} · €${filters.budget.toLocaleString()} · ${filters.numberOfPeople}p · ${filters.numberOfNights}n`
+              : `€${filters.budget.toLocaleString()} · ${filters.numberOfPeople}p · ${filters.numberOfNights}n`}
+          </p>
+        </div>
+
+        {/* Badge or arrow */}
+        {activeCount > 0 ? (
+          <span className="shrink-0 bg-[hsl(25,90%,55%)] text-white rounded-full min-w-[22px] h-[22px] flex items-center justify-center text-xs font-bold px-1">
+            {activeCount}
           </span>
-          {activeCount > 0 && (
-            <span className="bg-white text-primary rounded-full min-w-[22px] h-[22px] flex items-center justify-center text-xs font-bold px-1">
-              {activeCount}
-            </span>
-          )}
-        </div>
+        ) : (
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+        )}
       </button>
 
-      {/* Chips row for non-default filters */}
-      {chips.length > 3 && (
+      {/* Extra chips row */}
+      {chips.length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mt-2 pb-0.5">
-          {chips.slice(3).map((chip, i) => (
+          {chips.map((chip, i) => (
             <Badge key={i} variant="secondary" className="shrink-0 text-xs px-2.5 py-1 font-medium whitespace-nowrap">
               {chip}
             </Badge>
@@ -127,7 +147,6 @@ export function FilterSheet({
   const { t } = useI18n();
   const [draft, setDraft] = useState<TripFilters>(filters);
 
-  // Sync draft when sheet opens with latest filters
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) setDraft(filters);
     else onClose();
@@ -148,7 +167,7 @@ export function FilterSheet({
       <SheetContent side="bottom" className="h-[92dvh] p-0 rounded-t-3xl overflow-hidden flex flex-col">
         <SheetHeader className="px-5 pt-5 pb-3 border-b flex-row items-center justify-between">
           <SheetTitle className="text-lg">{t.filters.title}</SheetTitle>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <button onClick={handleReset} className="text-xs text-muted-foreground underline underline-offset-2">
               {t.filters.reset}
             </button>
@@ -160,12 +179,50 @@ export function FilterSheet({
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
 
-          {/* Budget */}
+          {/* ── Aeroporto partenza / arrivo ─────────────────────────── */}
+          <FilterSection label={t.filters.departureAirport}>
+            <LocationAutocomplete
+              value={draft.departureAirport}
+              onChange={(v) => set("departureAirport", v)}
+              placeholder={t.filters.departureAirport}
+              filter="airport"
+            />
+          </FilterSection>
+
+          <FilterSection label={t.filters.arrivalAirport}>
+            <LocationAutocomplete
+              value={draft.arrivalAirport}
+              onChange={(v) => set("arrivalAirport", v)}
+              placeholder={t.filters.arrivalAirport}
+              filter="airport"
+            />
+          </FilterSection>
+
+          {/* ── Stazione partenza / arrivo ──────────────────────────── */}
+          <FilterSection label={t.filters.departureStation}>
+            <LocationAutocomplete
+              value={draft.departureStation}
+              onChange={(v) => set("departureStation", v)}
+              placeholder={t.filters.departureStation}
+              filter="station"
+            />
+          </FilterSection>
+
+          <FilterSection label={t.filters.arrivalStation}>
+            <LocationAutocomplete
+              value={draft.arrivalStation}
+              onChange={(v) => set("arrivalStation", v)}
+              placeholder={t.filters.arrivalStation}
+              filter="station"
+            />
+          </FilterSection>
+
+          {/* ── Budget ─────────────────────────────────────────────── */}
           <FilterSection label={t.filters.budget}>
             <div className="flex items-center gap-3">
               <input
                 type="range"
-                min={500}
+                min={100}
                 max={20000}
                 step={100}
                 value={draft.budget}
@@ -179,7 +236,7 @@ export function FilterSheet({
             <p className="text-xs text-muted-foreground mt-1">{t.filters.perPerson}</p>
           </FilterSection>
 
-          {/* People */}
+          {/* ── Persone ────────────────────────────────────────────── */}
           <FilterSection label={t.filters.travelers}>
             <div className="flex gap-6 flex-wrap">
               <Stepper
@@ -206,7 +263,7 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* Dates */}
+          {/* ── Date ───────────────────────────────────────────────── */}
           <FilterSection label={t.filters.departureDate}>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -232,7 +289,7 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* Nights */}
+          {/* ── Notti ──────────────────────────────────────────────── */}
           <FilterSection label={t.filters.nights}>
             <div className="flex items-center gap-3">
               <input
@@ -250,7 +307,7 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* Flight preference */}
+          {/* ── Tipo volo ──────────────────────────────────────────── */}
           <FilterSection label={t.filters.flightType}>
             <RadioGroup
               options={[
@@ -263,7 +320,7 @@ export function FilterSheet({
             />
           </FilterSection>
 
-          {/* Max airport → hotel distance */}
+          {/* ── Max aeroporto → hotel ──────────────────────────────── */}
           <FilterSection label={t.filters.maxAirportDist}>
             <div className="flex items-center gap-3">
               <input
@@ -286,7 +343,7 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* Max hotel → centre distance */}
+          {/* ── Max hotel → centro ─────────────────────────────────── */}
           <FilterSection label={t.filters.maxCenterDist}>
             <div className="flex items-center gap-3">
               <input
@@ -309,7 +366,7 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* Accommodation type */}
+          {/* ── Sistemazione ───────────────────────────────────────── */}
           <FilterSection label={t.filters.accommodation}>
             <RadioGroup
               options={[

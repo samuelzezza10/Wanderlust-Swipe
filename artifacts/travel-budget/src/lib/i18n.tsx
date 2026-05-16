@@ -137,6 +137,10 @@ const en = {
     anyAcc: "No preference",
     persons: "persons",
     perPerson: "per person",
+    departureAirport: "Departure airport",
+    arrivalAirport: "Arrival airport",
+    departureStation: "Departure station",
+    arrivalStation: "Arrival station",
   },
   fun: {
     loadingMessages: [
@@ -290,6 +294,10 @@ const it: Translations = {
     anyAcc: "Nessuna preferenza",
     persons: "persone",
     perPerson: "a persona",
+    departureAirport: "Aeroporto partenza",
+    arrivalAirport: "Aeroporto arrivo",
+    departureStation: "Stazione partenza",
+    arrivalStation: "Stazione arrivo",
   },
   fun: {
     loadingMessages: [
@@ -443,6 +451,10 @@ const es: Translations = {
     anyAcc: "Sin preferencia",
     persons: "personas",
     perPerson: "por persona",
+    departureAirport: "Aeropuerto de salida",
+    arrivalAirport: "Aeropuerto de llegada",
+    departureStation: "Estación de salida",
+    arrivalStation: "Estación de llegada",
   },
   fun: {
     loadingMessages: [
@@ -596,6 +608,10 @@ const fr: Translations = {
     anyAcc: "Sans préférence",
     persons: "personnes",
     perPerson: "par personne",
+    departureAirport: "Aéroport de départ",
+    arrivalAirport: "Aéroport d'arrivée",
+    departureStation: "Gare de départ",
+    arrivalStation: "Gare d'arrivée",
   },
   fun: {
     loadingMessages: [
@@ -749,6 +765,10 @@ const de: Translations = {
     anyAcc: "Keine Präferenz",
     persons: "Personen",
     perPerson: "pro Person",
+    departureAirport: "Abflughafen",
+    arrivalAirport: "Ankunftsflughafen",
+    departureStation: "Abfahrtsbahnhof",
+    arrivalStation: "Zielbahnhof",
   },
   fun: {
     loadingMessages: [

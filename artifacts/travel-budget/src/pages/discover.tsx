@@ -75,6 +75,9 @@ export default function Discover() {
 
   function loadTrips(f: TripFilters) {
     const effectiveBudget = f.budget || prefs?.defaultBudget || 2000;
+    const depLocation =
+      f.departureAirport || f.departureStation || prefs?.defaultDepartureLocation || "Any";
+    const arrLocation = f.arrivalAirport || f.arrivalStation || "Any";
     generateTrips.mutate(
       {
         data: {
@@ -84,8 +87,8 @@ export default function Discover() {
           numberOfPets: f.numberOfPets > 0 ? f.numberOfPets : null,
           departureDate: f.departureDate || new Date().toISOString(),
           returnDate: f.returnDate || new Date(Date.now() + f.numberOfNights * 86400000).toISOString(),
-          departureLocation: prefs?.defaultDepartureLocation || "Any",
-          arrivalLocation: "Any",
+          departureLocation: depLocation,
+          arrivalLocation: arrLocation,
           numberOfNights: f.numberOfNights,
           flightPreference: f.flightPreference,
           hotelDistanceKm: f.maxHotelDistanceFromCenterKm,
@@ -228,6 +231,7 @@ export default function Discover() {
                       nopeLabel={t.discover.nope}
                       totalLabel={t.discover.total}
                       caption={hashCaption(trip.id, t.fun.captions)}
+                      departureFrom={filters.departureAirport || filters.departureStation}
                     />
                   );
                 })}
@@ -292,7 +296,7 @@ export default function Discover() {
 /* ─── Trip Card ─────────────────────────────────────────────────────────── */
 function TripCard({
   trip, isTop, index, onSwipe, onInfo,
-  likeLabel, nopeLabel, totalLabel, caption,
+  likeLabel, nopeLabel, totalLabel, caption, departureFrom,
 }: {
   trip: TripSuggestion;
   isTop: boolean;
@@ -303,6 +307,7 @@ function TripCard({
   nopeLabel: string;
   totalLabel: string;
   caption: string;
+  departureFrom?: string;
 }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);
@@ -378,11 +383,17 @@ function TripCard({
           <h2 className="text-3xl font-bold mb-0.5">{trip.destination}</h2>
           <p className="text-white/80 font-medium mb-3">{trip.country}</p>
           <div className="flex gap-2.5 mb-3">
-            {/* Round-trip transport price */}
+            {/* Round-trip transport price + route */}
             <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
               <Plane className="w-3.5 h-3.5" />
-              <span className="text-[11px] opacity-80">↕</span>
-              <span>${roundTripTransport}</span>
+              {departureFrom ? (
+                <span className="text-xs max-w-[90px] truncate">{departureFrom.split(" ")[0]} → {trip.destination}</span>
+              ) : (
+                <>
+                  <span className="text-[11px] opacity-80">↕</span>
+                  <span>${roundTripTransport}</span>
+                </>
+              )}
             </div>
             {/* Hotel per night */}
             <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
