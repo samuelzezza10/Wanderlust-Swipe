@@ -573,6 +573,9 @@ function generateTrip(
   propertyType: string,
   id: string,
 ) {
+  // ─── Budget is always TOTAL for the whole trip ────────────────
+  const budgetPerPerson = Math.floor(budget / numberOfPeople);
+
   // ─── Accommodation tier ───────────────────────────────────────
   let stars: number;
   let hotelList: string[];
@@ -596,15 +599,15 @@ function generateTrip(
     tier = "standard";
   }
 
-  // ─── Hotel cost ───────────────────────────────────────────────
-  const hotelBudgetTotal = Math.floor(budget * hotelShare);
-  const maxPerNight = Math.max(25, Math.floor(hotelBudgetTotal / numberOfNights));
+  // ─── Hotel cost (based on per-person budget share) ────────────
+  const hotelBudgetPerPerson = Math.floor(budgetPerPerson * hotelShare);
+  const maxPerNight = Math.max(25, Math.floor(hotelBudgetPerPerson / numberOfNights));
   const minPerNight = Math.max(15, Math.floor(maxPerNight * 0.55));
   const pricePerNight = randomBetween(minPerNight, maxPerNight);
   const hotelTotalPerPerson = pricePerNight * numberOfNights;
 
-  // ─── Transport ────────────────────────────────────────────────
-  const transportBudgetPerPerson = budget - hotelTotalPerPerson;
+  // ─── Transport cost (per person) ─────────────────────────────
+  const transportBudgetPerPerson = budgetPerPerson - hotelTotalPerPerson;
   if (transportBudgetPerPerson < 40) return null;
 
   const maxOutbound = Math.floor(transportBudgetPerPerson * 0.52);
@@ -616,10 +619,10 @@ function generateTrip(
   const totalTransportPerPerson = outboundPrice + returnPrice;
   const totalPerPerson = totalTransportPerPerson + hotelTotalPerPerson;
 
-  if (totalPerPerson > budget) return null;
-
+  // ─── STRICT budget check: total price MUST NOT exceed budget ──
   const totalPrice = Math.round(totalPerPerson * numberOfPeople);
   const hotelTotalCost = Math.round(hotelTotalPerPerson * numberOfPeople);
+  if (totalPrice > budget) return null;
 
   // ─── Transport type — flight vs train ─────────────────────────
   // Train not available for islands / overseas; flight always available
@@ -743,13 +746,14 @@ router.post("/trips/generate", (req, res) => {
   const matchedDest = matchDestination(arrivalLocation as string);
   const cleanDeparture = extractCityName(departureLocation as string);
 
-  // ─── Generate multiple variants of the SAME destination ───────
-  const seenHotels = new Set<string>();
+  // ─── Generate 20 variants of the SAME destination ────────────
+  // Dedup key: hotel name + price band (allows same hotel at meaningfully different prices)
+  const seenKeys = new Set<string>();
   const results: ReturnType<typeof generateTrip>[] = [];
   let attempts = 0;
-  const MAX_ATTEMPTS = 100;
+  const MAX_ATTEMPTS = 400;
 
-  while (results.length < 6 && attempts < MAX_ATTEMPTS) {
+  while (results.length < 20 && attempts < MAX_ATTEMPTS) {
     attempts++;
 
     const trip = generateTrip(
@@ -766,7 +770,9 @@ router.post("/trips/generate", (req, res) => {
     );
 
     if (!trip) continue;
-    if (seenHotels.has(trip.hotel.name)) continue;
+    // Allow same hotel only if total price differs by >5% (different room/conditions)
+    const dedupKey = `${trip.hotel.name}|${Math.round(trip.totalPrice / (budget * 0.05))}`;
+    if (seenKeys.has(dedupKey)) continue;
 
     // ─── Apply strict transport filters ─────────────────────────
     if (flightPreference === "direct" && trip.transport.type === "flight" && !trip.transport.isDirect) continue;
@@ -791,7 +797,7 @@ router.post("/trips/generate", (req, res) => {
       if (!hasAll) continue;
     }
 
-    seenHotels.add(trip.hotel.name);
+    seenKeys.add(dedupKey);
     const { _features, ...tripOut } = trip;
     results.push(tripOut as typeof trip);
   }
