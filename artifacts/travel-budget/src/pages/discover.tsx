@@ -150,29 +150,28 @@ export default function Discover() {
           </AnimatePresence>
         </div>
 
-        <div className="flex items-center gap-6 mt-8">
-          <Button
-            variant="outline" size="icon"
-            className="w-12 h-12 rounded-full text-muted-foreground border-2"
+        <div className="flex items-center gap-5 mt-8">
+          <button
             onClick={handleUndo}
             disabled={history.length === 0}
+            className="w-12 h-12 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform"
           >
             <RotateCcw className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="outline" size="icon"
-            className="w-16 h-16 rounded-full text-danger border-2 border-danger/20 hover:bg-danger/10"
+          </button>
+          <button
             onClick={() => handleSwipe("left")}
+            className="w-18 h-18 rounded-full bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
+            style={{ width: 72, height: 72 }}
           >
-            <X className="w-8 h-8" />
-          </Button>
-          <Button
-            variant="outline" size="icon"
-            className="w-16 h-16 rounded-full text-green-500 border-2 border-green-500/20 hover:bg-green-500/10"
+            <X className="w-9 h-9 stroke-[2.5]" />
+          </button>
+          <button
             onClick={() => handleSwipe("right")}
+            className="w-18 h-18 rounded-full bg-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
+            style={{ width: 72, height: 72 }}
           >
-            <Check className="w-8 h-8" />
-          </Button>
+            <Check className="w-9 h-9 stroke-[2.5]" />
+          </button>
         </div>
       </div>
 
