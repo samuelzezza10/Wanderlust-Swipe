@@ -501,6 +501,11 @@ export default function Discover() {
           const status = (err as { status?: number })?.status ?? (err as { response?: { status?: number } })?.response?.status;
           if (status === 403) {
             setShowPremiumModal(true);
+          } else if (status === 429) {
+            toast.error(t.discover.rateLimitError, {
+              description: t.discover.rateLimitHint,
+              duration: 8000,
+            });
           }
         },
       }

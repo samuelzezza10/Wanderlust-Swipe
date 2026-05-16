@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
@@ -8,10 +9,15 @@ import {
   clerkProxyMiddleware,
   getClerkProxyHost,
 } from "./middlewares/clerkProxyMiddleware";
+import { globalLimiter } from "./middlewares/rateLimiter";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+// Trust Replit's reverse proxy so express-rate-limit reads the real client IP
+// from X-Forwarded-For instead of the proxy IP
+app.set("trust proxy", 1);
 
 app.use(
   pinoHttp({
@@ -36,6 +42,19 @@ app.use(
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 app.use(cors({ credentials: true, origin: true }));
+
+// Security headers — disable CSP (API-only server, not serving HTML)
+// and crossOriginEmbedderPolicy (would break Clerk proxy responses)
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+
+// Global IP-based rate limiter (generous: protects against floods/bots)
+app.use(globalLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { tripGenerateLimiter, tripGenerateSlowDown, surpriseLimiter } from "../middlewares/rateLimiter";
 import { getAuth } from "@clerk/express";
 
 const router = Router();
@@ -729,7 +730,7 @@ function generateTrip(
 
 /* ─── Route ──────────────────────────────────────────────────────────────── */
 
-router.post("/trips/surprise", (req, res) => {
+router.post("/trips/surprise", surpriseLimiter, (req, res) => {
   const {
     budget = 2000,
     numberOfPeople = 2,
@@ -800,7 +801,7 @@ router.post("/trips/surprise", (req, res) => {
 
 const FREE_SEARCH_LIMIT = 20;
 
-router.post("/trips/generate", async (req, res) => {
+router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async (req, res) => {
   const {
     budget = 2000,
     numberOfPeople = 2,

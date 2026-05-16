@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { getAuth } from "@clerk/express";
+import { writeLimiter } from "../middlewares/rateLimiter";
 import { db, savedTripsTable } from "@workspace/db";
 import { eq, and, desc } from "drizzle-orm";
 import crypto from "crypto";
@@ -42,7 +43,7 @@ router.get("/saved-trips", requireAuth, async (req: any, res) => {
   }
 });
 
-router.post("/saved-trips", requireAuth, async (req: any, res) => {
+router.post("/saved-trips", requireAuth, writeLimiter, async (req: any, res) => {
   const { tripData, destination, totalPrice, imageUrl } = req.body;
 
   if (!tripData || !destination || totalPrice === undefined || !imageUrl) {
@@ -107,7 +108,7 @@ router.get("/saved-trips/:id", requireAuth, async (req: any, res) => {
   }
 });
 
-router.delete("/saved-trips/:id", requireAuth, async (req: any, res) => {
+router.delete("/saved-trips/:id", requireAuth, writeLimiter, async (req: any, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "Invalid id" });
 
