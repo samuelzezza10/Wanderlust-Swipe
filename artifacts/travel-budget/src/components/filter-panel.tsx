@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -182,9 +182,44 @@ export function FilterSheet({
 }) {
   const { t } = useI18n();
   const [draft, setDraft] = useState<TripFilters>(filters);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [tried, setTried] = useState(false);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const departureRef = useRef<HTMLDivElement>(null);
+  const arrivalRef = useRef<HTMLDivElement>(null);
+  const datesRef = useRef<HTMLDivElement>(null);
+  const budgetRef = useRef<HTMLDivElement>(null);
+
+  const validate = (f: TripFilters): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    const dep = f.departureAirport || f.departureStation;
+    const arr = f.arrivalAirport || f.arrivalStation;
+
+    if (!dep) errs["departure"] = t.filters.missingDeparture;
+    if (!arr) errs["arrival"] = t.filters.missingArrival;
+    if (!f.departureDate) errs["departureDate"] = t.filters.missingDepartureDate;
+    if (!f.returnDate) errs["returnDate"] = t.filters.missingReturnDate;
+
+    if (f.departureDate && f.returnDate && f.returnDate < f.departureDate) {
+      errs["returnDate"] = t.filters.returnBeforeDeparture;
+    }
+    if (dep && arr) {
+      const depCity = dep.split(" (")[0].trim().toLowerCase();
+      const arrCity = arr.split(" (")[0].trim().toLowerCase();
+      if (depCity === arrCity) errs["arrival"] = t.filters.sameLocation;
+    }
+    if (!f.budget || f.budget <= 0) errs["budget"] = t.filters.invalidBudget;
+
+    return errs;
+  };
+
+  useEffect(() => {
+    if (tried) setErrors(validate(draft));
+  }, [draft, tried]);
 
   const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) setDraft(filters);
+    if (isOpen) { setDraft(filters); setErrors({}); setTried(false); }
     else onClose();
   };
 
@@ -194,8 +229,31 @@ export function FilterSheet({
   const toggle = (key: keyof TripFilters) =>
     setDraft((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const handleApply = () => { onApply(draft); onClose(); };
-  const handleReset = () => setDraft(DEFAULT_FILTERS);
+  const handleApply = () => {
+    setTried(true);
+    const errs = validate(draft);
+    setErrors(errs);
+
+    if (Object.keys(errs).length > 0) {
+      const firstRef =
+        errs["departure"] ? departureRef :
+        errs["arrival"] ? arrivalRef :
+        errs["departureDate"] || errs["returnDate"] ? datesRef :
+        errs["budget"] ? budgetRef : null;
+
+      setTimeout(() => {
+        firstRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 80);
+      return;
+    }
+
+    onApply(draft);
+    onClose();
+  };
+
+  const handleReset = () => { setDraft(DEFAULT_FILTERS); setErrors({}); setTried(false); };
+
+  const hasErrors = Object.keys(errors).length > 0;
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -212,38 +270,89 @@ export function FilterSheet({
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
+        <div ref={contentRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
 
-          {/* ── Aeroporto partenza / arrivo ─────────────────── */}
-          <FilterSection label={t.filters.departureAirport}>
-            <LocationAutocomplete value={draft.departureAirport} onChange={(v) => set("departureAirport", v)} placeholder={t.filters.departureAirport} filter="airport" />
-          </FilterSection>
+          {/* ── Validation banner ───────────────────────────── */}
+          {tried && hasErrors && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex gap-3 items-start">
+              <span className="text-lg leading-none mt-0.5">⚠️</span>
+              <div>
+                <p className="text-sm font-semibold text-red-700">{t.filters.validationTitle}</p>
+                <p className="text-xs text-red-600 mt-0.5">{t.filters.validationSubtitle}</p>
+              </div>
+            </div>
+          )}
 
-          <FilterSection label={t.filters.arrivalAirport}>
-            <LocationAutocomplete value={draft.arrivalAirport} onChange={(v) => set("arrivalAirport", v)} placeholder={t.filters.arrivalAirport} filter="airport" />
-          </FilterSection>
+          {/* ── Partenza ────────────────────────────────────── */}
+          <div ref={departureRef} className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">{t.filters.departureAirport}</p>
+            <div className={`rounded-xl transition-colors ${errors["departure"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
+              <LocationAutocomplete
+                value={draft.departureAirport}
+                onChange={(v) => set("departureAirport", v)}
+                placeholder={t.filters.departureAirport}
+                filter="airport"
+              />
+            </div>
+            <div className={`rounded-xl transition-colors ${errors["departure"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
+              <LocationAutocomplete
+                value={draft.departureStation}
+                onChange={(v) => set("departureStation", v)}
+                placeholder={t.filters.departureStation}
+                filter="station"
+              />
+            </div>
+            {errors["departure"] && (
+              <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
+                <span>⚠️</span>{errors["departure"]}
+              </p>
+            )}
+          </div>
 
-          {/* ── Stazione partenza / arrivo ──────────────────── */}
-          <FilterSection label={t.filters.departureStation}>
-            <LocationAutocomplete value={draft.departureStation} onChange={(v) => set("departureStation", v)} placeholder={t.filters.departureStation} filter="station" />
-          </FilterSection>
-
-          <FilterSection label={t.filters.arrivalStation}>
-            <LocationAutocomplete value={draft.arrivalStation} onChange={(v) => set("arrivalStation", v)} placeholder={t.filters.arrivalStation} filter="station" />
-          </FilterSection>
+          {/* ── Destinazione ────────────────────────────────── */}
+          <div ref={arrivalRef} className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">{t.filters.arrivalAirport}</p>
+            <div className={`rounded-xl transition-colors ${errors["arrival"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
+              <LocationAutocomplete
+                value={draft.arrivalAirport}
+                onChange={(v) => set("arrivalAirport", v)}
+                placeholder={t.filters.arrivalAirport}
+                filter="airport"
+              />
+            </div>
+            <div className={`rounded-xl transition-colors ${errors["arrival"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
+              <LocationAutocomplete
+                value={draft.arrivalStation}
+                onChange={(v) => set("arrivalStation", v)}
+                placeholder={t.filters.arrivalStation}
+                filter="station"
+              />
+            </div>
+            {errors["arrival"] && (
+              <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
+                <span>⚠️</span>{errors["arrival"]}
+              </p>
+            )}
+          </div>
 
           {/* ── Budget ─────────────────────────────────────── */}
-          <FilterSection label={t.filters.budget}>
+          <div ref={budgetRef} className={`space-y-3 rounded-xl transition-colors ${errors["budget"] ? "p-3 ring-2 ring-red-400" : ""}`}>
+            <p className="text-sm font-semibold text-foreground">{t.filters.budget}</p>
             <div className="flex items-center gap-3">
               <input type="range" min={100} max={20000} step={100} value={draft.budget}
                 onChange={(e) => set("budget", Number(e.target.value))}
                 className="flex-1 accent-primary" />
               <span className="font-bold text-sm w-20 text-right">€{draft.budget.toLocaleString()}</span>
             </div>
-            <p className="text-xs text-primary/70 font-medium mt-2">
+            <p className="text-xs text-primary/70 font-medium">
               💡 {t.filters.budgetIncludes}
             </p>
-          </FilterSection>
+            {errors["budget"] && (
+              <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
+                <span>⚠️</span>{errors["budget"]}
+              </p>
+            )}
+          </div>
 
           {/* ── Persone ────────────────────────────────────── */}
           <FilterSection label={t.filters.travelers}>
@@ -255,22 +364,45 @@ export function FilterSheet({
           </FilterSection>
 
           {/* ── Date ───────────────────────────────────────── */}
-          <FilterSection label={t.filters.departureDate}>
+          <div ref={datesRef} className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">{t.filters.departureDate}</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">{t.filters.departureDate}</label>
-                <input type="date" value={draft.departureDate} min={new Date().toISOString().split("T")[0]}
+                <input
+                  type="date"
+                  value={draft.departureDate}
+                  min={new Date().toISOString().split("T")[0]}
                   onChange={(e) => set("departureDate", e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground" />
+                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground transition-colors ${
+                    errors["departureDate"] ? "border-red-400 bg-red-50 focus:ring-red-400" : ""
+                  }`}
+                />
+                {errors["departureDate"] && (
+                  <p className="text-xs text-red-500 font-medium mt-1 flex items-center gap-1">
+                    <span>⚠️</span>{errors["departureDate"]}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">{t.filters.returnDate}</label>
-                <input type="date" value={draft.returnDate} min={draft.departureDate || new Date().toISOString().split("T")[0]}
+                <input
+                  type="date"
+                  value={draft.returnDate}
+                  min={draft.departureDate || new Date().toISOString().split("T")[0]}
                   onChange={(e) => set("returnDate", e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground" />
+                  className={`w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground transition-colors ${
+                    errors["returnDate"] ? "border-red-400 bg-red-50 focus:ring-red-400" : ""
+                  }`}
+                />
+                {errors["returnDate"] && (
+                  <p className="text-xs text-red-500 font-medium mt-1 flex items-center gap-1">
+                    <span>⚠️</span>{errors["returnDate"]}
+                  </p>
+                )}
               </div>
             </div>
-          </FilterSection>
+          </div>
 
           {/* ── Notti ──────────────────────────────────────── */}
           <FilterSection label={t.filters.nights}>
@@ -431,8 +563,12 @@ export function FilterSheet({
         </div>
 
         <div className="px-5 pb-8 pt-3 border-t bg-background">
-          <Button size="lg" className="w-full text-base font-bold" onClick={handleApply}>
-            {t.filters.apply}
+          <Button
+            size="lg"
+            className={`w-full text-base font-bold transition-all ${tried && hasErrors ? "bg-red-500 hover:bg-red-600" : ""}`}
+            onClick={handleApply}
+          >
+            {tried && hasErrors ? `⚠️ ${t.filters.validationTitle}` : t.filters.apply}
           </Button>
         </div>
       </SheetContent>
