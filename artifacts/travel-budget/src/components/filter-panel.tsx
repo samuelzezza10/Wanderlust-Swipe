@@ -398,8 +398,11 @@ export function FilterSheet({
 
           {/* ── Date ───────────────────────────────────────── */}
           <div ref={datesRef} className="space-y-3">
-            <p className="text-sm font-semibold text-foreground">{t.filters.departureDate}</p>
-            <div className="grid grid-cols-2 gap-3">
+            <p className="text-sm font-semibold text-foreground">
+              {draft.tripType === "one_way" ? t.filters.departureDate : t.filters.departureDate + " / " + t.filters.returnDate}
+            </p>
+            <div className={`grid gap-3 ${draft.tripType === "one_way" ? "grid-cols-1" : "grid-cols-2"}`}>
+              {/* Departure date — always shown */}
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">{t.filters.departureDate}</label>
                 <input
@@ -417,34 +420,33 @@ export function FilterSheet({
                   </p>
                 )}
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground block mb-1">
-                  {t.filters.returnDate}
-                  {draft.tripType === "one_way" && (
-                    <span className="ml-1.5 text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full font-medium">
-                      {t.filters.oneWay}
-                    </span>
+              {/* Return date — hidden completely for one-way */}
+              {draft.tripType !== "one_way" && (
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">{t.filters.returnDate}</label>
+                  <input
+                    type="date"
+                    value={draft.returnDate}
+                    min={draft.departureDate || new Date().toISOString().split("T")[0]}
+                    onChange={(e) => set("returnDate", e.target.value)}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm bg-background text-foreground transition-colors ${
+                      errors["returnDate"] ? "border-red-400 bg-red-50" : ""
+                    }`}
+                  />
+                  {errors["returnDate"] && (
+                    <p className="text-xs text-red-500 font-medium mt-1 flex items-center gap-1">
+                      <span>⚠️</span>{errors["returnDate"]}
+                    </p>
                   )}
-                </label>
-                <input
-                  type="date"
-                  value={draft.returnDate}
-                  min={draft.departureDate || new Date().toISOString().split("T")[0]}
-                  disabled={draft.tripType === "one_way"}
-                  onChange={(e) => set("returnDate", e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm transition-colors ${
-                    draft.tripType === "one_way"
-                      ? "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
-                      : "bg-background text-foreground"
-                  } ${errors["returnDate"] ? "border-red-400 bg-red-50" : ""}`}
-                />
-                {errors["returnDate"] && (
-                  <p className="text-xs text-red-500 font-medium mt-1 flex items-center gap-1">
-                    <span>⚠️</span>{errors["returnDate"]}
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
+            {/* One-way info hint */}
+            {draft.tripType === "one_way" && (
+              <p className="text-xs text-primary/70 font-medium flex items-center gap-1.5">
+                <span>✈️</span> {t.filters.oneWayHint}
+              </p>
+            )}
           </div>
 
           {/* ── Notti ──────────────────────────────────────── */}

@@ -457,7 +457,9 @@ export default function Discover() {
           numberOfChildren: f.numberOfChildren > 0 ? f.numberOfChildren : null,
           numberOfPets: f.numberOfPets > 0 ? f.numberOfPets : null,
           departureDate: f.departureDate || new Date().toISOString(),
-          returnDate: f.returnDate || new Date(Date.now() + f.numberOfNights * 86400000).toISOString(),
+          returnDate: f.tripType === "one_way"
+            ? new Date(Date.now() + f.numberOfNights * 86400000).toISOString()
+            : (f.returnDate || new Date(Date.now() + f.numberOfNights * 86400000).toISOString()),
           departureLocation: depLocation,
           arrivalLocation: arrLocation,
           numberOfNights: f.numberOfNights,
@@ -1118,8 +1120,14 @@ function TripDetailSheet({
                 </div>
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
                   <Plane className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                  <p className="text-lg font-bold">${trip.transport.price + (trip.returnTransport?.price ?? 0)}</p>
-                  <p className="text-xs text-muted-foreground">{t.tripDetail.flight} ↕</p>
+                  <p className="text-lg font-bold">
+                    €{trip.tripType === "one_way"
+                      ? trip.transport.price
+                      : trip.transport.price + (trip.returnTransport?.price ?? 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {trip.tripType === "one_way" ? `${t.tripDetail.flight} →` : `${t.tripDetail.flight} ↕`}
+                  </p>
                 </div>
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
                   <Hotel className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
