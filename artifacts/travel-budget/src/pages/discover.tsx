@@ -556,7 +556,6 @@ export default function Discover() {
   if (generateTrips.isPending) {
     return (
       <div className="flex-1 flex flex-col">
-        <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 px-8 text-center">
             <Plane className="w-14 h-14 text-primary mb-1 animate-bounce" />
@@ -589,7 +588,6 @@ export default function Discover() {
   if (!hasSearched) {
     return (
       <div className="flex-1 flex flex-col">
-        <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         {UsageBadge}
         {isOnline ? (
           <>
@@ -630,7 +628,6 @@ export default function Discover() {
       filters.trainPreference === "direct" && !!filters.departureStation;
     return (
       <div className="flex-1 flex flex-col">
-        <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         {UsageBadge}
         <div className="flex-1 flex items-center justify-center flex-col p-6 text-center">
           {isNoDirectTrain ? (
@@ -679,7 +676,6 @@ export default function Discover() {
   if (currentIndex >= trips.length) {
     return (
       <div className="flex-1 flex flex-col">
-        <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         {UsageBadge}
         <div className="flex-1 flex items-center justify-center flex-col p-4 text-center">
           <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
@@ -716,7 +712,6 @@ export default function Discover() {
   return (
     <>
       <div className="flex-1 flex flex-col">
-        <FilterBar filters={filters} onEdit={() => setFilterOpen(true)} />
         <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} compact />
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
@@ -746,7 +741,7 @@ export default function Discover() {
             </AnimatePresence>
           </div>
 
-          {/* Action buttons: ❌ ↩ ✓ */}
+          {/* Action buttons: ❌ ↩ ✓ + Filtri */}
           <div className="flex items-center gap-4 mt-8">
             <button
               onClick={() => handleSwipe("left")}
@@ -769,6 +764,13 @@ export default function Discover() {
               style={{ width: 68, height: 68 }}
             >
               <Check className="w-8 h-8 stroke-[2.5]" />
+            </button>
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="w-11 h-11 rounded-full bg-card shadow-md border border-border flex items-center justify-center text-primary hover:scale-110 active:scale-95 transition-transform"
+              title="Filtri"
+            >
+              <SlidersHorizontal className="w-4.5 h-4.5" />
             </button>
           </div>
         </div>
@@ -906,12 +908,6 @@ function TripCard({
                 trip.tripType === "one_way" ? "bg-primary/80" : "bg-blue-600/80"
               }`}>
                 <span>{trip.tripType === "one_way" ? `✈️ ${t.filters.oneWay}` : `🔄 ${t.filters.roundTrip}`}</span>
-              </div>
-            )}
-            {savingsMsg && isTop && (
-              <div className="inline-flex items-center gap-1.5 bg-green-500/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                <span>💰</span>
-                <span>{savingsMsg}</span>
               </div>
             )}
           </div>
@@ -1136,19 +1132,6 @@ function TripDetailSheet({
                 </div>
               </section>
 
-              {/* Savings banner */}
-              {(() => {
-                const savings = budget && budget > 0 ? budget - trip.totalPrice : 0;
-                if (savings <= 10) return null;
-                const msgs = t.fun.savingsMessages;
-                const msg = msgs[trip.id.charCodeAt(trip.id.length - 1) % msgs.length].replace("{amount}", `€${savings}`);
-                return (
-                  <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-2xl px-4 py-3">
-                    <span className="text-2xl">💰</span>
-                    <p className="text-sm font-semibold text-green-700 dark:text-green-400">{msg}</p>
-                  </div>
-                );
-              })()}
 
               {/* Price disclaimer */}
               <p className="text-[11px] text-muted-foreground/70 leading-relaxed px-1">
