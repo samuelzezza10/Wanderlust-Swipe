@@ -14,7 +14,7 @@ import {
   Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
   Crown, Zap, Sparkles, RefreshCw, Lightbulb, ChevronLeft, ChevronRight,
-  LayoutList, Layers,
+  LayoutList, Layers, Users, Euro,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -1684,10 +1684,10 @@ function TripDetailSheet({
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-white/70 uppercase tracking-wider">{t.tripDetail.totalCost}</p>
+                    <p className="text-xs text-white/70 uppercase tracking-wider font-semibold">{t.tripDetail.totalCost}</p>
                     <p className="text-2xl font-bold">{formatCurrency((numberOfPeople ?? 1) * trip.totalPrice, lang)}</p>
-                    {numberOfPeople && numberOfPeople > 1 && (
-                      <p className="text-xs text-white/60">{numberOfPeople} {t.tripDetail.perPerson.includes("person") ? "people" : "persone"}</p>
+                    {(numberOfPeople ?? 1) > 1 && (
+                      <p className="text-xs text-white/60">{numberOfPeople} {t.tripDetail.perPerson}</p>
                     )}
                   </div>
                 </div>
@@ -1809,61 +1809,16 @@ function TripDetailSheet({
                   <p className="text-xs text-muted-foreground">{t.tripDetail.nights}</p>
                 </div>
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
-                  <Plane className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                  <p className="text-lg font-bold">
-                    {formatCurrency(trip.tripType === "one_way"
-                      ? trip.transport.price
-                      : trip.transport.price + (trip.returnTransport?.price ?? 0), lang)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {trip.tripType === "one_way" ? `${t.tripDetail.flight} →` : `${t.tripDetail.flight} ↕`}
-                  </p>
+                  <Users className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
+                  <p className="text-lg font-bold">{numberOfPeople ?? 1}</p>
+                  <p className="text-xs text-muted-foreground">{t.tripDetail.perPerson.replace("a ", "").replace("per ", "").replace("pro ", "").replace("par ", "").replace("por ", "").trim() || "persone"}</p>
                 </div>
-                <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
-                  <Hotel className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                  <p className="text-lg font-bold">{formatCurrency(trip.hotelTotalCost ?? trip.hotel.pricePerNight, lang)}</p>
-                  <p className="text-xs text-muted-foreground">{t.tripDetail.totalHotel}</p>
+                <div className="flex-1 bg-primary/10 border border-primary/20 rounded-xl p-3 text-center">
+                  <Euro className="w-4 h-4 mx-auto text-primary mb-1" />
+                  <p className="text-lg font-bold text-primary">{formatCurrency((numberOfPeople ?? 1) * trip.totalPrice, lang)}</p>
+                  <p className="text-xs text-primary/70 font-semibold">{t.tripDetail.totalCost}</p>
                 </div>
               </section>
-
-
-              {/* Budget breakdown */}
-              {budget != null && (
-                <section className="bg-muted/40 rounded-2xl p-4">
-                  <h3 className="font-semibold text-sm mb-3">💰 {t.tripDetail.totalCost}</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1.5">
-                        <Plane className="w-3.5 h-3.5" />{t.tripDetail.transport}
-                      </span>
-                      <span className="font-semibold">
-                        {formatCurrency(
-                          (trip.transport.price + (trip.returnTransport?.price ?? 0)) * (numberOfPeople ?? 1),
-                          lang,
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1.5">
-                        <Hotel className="w-3.5 h-3.5" />{t.tripDetail.hotel}
-                      </span>
-                      <span className="font-semibold">{formatCurrency(trip.hotelTotalCost ?? 0, lang)}</span>
-                    </div>
-                    <div className="border-t border-border pt-2 flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">{t.tripDetail.budgetRemaining}</span>
-                      {(() => {
-                        const spent = (trip.transport.price + (trip.returnTransport?.price ?? 0)) * (numberOfPeople ?? 1) + (trip.hotelTotalCost ?? 0);
-                        const remaining = Math.max(0, budget - spent);
-                        return (
-                          <span className={`font-bold ${remaining > 0 ? "text-green-600" : "text-orange-500"}`}>
-                            {remaining > 0 ? `+${formatCurrency(remaining, lang)}` : formatCurrency(0, lang)}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </section>
-              )}
 
               {/* Price disclaimer */}
               <p className="text-[11px] text-muted-foreground/70 leading-relaxed px-1">
