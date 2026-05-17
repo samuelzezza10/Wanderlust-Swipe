@@ -150,7 +150,7 @@ function ShareModal({
 
   if (!trip) return null;
 
-  const shareText = `✈️ ${trip.destination}, ${trip.country} — ${trip.durationDays} notti per $${trip.totalPrice}/persona! Scoperto su TravelBudget 🌍`;
+  const shareText = `✈️ ${trip.destination}, ${trip.country} — ${trip.durationDays} notti a €${trip.totalPrice}/persona! Scoperto su TravelBudget 🌍`;
   const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(shareText)}`;
 
@@ -176,7 +176,7 @@ function ShareModal({
             <img src={getImgSrc(trip.imageUrl)} alt={trip.destination} className="w-14 h-14 rounded-xl object-cover shrink-0" />
             <div className="min-w-0">
               <p className="font-bold text-sm">{trip.destination}</p>
-              <p className="text-xs text-muted-foreground">{trip.country} · ${trip.totalPrice}/p</p>
+              <p className="text-xs text-muted-foreground">{trip.country} · €{trip.totalPrice}/p</p>
             </div>
           </div>
 
@@ -263,6 +263,23 @@ function PremiumUpgradeModal({
         <p className="text-sm text-muted-foreground text-center mb-6">
           {isGuest ? t.premium.guestSubtitle : t.premium.subtitle}
         </p>
+
+        {/* Free vs Premium comparison */}
+        <div className="flex gap-3 mb-5">
+          <div className="flex-1 rounded-2xl border border-border bg-muted/40 p-3 text-center">
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">Free</p>
+            <p className="text-2xl font-black text-foreground">20</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">ricerche / mese</p>
+          </div>
+          <div className="flex-1 rounded-2xl border-2 border-primary bg-primary/5 p-3 text-center relative overflow-hidden">
+            <div className="absolute top-1.5 right-1.5">
+              <Crown className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <p className="text-xs text-primary font-semibold uppercase tracking-wide mb-1">Premium</p>
+            <p className="text-2xl font-black text-primary">80</p>
+            <p className="text-[11px] text-primary/70 mt-0.5">ricerche / mese</p>
+          </div>
+        </div>
 
         {/* Benefits */}
         <div className="space-y-3 mb-6">
@@ -601,15 +618,15 @@ export default function Discover() {
   }
 
   /* ── Usage badge (shared across branches) ── */
-  const usageRemaining = isSignedIn
-    ? (usage && !usage.isPremium && usage.searchCount > 0 ? usage.freeLimit - usage.searchCount : null)
-    : (guestCount > 0 ? GUEST_SEARCH_LIMIT - guestCount : null);
+  const usageSearchCount = isSignedIn
+    ? (usage && !usage.isPremium && usage.searchCount > 0 ? usage.searchCount : null)
+    : (guestCount > 0 ? guestCount : null);
 
-  const UsageBadge = usageRemaining !== null ? (
+  const UsageBadge = usageSearchCount !== null ? (
     <div className="flex justify-center mt-1 mb-0.5 px-4">
       <div className="flex items-center gap-1.5 bg-primary/8 border border-primary/15 rounded-full px-3 py-1 text-xs text-primary font-medium">
         <Sparkles className="w-3 h-3 shrink-0" />
-        <span>{usageRemaining} {t.premium.searchesLeft}</span>
+        <span>{usageSearchCount} {t.premium.searchesLeft}</span>
       </div>
     </div>
   ) : null;
@@ -765,6 +782,7 @@ export default function Discover() {
                     caption={hashCaption(trip.id, t.fun.captions)}
                     departureFrom={filters.departureAirport || filters.departureStation}
                     budget={filters.budget}
+                    numberOfPeople={filters.numberOfPeople}
                   />
                 );
               })}
@@ -813,6 +831,7 @@ export default function Discover() {
         onClose={() => setDetailTrip(null)}
         isSignedIn={!!isSignedIn}
         budget={filters.budget}
+        numberOfPeople={filters.numberOfPeople}
         onSave={() => {
           if (detailTrip) {
             if (isSignedIn) {
@@ -838,7 +857,7 @@ export default function Discover() {
 /* ─── Trip Card ─────────────────────────────────────────────────────────── */
 function TripCard({
   trip, isTop, index, onSwipe, onInfo, onShare,
-  likeLabel, nopeLabel, totalLabel, caption, departureFrom, budget,
+  likeLabel, nopeLabel, totalLabel, caption, departureFrom, budget, numberOfPeople,
 }: {
   trip: TripSuggestion;
   isTop: boolean;
@@ -852,6 +871,7 @@ function TripCard({
   caption: string;
   departureFrom?: string;
   budget?: number;
+  numberOfPeople?: number;
 }) {
   const { t } = useI18n();
   const x = useMotionValue(0);
@@ -861,7 +881,9 @@ function TripCard({
   const nopeOpacity = useTransform(x, [0, -100], [0, 1]);
 
   const roundTripTransport = trip.transport.price + (trip.returnTransport?.price ?? 0);
-  const savings = budget && budget > 0 ? budget - trip.totalPrice : 0;
+  // Total for ALL people (trip.totalPrice is per person)
+  const totalForAll = (numberOfPeople ?? 1) * trip.totalPrice;
+  const savings = budget && budget > 0 ? budget - totalForAll : 0;
   const savingsMsg = savings > 10
     ? t.fun.savingsMessages[trip.id.charCodeAt(trip.id.length - 1) % t.fun.savingsMessages.length]
       .replace("{amount}", `€${savings}`)
@@ -959,7 +981,7 @@ function TripCard({
             <p className="text-sm text-white/80 line-clamp-2 pr-4 leading-relaxed">{trip.description}</p>
             <div className="text-right shrink-0">
               <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
-              <p className="text-2xl font-black">${trip.totalPrice}</p>
+              <p className="text-2xl font-black">€{totalForAll}</p>
             </div>
           </div>
         </div>
@@ -1005,7 +1027,7 @@ function TransportBlock({ label, transport, t }: { label?: string; transport: No
 
 /* ─── Trip Detail Sheet ──────────────────────────────────────────────────── */
 function TripDetailSheet({
-  trip, onClose, isSignedIn, onSave, onShare, budget,
+  trip, onClose, isSignedIn, onSave, onShare, budget, numberOfPeople,
 }: {
   trip: TripSuggestion | null;
   onClose: () => void;
@@ -1013,6 +1035,7 @@ function TripDetailSheet({
   onSave: () => void;
   onShare: () => void;
   budget?: number;
+  numberOfPeople?: number;
 }) {
   const { t } = useI18n();
 
@@ -1034,8 +1057,10 @@ function TripDetailSheet({
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-white/70 uppercase tracking-wider">{t.tripDetail.totalCost}</p>
-                    <p className="text-2xl font-bold">${trip.totalPrice}</p>
-                    <p className="text-xs text-white/60">{t.tripDetail.perPerson}</p>
+                    <p className="text-2xl font-bold">€{(numberOfPeople ?? 1) * trip.totalPrice}</p>
+                    {numberOfPeople && numberOfPeople > 1 && (
+                      <p className="text-xs text-white/60">{numberOfPeople} {t.tripDetail.perPerson.includes("person") ? "people" : "persone"}</p>
+                    )}
                   </div>
                 </div>
               </div>
