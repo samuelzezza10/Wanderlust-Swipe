@@ -1305,32 +1305,58 @@ function TripCard({
           </>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
-          <div className="mb-2.5" />
+        <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 text-white pointer-events-none">
           <h2 className="text-3xl font-bold mb-0.5">{trip.destination}</h2>
-          <p className="text-white/80 font-medium mb-3">{trip.country}</p>
-          <div className="flex gap-2.5 mb-3">
-            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
+          <p className="text-white/80 font-medium mb-2">{trip.country}</p>
+
+          {/* Row 1: flight route + duration + hotel price */}
+          <div className="flex gap-2 mb-2 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
               <Plane className="w-3.5 h-3.5 shrink-0" />
               {departureFrom ? (
-                <span className="text-xs max-w-[100px] truncate">{departureFrom.split(" (")[0].split(" ")[0]} → {trip.destination}</span>
+                <span className="max-w-[90px] truncate">{departureFrom.split(" (")[0].split(" ")[0]} → {trip.destination}</span>
               ) : (
-                <>
-                  <span className="text-[11px] opacity-80">{trip.tripType === "one_way" ? "→" : "↕"}</span>
-                  <span>{formatCurrency(trip.tripType === "one_way" ? trip.transport.price : roundTripTransport, lang)}</span>
-                </>
+                <span>{trip.tripType === "one_way" ? "→" : "↕"} {formatCurrency(trip.tripType === "one_way" ? trip.transport.price : roundTripTransport, lang)}</span>
               )}
             </div>
-            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
+            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+              <span>{trip.transport.duration}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
               <Hotel className="w-3.5 h-3.5 shrink-0" />
               <span>{formatCurrency(trip.hotel.pricePerNight, lang)}/nt</span>
             </div>
-            <div className="flex items-center gap-0.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
-              {"★".repeat(trip.hotel.stars)}{"☆".repeat(5 - trip.hotel.stars)}
+          </div>
+
+          {/* Row 2: hotel name + distance + rating */}
+          <div className="flex gap-2 mb-3 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium max-w-[180px]">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span className="truncate">{trip.hotel.name.split(" ").slice(0, 3).join(" ")}</span>
+              <span className="opacity-70 shrink-0">· {formatDistance(trip.hotel.distanceFromCenter, lang)}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+              <span>{trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}</span>
+              <span className="opacity-60">({trip.hotel.stars}★)</span>
             </div>
           </div>
+
+          {/* Row 3: budget remaining + total */}
           <div className="flex items-end justify-between">
-            <p className="text-sm text-white/80 line-clamp-2 pr-4 leading-relaxed">{trip.description}</p>
+            <div>
+              {savings > 0 ? (
+                <p className="text-xs font-semibold text-emerald-400">
+                  {t.tripDetail.budgetRemaining}: {formatCurrency(savings, lang)}
+                </p>
+              ) : savings < 0 ? (
+                <p className="text-xs font-semibold text-red-400">
+                  +{formatCurrency(Math.abs(savings), lang)} {t.tripDetail.overBudget}
+                </p>
+              ) : null}
+              <p className="text-[10px] text-white/50 mt-0.5">{trip.durationDays}n · {trip.tripType === "one_way" ? "→" : "↕"}</p>
+            </div>
             <div className="text-right shrink-0">
               <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
               <p className="text-2xl font-black">{formatCurrency(totalForAll, lang)}</p>
