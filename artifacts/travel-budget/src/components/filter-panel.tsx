@@ -34,11 +34,14 @@ export interface TripFilters {
   parkingAvailable: boolean;
   minHotelRating: number | null;
   privateBathroom: boolean;
-  propertyType: "hotel" | "apartment" | "any";
+  propertyType: "hotel" | "apartment" | "hostel" | "any";
   onlinePayment: boolean;
   elevator: boolean;
   petFriendly: boolean;
   tripType: "one_way" | "round_trip";
+  sortBy: "best_value" | "cheapest" | "fastest" | "best_rating";
+  maxTravelTimeHours: number | null;
+  departureTimeSlot: "morning" | "afternoon" | "evening" | "any";
 }
 
 export const DEFAULT_FILTERS: TripFilters = {
@@ -70,6 +73,9 @@ export const DEFAULT_FILTERS: TripFilters = {
   elevator: false,
   petFriendly: false,
   tripType: "round_trip",
+  sortBy: "best_value",
+  maxTravelTimeHours: null,
+  departureTimeSlot: "any",
 };
 
 export function countActiveFilters(f: TripFilters): number {
@@ -101,6 +107,9 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.elevator) n++;
   if (f.petFriendly) n++;
   if (f.tripType === "one_way") n++;
+  if (f.sortBy !== "best_value") n++;
+  if (f.maxTravelTimeHours !== null) n++;
+  if (f.departureTimeSlot !== "any") n++;
   return n;
 }
 
@@ -131,7 +140,20 @@ export function FilterBar({
   if (filters.parkingAvailable) chips.push(`🅿 ${t.filters.parkingAvailable}`);
   if (filters.petFriendly) chips.push(`🐾 ${t.filters.petFriendly}`);
   if (filters.minHotelRating !== null) chips.push(`⭐ ≥ ${filters.minHotelRating}/10`);
-  if (filters.propertyType !== "any") chips.push(filters.propertyType === "hotel" ? t.filters.hotelOnly : t.filters.apartmentOnly);
+  if (filters.propertyType !== "any") chips.push(
+    filters.propertyType === "hotel" ? t.filters.hotelOnly
+      : filters.propertyType === "apartment" ? t.filters.apartmentOnly
+      : t.filters.hostelOnly,
+  );
+  if (filters.sortBy !== "best_value") {
+    const sl: Record<string, string> = { cheapest: t.filters.sortCheapest, fastest: t.filters.sortFastest, best_rating: t.filters.sortBestRating };
+    chips.push(`📊 ${sl[filters.sortBy] ?? filters.sortBy}`);
+  }
+  if (filters.departureTimeSlot !== "any") {
+    const tl: Record<string, string> = { morning: t.filters.morning, afternoon: t.filters.afternoon, evening: t.filters.evening };
+    chips.push(`🕐 ${tl[filters.departureTimeSlot] ?? filters.departureTimeSlot}`);
+  }
+  if (filters.maxTravelTimeHours !== null) chips.push(`⏱ ≤ ${filters.maxTravelTimeHours}h`);
 
   return (
     <div className="w-full px-4 pt-3 pb-2">
@@ -315,6 +337,30 @@ export function FilterSheet({
               </div>
             </div>
           )}
+
+          {/* ── Ordina per ───────────────────────────────────── */}
+          <FilterSection label={t.filters.sortBy}>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: "best_value", emoji: "🏆", label: t.filters.sortBestValue },
+                { value: "cheapest", emoji: "💰", label: t.filters.sortCheapest },
+                { value: "fastest", emoji: "⚡", label: t.filters.sortFastest },
+                { value: "best_rating", emoji: "⭐", label: t.filters.sortBestRating },
+              ] as const).map(({ value, emoji, label }) => (
+                <button
+                  key={value}
+                  onClick={() => set("sortBy", value)}
+                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
+                    draft.sortBy === value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-foreground"
+                  }`}
+                >
+                  <span>{emoji}</span><span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </FilterSection>
 
           {/* ── Partenza ────────────────────────────────────── */}
           <div ref={departureRef} className="space-y-3">
@@ -517,6 +563,46 @@ export function FilterSheet({
             />
           </FilterSection>
 
+          {/* ── Orario partenza ────────────────────────────── */}
+          <FilterSection label={t.filters.departureTime}>
+            <div className="flex gap-1.5">
+              {([
+                { value: "any", emoji: "🕐", label: t.filters.anyFlight },
+                { value: "morning", emoji: "🌅", label: t.filters.morning },
+                { value: "afternoon", emoji: "☀️", label: t.filters.afternoon },
+                { value: "evening", emoji: "🌙", label: t.filters.evening },
+              ] as const).map(({ value, emoji, label }) => (
+                <button
+                  key={value}
+                  onClick={() => set("departureTimeSlot", value)}
+                  className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 rounded-xl border text-xs font-semibold transition-colors ${
+                    draft.departureTimeSlot === value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background text-foreground"
+                  }`}
+                >
+                  <span className="text-base">{emoji}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+          </FilterSection>
+
+          {/* ── Durata massima viaggio ─────────────────────── */}
+          <FilterSection label={t.filters.maxTravelTime}>
+            <div className="flex items-center gap-3">
+              <input type="range" min={1} max={24} step={1} value={draft.maxTravelTimeHours ?? 24}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  set("maxTravelTimeHours", v >= 24 ? null : v);
+                }}
+                className="flex-1 accent-primary" />
+              <span className="font-bold text-sm w-20 text-right">
+                {draft.maxTravelTimeHours !== null ? `≤ ${draft.maxTravelTimeHours}h` : t.filters.noLimit}
+              </span>
+            </div>
+          </FilterSection>
+
           {/* ── Max aeroporto → hotel ──────────────────────── */}
           <FilterSection label={t.filters.maxAirportDist}>
             <div className="flex items-center gap-3">
@@ -566,18 +652,18 @@ export function FilterSheet({
 
           {/* ── Tipo struttura ─────────────────────────────── */}
           <FilterSection label={t.filters.propertyType}>
-            <div className="flex gap-2">
-              {(["any", "hotel", "apartment"] as const).map((v) => (
+            <div className="grid grid-cols-2 gap-2">
+              {(["any", "hotel", "apartment", "hostel"] as const).map((v) => (
                 <button
                   key={v}
-                  onClick={() => set("propertyType", v)}
-                  className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
+                  onClick={() => set("propertyType", v as TripFilters["propertyType"])}
+                  className={`py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
                     draft.propertyType === v
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-background text-foreground"
                   }`}
                 >
-                  {v === "any" ? t.filters.anyAcc : v === "hotel" ? t.filters.hotelOnly : t.filters.apartmentOnly}
+                  {v === "any" ? t.filters.anyAcc : v === "hotel" ? t.filters.hotelOnly : v === "apartment" ? t.filters.apartmentOnly : t.filters.hostelOnly}
                 </button>
               ))}
             </div>

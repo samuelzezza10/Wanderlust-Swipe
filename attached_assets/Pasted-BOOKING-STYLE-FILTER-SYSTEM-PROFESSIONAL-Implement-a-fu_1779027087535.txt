@@ -1,0 +1,98 @@
+BOOKING-STYLE FILTER SYSTEM (PROFESSIONAL)
+
+Implement a full hotel and travel filter system inspired by Booking.com UX and logic.
+
+⸻
+
+1. FILTER UI STRUCTURE (IMPORTANT)
+    Add a sidebar or top filter panel with real selectable filters:
+
+HOTEL FILTERS:
+
+* Price range slider (€ min → € max)
+* Distance from city center (0–1km, 1–3km, 3–8km, 8km+)
+* Minimum rating (1 to 5 stars)
+* Free cancellation (boolean)
+* Breakfast included (boolean)
+* Hotel type:
+    * hotel
+    * apartment
+    * hostel
+    * resort
+
+TRANSPORT FILTERS:
+
+* Direct only (yes/no)
+* Max travel time (hours)
+* Departure time range (morning / afternoon / night)
+
+GENERAL FILTERS:
+
+* Budget limit (hard constraint, never exceed)
+* Sort by:
+    * cheapest
+    * fastest
+    * best rating
+    * best value
+
+⸻
+
+2. FILTER LOGIC RULES (CRITICAL)
+
+* Filters must be applied BEFORE showing results (backend filtering, not UI only)
+* Multiple filters can be combined
+* If no results match filters:
+    * show smart suggestions (not empty page)
+
+⸻
+
+3. HARD BUDGET RULE
+
+* Budget is ALWAYS enforced as strict limit
+* No result can exceed budget under any condition
+
+⸻
+
+4. RANKING AFTER FILTERS
+    After filtering, rank results by:
+5. best value (price + rating + distance balance)
+6. then cheapest
+7. then fastest travel time
+
+⸻
+
+5. REAL-TIME FILTERING
+
+* Filters must update results instantly or on “Apply”
+* No full page reload required
+* Use cached results if possible
+
+⸻
+
+6. EMPTY STATE LOGIC
+    If filters return no results:
+
+* suggest:
+    * increasing budget
+    * removing distance restriction
+    * changing dates
+* show alternative nearby cities or cheaper options
+
+⸻
+
+7. UX REQUIREMENTS (BOOKING STYLE)
+
+* clean layout like Booking.com
+* filters always visible or easily accessible
+* results update smoothly
+* no confusion between filters and search
+
+⸻
+
+8. FINAL GOAL
+    Transform search experience into a professional travel booking engine with:
+
+* dynamic filters
+* smart ranking
+* real constraints
+* zero broken results

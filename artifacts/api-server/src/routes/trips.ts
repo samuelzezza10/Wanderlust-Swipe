@@ -474,6 +474,12 @@ function fmt(h: number, m: number) {
 type AccommodationType = "budget" | "standard" | "luxury" | null;
 type Tier = "budget" | "standard" | "luxury";
 
+function parseDurationHours(duration: string): number {
+  const hMatch = duration.match(/(\d+)h/);
+  const mMatch = duration.match(/(\d+)m/);
+  return (hMatch ? parseInt(hMatch[1], 10) : 0) + (mMatch ? parseInt(mMatch[1], 10) : 0) / 60;
+}
+
 function generateHotelFeatures(tier: Tier): { amenities: string[]; features: Set<string> } {
   const probs = FEATURE_PROBS[tier];
   const features = new Set<string>();
@@ -611,6 +617,9 @@ function generateTrip(
     hotelShare = 0.42;
     tier = "standard";
   }
+
+  // hostel property type → always use budget hotel names (backpackers, B&Bs, hostels)
+  if (propertyType === "hostel") hotelList = dest.hotels.budget;
 
   // ─── Hotel cost ───────────────────────────────────────────────
   const hotelBudgetPerPerson = Math.floor(budgetPerPerson * hotelShare);
@@ -855,6 +864,9 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     hotelStarsMin = null,
     hotelStarsMax = null,
     tripType = "round_trip",
+    sortBy = "best_value",
+    maxTravelTimeHours = null,
+    departureTimeSlot = "any",
   } = req.body;
 
   // ─── Freemium: check search limit for authenticated users ──────
@@ -943,6 +955,19 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
       if (!hasAll) continue;
     }
 
+    // ─── Max travel time filter ───────────────────────────────────
+    if (maxTravelTimeHours != null) {
+      if (parseDurationHours(trip.transport.duration ?? "0h 0m") > (maxTravelTimeHours as number)) continue;
+    }
+
+    // ─── Departure time slot filter ───────────────────────────────
+    if (departureTimeSlot && departureTimeSlot !== "any") {
+      const depHour = parseInt((trip.transport.departureTime ?? "00:00").split(":")[0], 10);
+      if (departureTimeSlot === "morning" && (depHour < 5 || depHour >= 12)) continue;
+      if (departureTimeSlot === "afternoon" && (depHour < 12 || depHour >= 18)) continue;
+      if (departureTimeSlot === "evening" && depHour < 18) continue;
+    }
+
     seenKeys.add(dedupKey);
     const { _features, ...tripOut } = trip;
     // ── Defensive guard: NEVER return return-transport for one-way trips ──
@@ -983,10 +1008,18 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     s += Math.max(0, (1 - Math.min(trip.hotel.distanceFromCenter, 8) / 8) * 20);
     return s;
   };
-  results.sort((a, b) => {
-    if (!a || !b) return 0;
-    return scoreTrip(b) - scoreTrip(a);
-  });
+  if (sortBy === "cheapest") {
+    results.sort((a, b) => (!a || !b ? 0 : (a.totalPrice ?? 0) - (b.totalPrice ?? 0)));
+  } else if (sortBy === "fastest") {
+    results.sort((a, b) => (!a || !b ? 0 : parseDurationHours(a.transport?.duration ?? "99h 0m") - parseDurationHours(b.transport?.duration ?? "99h 0m")));
+  } else if (sortBy === "best_rating") {
+    results.sort((a, b) => (!a || !b ? 0 : (b.hotel?.rating ?? 0) - (a.hotel?.rating ?? 0)));
+  } else {
+    results.sort((a, b) => {
+      if (!a || !b) return 0;
+      return scoreTrip(b) - scoreTrip(a);
+    });
+  }
 
   return res.json(results);
 });

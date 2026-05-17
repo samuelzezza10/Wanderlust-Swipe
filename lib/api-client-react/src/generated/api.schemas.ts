@@ -109,6 +109,7 @@ export type TripPreferencesPropertyType = typeof TripPreferencesPropertyType[key
 export const TripPreferencesPropertyType = {
   hotel: 'hotel',
   apartment: 'apartment',
+  hostel: 'hostel',
   any: 'any',
 } as const;
 
@@ -130,6 +131,26 @@ export type TripPreferencesTripType = typeof TripPreferencesTripType[keyof typeo
 export const TripPreferencesTripType = {
   one_way: 'one_way',
   round_trip: 'round_trip',
+} as const;
+
+export type TripPreferencesSortBy = typeof TripPreferencesSortBy[keyof typeof TripPreferencesSortBy];
+
+
+export const TripPreferencesSortBy = {
+  best_value: 'best_value',
+  cheapest: 'cheapest',
+  fastest: 'fastest',
+  best_rating: 'best_rating',
+} as const;
+
+export type TripPreferencesDepartureTimeSlot = typeof TripPreferencesDepartureTimeSlot[keyof typeof TripPreferencesDepartureTimeSlot];
+
+
+export const TripPreferencesDepartureTimeSlot = {
+  morning: 'morning',
+  afternoon: 'afternoon',
+  evening: 'evening',
+  any: 'any',
 } as const;
 
 export interface TripPreferences {
@@ -174,6 +195,13 @@ export interface TripPreferences {
   trainPreference?: TripPreferencesTrainPreference;
   /** one_way = outbound only (no returnDate, no returnTransport); round_trip = outbound + return */
   tripType: TripPreferencesTripType;
+  sortBy?: TripPreferencesSortBy;
+  /**
+     * Maximum total travel time in hours (null = no limit)
+     * @nullable
+     */
+  maxTravelTimeHours?: number | null;
+  departureTimeSlot?: TripPreferencesDepartureTimeSlot;
 }
 
 export type TripSuggestionTripType = typeof TripSuggestionTripType[keyof typeof TripSuggestionTripType];

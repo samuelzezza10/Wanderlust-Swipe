@@ -6,8 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { TripPreferencesAccommodationType } from './tripPreferencesAccommodationType';
+import type { TripPreferencesDepartureTimeSlot } from './tripPreferencesDepartureTimeSlot';
 import type { TripPreferencesFlightPreference } from './tripPreferencesFlightPreference';
 import type { TripPreferencesPropertyType } from './tripPreferencesPropertyType';
+import type { TripPreferencesSortBy } from './tripPreferencesSortBy';
 import type { TripPreferencesTrainPreference } from './tripPreferencesTrainPreference';
 import type { TripPreferencesTripType } from './tripPreferencesTripType';
 
@@ -53,4 +55,11 @@ export interface TripPreferences {
   trainPreference?: TripPreferencesTrainPreference;
   /** one_way = outbound only (no returnDate, no returnTransport); round_trip = outbound + return */
   tripType: TripPreferencesTripType;
+  sortBy?: TripPreferencesSortBy;
+  /**
+     * Maximum total travel time in hours (null = no limit)
+     * @nullable
+     */
+  maxTravelTimeHours?: number | null;
+  departureTimeSlot?: TripPreferencesDepartureTimeSlot;
 }

@@ -15,5 +15,6 @@ export type TripPreferencesPropertyType = typeof TripPreferencesPropertyType[key
 export const TripPreferencesPropertyType = {
   hotel: 'hotel',
   apartment: 'apartment',
+  hostel: 'hostel',
   any: 'any',
 } as const;

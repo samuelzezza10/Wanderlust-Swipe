@@ -646,6 +646,9 @@ export default function Discover() {
             ...(f.petFriendly ? ["pet_friendly"] : []),
             ...(f.onlinePayment ? ["online_payment"] : []),
           ],
+          sortBy: f.sortBy,
+          maxTravelTimeHours: f.maxTravelTimeHours,
+          departureTimeSlot: f.departureTimeSlot !== "any" ? f.departureTimeSlot : undefined,
         },
       },
       {
