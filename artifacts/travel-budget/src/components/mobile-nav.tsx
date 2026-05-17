@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Compass, Heart, User, Bell, X, Trash2 } from "lucide-react";
+import { Compass, Heart, User, Bell, X, Trash2, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { useNotifications } from "@/lib/notifications";
 import { motion, AnimatePresence } from "framer-motion";
+import { PremiumModal } from "./premium-modal";
 
 function NotificationPanel({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
@@ -115,39 +116,72 @@ export function MobileNav() {
   const { t } = useI18n();
   const { unreadCount } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [premiumOpen, setPremiumOpen] = useState(false);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   const currentPath = location.replace(basePath, "") || "/";
-
-  const navItems = [
-    { href: "/discover", icon: Compass, label: t.nav.discover },
-    { href: "/saved", icon: Heart, label: t.nav.saved },
-    { href: "/profile", icon: User, label: t.nav.profile },
-  ];
 
   return (
     <>
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t z-50 pb-safe">
         <div className="flex justify-around items-center h-16">
-          {navItems.map((item) => {
-            const isActive = currentPath.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
-                  isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                )}
-                data-testid={`mobile-nav-${item.href.replace("/", "")}`}
-              >
-                <item.icon className="w-6 h-6" />
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
 
-          {/* Bell icon */}
+          {/* Discover */}
+          <Link
+            href="/discover"
+            className={cn(
+              "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
+              currentPath.startsWith("/discover") ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+            data-testid="mobile-nav-discover"
+          >
+            <Compass className="w-6 h-6" />
+            <span className="text-[10px] font-medium">{t.nav.discover}</span>
+          </Link>
+
+          {/* Premium crown — sits between Discover and Saved */}
+          <button
+            onClick={() => setPremiumOpen(true)}
+            className="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors text-amber-500 hover:text-amber-400 relative"
+            data-testid="mobile-nav-premium"
+          >
+            {/* Glow ring */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-amber-400/20 blur-sm scale-150" />
+              <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-primary flex items-center justify-center shadow-md">
+                <Crown className="w-4 h-4 text-white" />
+              </div>
+            </div>
+            <span className="text-[10px] font-semibold">Premium</span>
+          </button>
+
+          {/* Saved */}
+          <Link
+            href="/saved"
+            className={cn(
+              "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
+              currentPath.startsWith("/saved") ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+            data-testid="mobile-nav-saved"
+          >
+            <Heart className="w-6 h-6" />
+            <span className="text-[10px] font-medium">{t.nav.saved}</span>
+          </Link>
+
+          {/* Profile */}
+          <Link
+            href="/profile"
+            className={cn(
+              "flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors",
+              currentPath.startsWith("/profile") ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+            data-testid="mobile-nav-profile"
+          >
+            <User className="w-6 h-6" />
+            <span className="text-[10px] font-medium">{t.nav.profile}</span>
+          </Link>
+
+          {/* Bell */}
           <button
             onClick={() => setNotifOpen(true)}
             className="flex flex-col items-center justify-center w-full h-full space-y-1 text-muted-foreground hover:text-foreground transition-colors relative"
@@ -162,12 +196,15 @@ export function MobileNav() {
             </div>
             <span className="text-[10px] font-medium">{t.notifications.title}</span>
           </button>
+
         </div>
       </nav>
 
       <AnimatePresence>
         {notifOpen && <NotificationPanel onClose={() => setNotifOpen(false)} />}
       </AnimatePresence>
+
+      <PremiumModal open={premiumOpen} onClose={() => setPremiumOpen(false)} />
     </>
   );
 }
