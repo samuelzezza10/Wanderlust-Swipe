@@ -1011,7 +1011,14 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     return s;
   };
   if (sortBy === "cheapest") {
-    results.sort((a, b) => (!a || !b ? 0 : (a.totalPrice ?? 0) - (b.totalPrice ?? 0)));
+    results.sort((a, b) => {
+      if (!a || !b) return 0;
+      const priceDiff = (a.totalPrice ?? 0) - (b.totalPrice ?? 0);
+      if (priceDiff !== 0) return priceDiff;
+      const ratingDiff = (b.hotel?.rating ?? 0) - (a.hotel?.rating ?? 0);
+      if (ratingDiff !== 0) return ratingDiff;
+      return (a.hotel?.distanceFromCenter ?? 0) - (b.hotel?.distanceFromCenter ?? 0);
+    });
   } else if (sortBy === "fastest") {
     results.sort((a, b) => (!a || !b ? 0 : parseDurationHours(a.transport?.duration ?? "99h 0m") - parseDurationHours(b.transport?.duration ?? "99h 0m")));
   } else if (sortBy === "best_rating") {

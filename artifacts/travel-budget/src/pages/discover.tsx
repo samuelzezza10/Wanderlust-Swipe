@@ -14,6 +14,7 @@ import {
   Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
   Crown, Zap, Sparkles, RefreshCw, Lightbulb, ChevronLeft, ChevronRight,
+  LayoutList, Layers,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -462,6 +463,10 @@ export default function Discover() {
   const [guestCount, setGuestCount] = useState(() =>
     parseInt(localStorage.getItem("guestSearchCount") ?? "0")
   );
+  const [viewMode, setViewMode] = useState<"swipe" | "list">("swipe");
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreExhausted, setLoadMoreExhausted] = useState(false);
+  const seenHotelNamesRef = useRef<Set<string>>(new Set());
 
   // Welcome splash — show once per session
   const [showSplash, setShowSplash] = useState(() => {
@@ -612,6 +617,9 @@ export default function Discover() {
     const thisGen = ++searchGenRef.current;
     // Clear stale results immediately — prevents old data surviving a trip-type switch
     setTrips([]);
+    seenHotelNamesRef.current.clear();
+    setLoadMoreExhausted(false);
+    setIsLoadingMore(false);
 
     const effectiveBudget = f.budget || prefs?.defaultBudget || 2000;
     const depLocation = f.departureAirport || f.departureStation || prefs?.defaultDepartureLocation || "Any";
@@ -682,6 +690,8 @@ export default function Discover() {
           setCurrentIndex(0);
           setHistory([]);
           setHasSearched(true);
+          // Populate seen hotel names for cross-batch dedup
+          cleaned.forEach(t => seenHotelNamesRef.current.add(t.hotel.name));
           // Save results to client-side cache
           setCachedSearch(f as unknown as Record<string, unknown>, cleaned);
           // ── Success toast with rotating message ──
@@ -754,6 +764,88 @@ export default function Discover() {
     setFilters(newFilters);
     loadTrips(newFilters);
   };
+
+  // ── Load next batch (append, dedup by hotel name) ──────────────
+  function loadMore(f: TripFilters) {
+    if (isLoadingMore || loadMoreExhausted || !isOnline || generateTrips.isPending) return;
+    setIsLoadingMore(true);
+    const effectiveBudget = f.budget || prefs?.defaultBudget || 2000;
+    const depLocation = f.departureAirport || f.departureStation || prefs?.defaultDepartureLocation || "Any";
+    const arrLocation = f.arrivalAirport || f.arrivalStation || "Any";
+    const tripType = f.tripType;
+    generateTrips.mutate(
+      {
+        data: {
+          budget: effectiveBudget,
+          numberOfPeople: f.numberOfPeople,
+          numberOfChildren: f.numberOfChildren > 0 ? f.numberOfChildren : null,
+          numberOfPets: f.numberOfPets > 0 ? f.numberOfPets : null,
+          departureDate: f.departureDate || new Date().toISOString(),
+          returnDate: tripType === "one_way" ? null : (f.returnDate || null),
+          departureLocation: depLocation,
+          arrivalLocation: arrLocation,
+          numberOfNights: f.numberOfNights,
+          flightPreference: f.flightPreference,
+          trainPreference: f.trainPreference,
+          hotelDistanceKm: f.maxHotelDistanceFromCenterKm,
+          maxDistanceFromAirportKm: f.maxDistanceFromAirportKm,
+          accommodationType: f.accommodationType,
+          propertyType: f.propertyType !== "any" ? f.propertyType : null,
+          minHotelRating: f.minHotelRating,
+          hotelStarsMin: f.hotelStarsMin !== 1 ? f.hotelStarsMin : null,
+          hotelStarsMax: f.hotelStarsMax !== 5 ? f.hotelStarsMax : null,
+          tripType,
+          hotelAmenities: [
+            ...(f.freeCancellation ? ["free_cancellation"] : []),
+            ...(f.breakfastIncluded ? ["breakfast"] : []),
+            ...(f.parkingAvailable ? ["parking"] : []),
+            ...(f.privateBathroom ? ["private_bathroom"] : []),
+            ...(f.elevator ? ["elevator"] : []),
+            ...(f.petFriendly ? ["pet_friendly"] : []),
+            ...(f.onlinePayment ? ["online_payment"] : []),
+          ],
+          sortBy: f.sortBy,
+          maxTravelTimeHours: f.maxTravelTimeHours,
+          departureTimeSlot: f.departureTimeSlot !== "any" ? f.departureTimeSlot : undefined,
+        },
+      },
+      {
+        onSuccess: (data) => {
+          const cleaned = tripType === "one_way"
+            ? data.map((trip) => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { returnTransport: _rt, ...rest } = trip as typeof trip & { returnTransport?: unknown };
+                return rest as typeof trip;
+              })
+            : data;
+          const newTrips = cleaned.filter(trip => !seenHotelNamesRef.current.has(trip.hotel.name));
+          newTrips.forEach(trip => seenHotelNamesRef.current.add(trip.hotel.name));
+          if (newTrips.length === 0) {
+            setLoadMoreExhausted(true);
+          } else {
+            setTrips(prev => [...prev, ...newTrips]);
+          }
+          setIsLoadingMore(false);
+        },
+        onError: () => setIsLoadingMore(false),
+      }
+    );
+  }
+
+  // Auto-load next batch when near the end of the deck
+  useEffect(() => {
+    if (
+      hasSearched &&
+      trips.length > 0 &&
+      currentIndex >= trips.length - 3 &&
+      !isLoadingMore &&
+      !loadMoreExhausted &&
+      !generateTrips.isPending
+    ) {
+      loadMore(filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, trips.length, hasSearched]);
 
   const handleSwipe = (direction: "left" | "right") => {
     if (currentIndex >= trips.length) return;
@@ -1051,8 +1143,8 @@ export default function Discover() {
     );
   }
 
-  /* ── Seen all ── */
-  if (currentIndex >= trips.length) {
+  /* ── Seen all (only when exhausted AND no more can be loaded) ── */
+  if (currentIndex >= trips.length && !isLoadingMore) {
     return (
       <div className="flex-1 flex flex-col bg-primary">
         {UsageBadge}
@@ -1074,9 +1166,17 @@ export default function Discover() {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => loadTrips(filters)} size="lg" disabled={generateTrips.isPending} className="bg-white text-primary hover:bg-white/90">
-              {t.discover.generateMore}
-            </Button>
+            <div className="flex flex-col gap-3">
+              {!loadMoreExhausted && (
+                <Button onClick={() => loadMore(filters)} size="lg" disabled={generateTrips.isPending || isLoadingMore} className="bg-white text-primary hover:bg-white/90 gap-2">
+                  <RefreshCw className={`w-4 h-4 ${isLoadingMore ? "animate-spin" : ""}`} />
+                  {t.discover.generateMore}
+                </Button>
+              )}
+              <Button onClick={() => loadTrips(filters)} size="lg" variant="outline" disabled={generateTrips.isPending} className="border-white/40 text-white hover:bg-white/10">
+                {t.discover.generateMore} (reset)
+              </Button>
+            </div>
           )}
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
@@ -1087,93 +1187,148 @@ export default function Discover() {
     );
   }
 
-  /* ── Main swipe deck ── */
+  /* ── Main swipe / list deck ── */
   return (
     <>
-      <div className="flex-1 flex flex-col bg-primary">
+      <div className="flex-1 flex flex-col bg-primary overflow-hidden">
         <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} compact />
 
-        <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
-          {/* Card counter + prev/next navigation */}
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <button
-              onClick={handlePrev}
-              disabled={currentIndex === 0}
-              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-white/80 text-sm font-semibold tabular-nums">
-              {currentIndex + 1} / {trips.length}
+        {/* ── Top bar: counter + view toggle ── */}
+        <div className="flex items-center justify-between px-4 pt-2 pb-1">
+          {viewMode === "swipe" ? (
+            <div className="flex items-center gap-2">
+              <button onClick={handlePrev} disabled={currentIndex === 0} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform">
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-white/80 text-sm font-semibold tabular-nums">
+                {currentIndex + 1} / {trips.length}{isLoadingMore ? "+" : ""}
+              </span>
+              <button onClick={handleNext} disabled={currentIndex >= trips.length - 1} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform">
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <span className="text-white/80 text-sm font-semibold">
+              {trips.length}{isLoadingMore ? "+" : ""} risultati
             </span>
+          )}
+          {/* Mode toggle */}
+          <div className="flex items-center bg-white/15 rounded-xl p-0.5 gap-0.5">
             <button
-              onClick={handleNext}
-              disabled={currentIndex >= trips.length - 1}
-              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform"
+              onClick={() => setViewMode("swipe")}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all ${viewMode === "swipe" ? "bg-white text-primary shadow-sm" : "text-white/70 hover:text-white"}`}
             >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="relative w-full max-w-sm aspect-[3/4]">
-            <AnimatePresence>
-              {trips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
-                const stack = trips.slice(currentIndex, currentIndex + 3);
-                const isTop = i === stack.length - 1;
-                return (
-                  <TripCard
-                    key={trip.id}
-                    trip={trip}
-                    isTop={isTop}
-                    index={i}
-                    onSwipe={handleSwipe}
-                    onInfo={() => setDetailTrip(trip)}
-                    onShare={() => setShareTrip(trip)}
-                    likeLabel={t.discover.like}
-                    nopeLabel={t.discover.nope}
-                    totalLabel={t.discover.total}
-                    caption={hashCaption(trip.id, t.fun.captions)}
-                    departureFrom={filters.departureAirport || filters.departureStation}
-                    budget={filters.budget}
-                    numberOfPeople={filters.numberOfPeople}
-                  />
-                );
-              })}
-            </AnimatePresence>
-          </div>
-
-          {/* Action buttons: ❌ ↩ ✓ + Filtri */}
-          <div className="flex items-center gap-4 mt-8">
-            <button
-              onClick={() => handleSwipe("left")}
-              className="rounded-full bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
-              style={{ width: 68, height: 68 }}
-            >
-              <X className="w-8 h-8 stroke-[2.5]" />
+              <Layers className="w-3.5 h-3.5" /> Swipe
             </button>
             <button
-              onClick={handleUndo}
-              disabled={history.length === 0}
-              className="w-11 h-11 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform"
-              title="Torna indietro"
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all ${viewMode === "list" ? "bg-white text-primary shadow-sm" : "text-white/70 hover:text-white"}`}
             >
-              <RotateCcw className="w-4.5 h-4.5" />
-            </button>
-            <button
-              onClick={() => handleSwipe("right")}
-              className="rounded-full bg-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
-              style={{ width: 68, height: 68 }}
-            >
-              <Check className="w-8 h-8 stroke-[2.5]" />
-            </button>
-            <button
-              onClick={() => setFilterOpen(true)}
-              className="w-11 h-11 rounded-full bg-white/20 shadow-md border border-white/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
-              title="Filtri"
-            >
-              <SlidersHorizontal className="w-4.5 h-4.5" />
+              <LayoutList className="w-3.5 h-3.5" /> Lista
             </button>
           </div>
         </div>
+
+        {viewMode === "swipe" ? (
+          /* ── SWIPE DECK ── */
+          <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+            <div className="relative w-full max-w-sm aspect-[3/4]">
+              <AnimatePresence>
+                {trips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
+                  const stack = trips.slice(currentIndex, currentIndex + 3);
+                  const isTop = i === stack.length - 1;
+                  return (
+                    <TripCard
+                      key={trip.id}
+                      trip={trip}
+                      isTop={isTop}
+                      index={i}
+                      onSwipe={handleSwipe}
+                      onInfo={() => setDetailTrip(trip)}
+                      onShare={() => setShareTrip(trip)}
+                      likeLabel={t.discover.like}
+                      nopeLabel={t.discover.nope}
+                      totalLabel={t.discover.total}
+                      caption={hashCaption(trip.id, t.fun.captions)}
+                      departureFrom={filters.departureAirport || filters.departureStation}
+                      budget={filters.budget}
+                      numberOfPeople={filters.numberOfPeople}
+                    />
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+            {/* Loading more indicator below deck */}
+            {isLoadingMore && (
+              <div className="flex items-center gap-2 mt-3 text-white/60 text-xs">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>Caricamento nuovi risultati…</span>
+              </div>
+            )}
+            {/* Action buttons: ❌ ↩ ✓ + Filtri */}
+            <div className="flex items-center gap-4 mt-6">
+              <button onClick={() => handleSwipe("left")} className="rounded-full bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 68, height: 68 }}>
+                <X className="w-8 h-8 stroke-[2.5]" />
+              </button>
+              <button onClick={handleUndo} disabled={history.length === 0} className="w-11 h-11 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform" title="Torna indietro">
+                <RotateCcw className="w-4.5 h-4.5" />
+              </button>
+              <button onClick={() => handleSwipe("right")} className="rounded-full bg-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 68, height: 68 }}>
+                <Check className="w-8 h-8 stroke-[2.5]" />
+              </button>
+              <button onClick={() => setFilterOpen(true)} className="w-11 h-11 rounded-full bg-white/20 shadow-md border border-white/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" title="Filtri">
+                <SlidersHorizontal className="w-4.5 h-4.5" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* ── LIST VIEW ── */
+          <div className="flex-1 overflow-y-auto px-3 pt-2 pb-24">
+            <div className="space-y-3 max-w-lg mx-auto">
+              {trips.map((trip, idx) => (
+                <TripListCard
+                  key={trip.id}
+                  trip={trip}
+                  index={idx}
+                  t={t}
+                  lang={lang}
+                  budget={filters.budget}
+                  numberOfPeople={filters.numberOfPeople}
+                  departureFrom={filters.departureAirport || filters.departureStation || ""}
+                  onSave={() => {
+                    if (isSignedIn) {
+                      saveTrip.mutate({ data: { tripData: trip, destination: trip.destination, totalPrice: trip.totalPrice, imageUrl: trip.imageUrl } });
+                      addNotification(t.notifications.tripSaved, "trip_saved");
+                    } else {
+                      toast(t.discover.signUpToSave, { action: { label: t.landing.getStarted, onClick: () => setLocation("/sign-up") } });
+                    }
+                  }}
+                  onInfo={() => setDetailTrip(trip)}
+                />
+              ))}
+              {/* Load more at bottom of list */}
+              <div className="py-4 flex justify-center">
+                {isLoadingMore ? (
+                  <div className="flex items-center gap-2 text-white/60 text-sm">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Caricamento…</span>
+                  </div>
+                ) : !loadMoreExhausted ? (
+                  <button
+                    onClick={() => loadMore(filters)}
+                    disabled={generateTrips.isPending}
+                    className="px-6 py-2.5 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl text-white text-sm font-semibold transition-colors flex items-center gap-2"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    {t.discover.generateMore}
+                  </button>
+                ) : (
+                  <p className="text-white/50 text-sm">{t.discover.seenAll}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
@@ -1203,6 +1358,101 @@ export default function Discover() {
         <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} onUpgrade={handleUpgrade} isUpgrading={upgradeSubscription.isPending} />
       </AnimatePresence>
     </>
+  );
+}
+
+/* ─── Trip List Card (compact, for list mode) ───────────────────────────── */
+function TripListCard({
+  trip, index, t, lang, budget, numberOfPeople, departureFrom, onSave, onInfo,
+}: {
+  trip: TripSuggestion;
+  index: number;
+  t: ReturnType<typeof useI18n>["t"];
+  lang: string;
+  budget: number;
+  numberOfPeople: number;
+  departureFrom: string;
+  onSave: () => void;
+  onInfo: () => void;
+}) {
+  const totalForAll = trip.totalPrice * numberOfPeople;
+  const savings = budget > 0 ? budget - totalForAll : 0;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.25 }}
+      className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden"
+    >
+      <div className="flex gap-3 p-3">
+        {/* Thumbnail */}
+        <div className="relative shrink-0">
+          <img
+            src={getImgSrc(trip.imageUrl)}
+            alt={trip.destination}
+            className="w-24 h-24 rounded-xl object-cover"
+          />
+          <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-sm rounded-lg px-1.5 py-0.5">
+            <span className="text-white text-[10px] font-bold">{formatCurrency(totalForAll, lang)}</span>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between">
+          <div>
+            <div className="flex items-start justify-between gap-1 mb-1">
+              <div>
+                <p className="text-white font-bold text-base leading-tight">{trip.destination}</p>
+                <p className="text-white/60 text-xs">{trip.country}</p>
+              </div>
+              {savings > 0 && (
+                <span className="text-emerald-400 text-[10px] font-semibold shrink-0 mt-0.5">
+                  -{formatCurrency(savings, lang)}
+                </span>
+              )}
+            </div>
+
+            {/* Pills row */}
+            <div className="flex flex-wrap gap-1 mb-1.5">
+              <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+                <Clock className="w-3 h-3" />{trip.transport.duration}
+              </span>
+              <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                {trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}
+              </span>
+              <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+                <MapPin className="w-3 h-3" />{formatDistance(trip.hotel.distanceFromCenter, lang)}
+              </span>
+              {departureFrom && (
+                <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+                  <Plane className="w-3 h-3" />{departureFrom.split(" (")[0].split(" ")[0]}
+                </span>
+              )}
+            </div>
+
+            <p className="text-white/50 text-[11px] truncate">{trip.hotel.name} · {trip.durationDays}n</p>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-2 mt-2">
+            <button
+              onClick={onInfo}
+              className="flex-1 h-8 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" /> Info
+            </button>
+            <button
+              onClick={onSave}
+              className="flex-1 h-8 rounded-xl bg-green-500/80 hover:bg-green-500 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+            >
+              <Check className="w-3.5 h-3.5" /> Save
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
