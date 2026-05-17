@@ -468,17 +468,35 @@ export default function Discover() {
     setShowSplash(false);
   }, []);
 
-  const loadingMsgRef = useRef<string | null>(null);
-  const noResultsMsgRef = useRef<string | null>(null);
   // ── Race-condition guard: only accept results from the latest search ──
   const searchGenRef = useRef(0);
+
+  // ── Non-repeating random message picker ──
+  const lastLoadingMsgRef = useRef<string | null>(null);
+  const lastNoResultsMsgRef = useRef<string | null>(null);
+  const lastSuccessMsgRef = useRef<string | null>(null);
+  const lastLowBudgetMsgRef = useRef<string | null>(null);
+  const loadingMsgRef = useRef<string>("");
+  const noResultsMsgRef = useRef<string>("");
+  const lowBudgetMsgRef = useRef<string>("");
+
+  function pickRandom(msgs: string[], last: string | null): string {
+    if (msgs.length === 1) return msgs[0];
+    const pool = msgs.filter((m) => m !== last);
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
   if (!loadingMsgRef.current) {
-    const msgs = t.fun.loadingMessages;
-    loadingMsgRef.current = msgs[Math.floor(Math.random() * msgs.length)];
+    loadingMsgRef.current = pickRandom(t.fun.loadingMessages, null);
+    lastLoadingMsgRef.current = loadingMsgRef.current;
   }
   if (!noResultsMsgRef.current) {
-    const msgs = t.fun.noResultsMessages;
-    noResultsMsgRef.current = msgs[Math.floor(Math.random() * msgs.length)];
+    noResultsMsgRef.current = pickRandom(t.fun.noResultsMessages, null);
+    lastNoResultsMsgRef.current = noResultsMsgRef.current;
+  }
+  if (!lowBudgetMsgRef.current) {
+    lowBudgetMsgRef.current = pickRandom(t.fun.lowBudgetMessages, null);
+    lastLowBudgetMsgRef.current = lowBudgetMsgRef.current;
   }
 
   const { data: prefs } = useGetPreferences({
@@ -583,7 +601,14 @@ export default function Discover() {
     const arrLocation = f.arrivalAirport || f.arrivalStation || "Any";
     // tripType is always explicitly set — no fallback to avoid accidental mode mixing
     const tripType = f.tripType;
-    loadingMsgRef.current = t.fun.loadingMessages[Math.floor(Math.random() * t.fun.loadingMessages.length)];
+    // Rotate loading message — never the same as last time
+    const newLoadingMsg = pickRandom(t.fun.loadingMessages, lastLoadingMsgRef.current);
+    loadingMsgRef.current = newLoadingMsg;
+    lastLoadingMsgRef.current = newLoadingMsg;
+    // Rotate low-budget message pre-emptively
+    const newLowBudgetMsg = pickRandom(t.fun.lowBudgetMessages, lastLowBudgetMsgRef.current);
+    lowBudgetMsgRef.current = newLowBudgetMsg;
+    lastLowBudgetMsgRef.current = newLowBudgetMsg;
     generateTrips.mutate(
       {
         data: {
@@ -639,6 +664,17 @@ export default function Discover() {
           setHasSearched(true);
           // Save results to client-side cache
           setCachedSearch(f as unknown as Record<string, unknown>, cleaned);
+          // ── Success toast with rotating message ──
+          if (cleaned.length > 0) {
+            const successMsg = pickRandom(t.fun.successMessages, lastSuccessMsgRef.current);
+            lastSuccessMsgRef.current = successMsg;
+            toast.success(successMsg, { duration: 3000 });
+          } else {
+            // Pre-rotate the no-results message for the empty state
+            const newNoResults = pickRandom(t.fun.noResultsMessages, lastNoResultsMsgRef.current);
+            noResultsMsgRef.current = newNoResults;
+            lastNoResultsMsgRef.current = newNoResults;
+          }
           // Track guest searches / save to history
           if (!isSignedIn) {
             const newCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0") + 1;
@@ -729,12 +765,21 @@ export default function Discover() {
 
   /* ── Loading ── */
   if (generateTrips.isPending) {
+    const isLowBudget = (filters.budget || prefs?.defaultBudget || 2000) < 600;
     return (
       <div className="flex-1 flex flex-col bg-primary">
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 px-8 text-center">
-            <Plane className="w-14 h-14 text-white mb-1 animate-bounce" />
-            <p className="text-white/80 font-medium">{loadingMsgRef.current}</p>
+            <motion.div
+              animate={{ y: [0, -12, 0] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <Plane className="w-14 h-14 text-white mb-1" />
+            </motion.div>
+            <p className="text-white font-semibold text-lg">{loadingMsgRef.current}</p>
+            {isLowBudget && (
+              <p className="text-xs text-white/70 italic mt-1 max-w-xs">{lowBudgetMsgRef.current}</p>
+            )}
             <p className="text-xs text-white font-semibold mt-3 bg-white/15 px-4 py-1.5 rounded-full">
               {filters.tripType === "one_way" ? t.filters.oneWayHint : t.filters.roundTripHint}
             </p>
