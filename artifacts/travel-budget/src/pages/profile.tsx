@@ -51,18 +51,6 @@ export default function Profile() {
       <div className="space-y-4">
         <h3 className="font-bold text-lg mb-2">{t.profile.settings}</h3>
 
-        <Link href="/onboarding">
-          <div className="flex items-center justify-between p-4 bg-card border rounded-xl hover:border-primary transition-colors cursor-pointer group">
-            <div className="flex items-center gap-3">
-              <Settings className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              <div className="font-medium">{t.profile.updatePreferences}</div>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {prefs?.defaultDepartureLocation || t.profile.notSet} • €{prefs?.defaultBudget || 0}
-            </div>
-          </div>
-        </Link>
-
         <Link href="/privacy">
           <div className="flex items-center justify-between p-4 bg-card border rounded-xl hover:border-primary transition-colors cursor-pointer group">
             <div className="flex items-center gap-3">
