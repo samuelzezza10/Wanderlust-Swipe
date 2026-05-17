@@ -290,10 +290,10 @@ export function FilterSheet({
                       ...(v === "one_way" ? { returnDate: "" } : {}),
                     }));
                   }}
-                  className={`flex-1 py-3 rounded-xl border text-sm font-semibold transition-colors ${
+                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
                     draft.tripType === v
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-background text-foreground hover:bg-muted/50"
+                      ? "bg-primary text-white shadow-md shadow-primary/30"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                   }`}
                 >
                   {v === "round_trip" ? `🔄 ${t.filters.roundTrip}` : `✈️ ${t.filters.oneWay}`}

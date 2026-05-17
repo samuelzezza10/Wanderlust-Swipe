@@ -932,15 +932,7 @@ function TripCard({
         )}
 
         <div className="absolute bottom-0 left-0 right-0 p-5 text-white pointer-events-none">
-          <div className="flex items-center gap-2 mb-2.5 flex-wrap">
-            {trip.tripType && (
-              <div className={`inline-flex items-center gap-1 backdrop-blur-md text-white text-xs font-bold px-2.5 py-1.5 rounded-full ${
-                trip.tripType === "one_way" ? "bg-primary/80" : "bg-blue-600/80"
-              }`}>
-                <span>{trip.tripType === "one_way" ? `✈️ ${t.filters.oneWay}` : `🔄 ${t.filters.roundTrip}`}</span>
-              </div>
-            )}
-          </div>
+          <div className="mb-2.5" />
           <h2 className="text-3xl font-bold mb-0.5">{trip.destination}</h2>
           <p className="text-white/80 font-medium mb-3">{trip.country}</p>
           <div className="flex gap-2.5 mb-3">
