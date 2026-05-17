@@ -1,0 +1,179 @@
+TravelBudget must evolve from a prototype into a real production-ready travel platform with professional UX, stable architecture, scalable systems, and realistic behavior similar to modern travel apps (Booking / Skyscanner / Tinder style).
+
+CORE GOAL:
+The app must feel fast, stable, intelligent, mobile-first, and safe for real users.
+
+1. AUTHENTICATION & USERS
+
+* persistent login sessions
+* email login with verification
+* guest mode
+* Google/Apple login ready
+* user profile system
+* saved trips linked to user
+* user preferences saved permanently
+* no data loss after refresh
+
+2. SEARCH SYSTEM
+
+* strict destination matching
+* one-way and round-trip fully separated
+* mandatory required fields before search
+* budget can NEVER be exceeded
+* support:
+    * flights
+    * trains
+    * hotels
+* traveler count:
+    * adults
+    * children
+    * pets
+* direct flight / stop filters
+* hotel distance from center
+* nights count
+
+3. SWIPE CARD EXPERIENCE
+
+* Tinder-style swipe cards
+* swipe right = next
+* swipe left = like/save
+* undo previous card button
+* smooth animations
+* mobile optimized
+* no lag while swiping
+* card details modal:
+    * duration
+    * stops
+    * hotel info
+    * total budget breakdown
+
+4. RANKING ALGORITHM
+
+* rank trips intelligently based on:
+    * budget fit
+    * travel duration
+    * direct routes
+    * hotel quality
+    * hotel distance
+* personalized ranking from user behavior
+* avoid repetitive or duplicate cards
+
+5. CACHE & PERFORMANCE
+
+* same search = same results
+* cache all searches
+* cache expires safely after time
+* background refresh only
+* prevent duplicate API calls
+* never overload APIs
+* instant response from cache when possible
+
+6. ERROR HANDLING & STABILITY
+
+* NEVER show blank screen
+* always show:
+    * loading
+    * results
+    * fallback
+    * error state
+* graceful API failure handling
+* retry system
+* offline mode support
+* cached results available offline
+
+7. OFFLINE & CONNECTION SYSTEM
+
+* detect no internet
+* show offline mode
+* disable searches while offline
+* keep saved trips accessible
+* auto reconnect when internet returns
+
+8. SECURITY & ANTI-SPAM
+
+* rate limiting
+* anti-bot protection
+* prevent brute-force login attempts
+* secure sessions
+* protected API keys
+* hide all secrets from frontend
+* prevent spam searches
+
+9. NOTIFICATION SYSTEM
+
+* in-app notifications
+* future-ready push notification support
+* notifications for:
+    * saved trips
+    * price changes
+    * better offers
+    * search updates
+
+10. UX & UI QUALITY
+
+* modern design
+* mobile-first layout
+* responsive on all devices
+* smooth transitions
+* fun travel messages
+* no confusing screens
+* clear navigation
+* accessible and readable UI
+
+11. EMPTY STATES & SMART MESSAGES
+    If no results:
+
+* never leave empty page
+* show smart suggestions:
+    * increase budget
+    * change dates
+    * nearby airports/stations
+* show funny loading and fallback messages
+
+12. USER MEMORY SYSTEM
+    Remember:
+
+* last search
+* filters
+* preferred destinations
+* favorite trips
+* previous swipe progress
+
+13. DATA CONSISTENCY
+
+* one-way must NEVER generate return trips
+* no mixed trip logic
+* clear state reset between searches
+* cache must include trip type
+
+14. SCALABILITY
+    System should support:
+
+* many users
+* repeated searches
+* high traffic
+    without crashing or slowing significantly.
+
+15. DEPLOYMENT READY
+
+* app must be deployable to Vercel
+* optimized production build
+* environment variable support
+* scalable backend structure
+* clean separation between frontend/backend
+
+16. LEGAL & TRUST
+
+* privacy policy page
+* terms of service page
+* cookie consent
+* disclaimer for changing prices/availability
+* affiliate-ready structure
+
+17. FINAL PRODUCT GOAL
+    TravelBudget should feel like:
+
+* Tinder for travel discovery
+* Booking for hotels
+* Skyscanner for transport
+    combined into one fast, modern, intelligent experience.
