@@ -267,10 +267,10 @@ components:
         - budget
         - numberOfPeople
         - departureDate
-        - returnDate
         - departureLocation
         - arrivalLocation
         - numberOfNights
+        - tripType
       properties:
         language:
           type: string
@@ -289,7 +289,8 @@ components:
         departureDate:
           type: string
         returnDate:
-          type: string
+          type: ["string", "null"]
+          description: Required only for round_trip; must be null/omitted for one_way
         departureLocation:
           type: string
         arrivalLocation:
@@ -327,7 +328,7 @@ components:
         tripType:
           type: string
           enum: [one_way, round_trip]
-          description: Whether the trip is one-way or round-trip (default round_trip)
+          description: "one_way = outbound only (no returnDate, no returnTransport); round_trip = outbound + return"
 
     TripSuggestion:
       type: object

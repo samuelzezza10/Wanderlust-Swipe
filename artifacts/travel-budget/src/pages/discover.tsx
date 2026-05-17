@@ -449,14 +449,14 @@ export default function Discover() {
 
     // ── Stamp this search so stale responses are discarded ────────
     const thisGen = ++searchGenRef.current;
-    // Clear stale results immediately — prevents old round-trip cards
-    // from remaining visible while the new one-way search loads
+    // Clear stale results immediately — prevents old data surviving a trip-type switch
     setTrips([]);
 
     const effectiveBudget = f.budget || prefs?.defaultBudget || 2000;
     const depLocation = f.departureAirport || f.departureStation || prefs?.defaultDepartureLocation || "Any";
     const arrLocation = f.arrivalAirport || f.arrivalStation || "Any";
-    const isOneWay = f.tripType === "one_way";
+    // tripType is always explicitly set — no fallback to avoid accidental mode mixing
+    const tripType = f.tripType;
     loadingMsgRef.current = t.fun.loadingMessages[Math.floor(Math.random() * t.fun.loadingMessages.length)];
     generateTrips.mutate(
       {
@@ -466,11 +466,9 @@ export default function Discover() {
           numberOfChildren: f.numberOfChildren > 0 ? f.numberOfChildren : null,
           numberOfPets: f.numberOfPets > 0 ? f.numberOfPets : null,
           departureDate: f.departureDate || new Date().toISOString(),
-          // Never send a meaningful returnDate for one-way — server ignores it
-          // but we pass a placeholder to satisfy the OpenAPI schema
-          returnDate: isOneWay
-            ? new Date(Date.now() + f.numberOfNights * 86400000).toISOString()
-            : (f.returnDate || new Date(Date.now() + f.numberOfNights * 86400000).toISOString()),
+          // ONE-WAY: returnDate is explicitly null — never send a date for one-way trips
+          // ROUND-TRIP: send the user-selected returnDate (or null if not set yet)
+          returnDate: tripType === "one_way" ? null : (f.returnDate || null),
           departureLocation: depLocation,
           arrivalLocation: arrLocation,
           numberOfNights: f.numberOfNights,
@@ -483,7 +481,7 @@ export default function Discover() {
           minHotelRating: f.minHotelRating,
           hotelStarsMin: f.hotelStarsMin !== 1 ? f.hotelStarsMin : null,
           hotelStarsMax: f.hotelStarsMax !== 5 ? f.hotelStarsMax : null,
-          tripType: f.tripType || "one_way",
+          tripType,
           hotelAmenities: [
             ...(f.freeCancellation ? ["free_cancellation"] : []),
             ...(f.breakfastIncluded ? ["breakfast"] : []),
@@ -500,8 +498,8 @@ export default function Discover() {
           // ── Discard stale response if a newer search was already fired ──
           if (thisGen !== searchGenRef.current) return;
 
-          // ── Defensive: strip any return-transport from one-way results ──
-          const cleaned = isOneWay
+          // ── Final safety strip: guarantee no returnTransport leaks into one-way results ──
+          const cleaned = tripType === "one_way"
             ? data.map((trip) => {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const { returnTransport: _rt, ...rest } = trip as typeof trip & { returnTransport?: unknown };
@@ -979,10 +977,10 @@ function TripCard({
 }
 
 /* ─── Transport block ────────────────────────────────────────────────────── */
-function TransportBlock({ label, transport, t }: { label: string; transport: NonNullable<TripSuggestion["returnTransport"]>; t: ReturnType<typeof useI18n>["t"] }) {
+function TransportBlock({ label, transport, t }: { label?: string; transport: NonNullable<TripSuggestion["returnTransport"]>; t: ReturnType<typeof useI18n>["t"] }) {
   return (
     <div>
-      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{label}</p>
+      {label && <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{label}</p>}
       <div className="space-y-2 text-sm">
         <div className="flex items-center justify-between">
           <span className="font-semibold">{transport.company}</span>
@@ -1080,8 +1078,14 @@ function TripDetailSheet({
                   <Plane className="w-4 h-4 text-primary" />
                   {trip.transport.type === "train" ? t.tripDetail.train : t.tripDetail.flight}
                 </h3>
-                <TransportBlock label={t.tripDetail.outbound} transport={trip.transport} t={t} />
-                {trip.returnTransport && (
+                {/* ONE-WAY: single leg, no sub-label needed (no return implied)
+                    ROUND-TRIP: "Andata" + "Ritorno" labels clarify both legs */}
+                <TransportBlock
+                  label={trip.tripType === "round_trip" ? t.tripDetail.outbound : undefined}
+                  transport={trip.transport}
+                  t={t}
+                />
+                {trip.tripType === "round_trip" && trip.returnTransport && (
                   <>
                     <div className="border-t border-border" />
                     <TransportBlock label={t.tripDetail.returnJourney} transport={trip.returnTransport} t={t} />

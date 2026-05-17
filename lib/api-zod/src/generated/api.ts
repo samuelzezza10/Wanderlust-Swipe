@@ -100,7 +100,7 @@ export const GenerateTripsBody = zod.object({
   "hasPets": zod.boolean().optional(),
   "numberOfPets": zod.number().nullish(),
   "departureDate": zod.string(),
-  "returnDate": zod.string(),
+  "returnDate": zod.string().nullish().describe('Required only for round_trip; must be null\/omitted for one_way'),
   "departureLocation": zod.string(),
   "arrivalLocation": zod.string(),
   "hotelDistanceKm": zod.number().nullish(),
@@ -114,7 +114,7 @@ export const GenerateTripsBody = zod.object({
   "hotelStarsMin": zod.number().nullish(),
   "hotelStarsMax": zod.number().nullish(),
   "trainPreference": zod.enum(['direct', 'with_stops', 'any']).optional(),
-  "tripType": zod.enum(['one_way', 'round_trip']).optional().describe('Whether the trip is one-way or round-trip (default round_trip)')
+  "tripType": zod.enum(['one_way', 'round_trip']).describe('one_way = outbound only (no returnDate, no returnTransport); round_trip = outbound + return')
 })
 
 export const GenerateTripsResponseItem = zod.object({

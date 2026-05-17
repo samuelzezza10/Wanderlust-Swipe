@@ -69,7 +69,7 @@ export const DEFAULT_FILTERS: TripFilters = {
   onlinePayment: false,
   elevator: false,
   petFriendly: false,
-  tripType: "one_way",
+  tripType: "round_trip",
 };
 
 export function countActiveFilters(f: TripFilters): number {

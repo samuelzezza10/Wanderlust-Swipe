@@ -109,7 +109,7 @@ export const TripPreferencesTrainPreference = {
 } as const;
 
 /**
- * Whether the trip is one-way or round-trip (default round_trip)
+ * one_way = outbound only (no returnDate, no returnTransport); round_trip = outbound + return
  */
 export type TripPreferencesTripType = typeof TripPreferencesTripType[keyof typeof TripPreferencesTripType];
 
@@ -130,7 +130,11 @@ export interface TripPreferences {
   /** @nullable */
   numberOfPets?: number | null;
   departureDate: string;
-  returnDate: string;
+  /**
+     * Required only for round_trip; must be null/omitted for one_way
+     * @nullable
+     */
+  returnDate?: string | null;
   departureLocation: string;
   arrivalLocation: string;
   /** @nullable */
@@ -155,8 +159,8 @@ export interface TripPreferences {
   /** @nullable */
   hotelStarsMax?: number | null;
   trainPreference?: TripPreferencesTrainPreference;
-  /** Whether the trip is one-way or round-trip (default round_trip) */
-  tripType?: TripPreferencesTripType;
+  /** one_way = outbound only (no returnDate, no returnTransport); round_trip = outbound + return */
+  tripType: TripPreferencesTripType;
 }
 
 export type TripSuggestionTripType = typeof TripSuggestionTripType[keyof typeof TripSuggestionTripType];

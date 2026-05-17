@@ -7,7 +7,7 @@
  */
 
 /**
- * Whether the trip is one-way or round-trip (default round_trip)
+ * one_way = outbound only (no returnDate, no returnTransport); round_trip = outbound + return
  */
 export type TripPreferencesTripType = typeof TripPreferencesTripType[keyof typeof TripPreferencesTripType];
 
