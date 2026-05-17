@@ -719,6 +719,7 @@ function StarRangePicker({
 }: {
   min: number; max: number; onChange: (min: number, max: number) => void;
 }) {
+  const { t } = useI18n();
   const handleStarClick = (star: number, role: "min" | "max") => {
     if (role === "min") {
       onChange(star, Math.max(star, max));
@@ -730,7 +731,7 @@ function StarRangePicker({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <span className="text-xs text-muted-foreground w-8 shrink-0">Min</span>
+        <span className="text-xs text-muted-foreground w-8 shrink-0">{t.filters.minLabel}</span>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((s) => (
             <button key={s} type="button" onClick={() => handleStarClick(s, "min")} className="transition-transform active:scale-90">
@@ -741,7 +742,7 @@ function StarRangePicker({
         <span className="text-xs font-semibold text-foreground ml-1">{min}★</span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-muted-foreground w-8 shrink-0">Max</span>
+        <span className="text-xs text-muted-foreground w-8 shrink-0">{t.filters.maxLabel}</span>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((s) => (
             <button key={s} type="button" onClick={() => handleStarClick(s, "max")} className="transition-transform active:scale-90">

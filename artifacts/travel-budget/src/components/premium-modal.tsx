@@ -30,12 +30,11 @@ export function PremiumModal({ open, onClose }: PremiumModalProps) {
   };
 
   const PERKS = [
-    { icon: <Zap className="w-4 h-4" />, title: "80 ricerche al giorno", sub: "vs 20 nel piano Free" },
-    { icon: <Infinity className="w-4 h-4" />, title: t.premium.benefit1 },
-    { icon: <SlidersHorizontal className="w-4 h-4" />, title: t.premium.benefit2 },
-    { icon: <Sparkles className="w-4 h-4" />, title: t.premium.benefit3 },
-    { icon: <Star className="w-4 h-4" />, title: "Risultati AI prioritari", sub: "Hotel e voli migliori in cima" },
-    { icon: <Shield className="w-4 h-4" />, title: "Nessuna pubblicità" },
+    { icon: <Zap className="w-4 h-4" />, title: t.premium.benefit1, sub: t.premium.perkSearchesSub },
+    { icon: <Infinity className="w-4 h-4" />, title: t.premium.benefit2 },
+    { icon: <SlidersHorizontal className="w-4 h-4" />, title: t.premium.benefit3 },
+    { icon: <Sparkles className="w-4 h-4" />, title: t.premium.perkPriority, sub: t.premium.perkPrioritySub },
+    { icon: <Shield className="w-4 h-4" />, title: t.premium.noAds },
   ];
 
   return (
@@ -75,24 +74,24 @@ export function PremiumModal({ open, onClose }: PremiumModalProps) {
               </div>
               <h2 className="text-2xl font-black text-center">{t.premium.title}</h2>
               <p className="text-sm text-muted-foreground text-center mt-1 max-w-xs">
-                {isPremium ? "Sei già un membro Premium 🎉" : "Sblocca tutto per soli €3/mese"}
+                {isPremium ? t.premium.alreadyMember : t.premium.unlockFor}
               </p>
             </div>
 
             {/* Free vs Premium */}
             <div className="flex gap-3 mb-5">
               <div className="flex-1 rounded-2xl border border-border bg-muted/40 p-3 text-center">
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Free</p>
+                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">{t.premium.planFree}</p>
                 <p className="text-3xl font-black">20</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">{t.premium.perDay}</p>
               </div>
               <div className="relative flex-1 rounded-2xl border-2 border-primary bg-primary/5 p-3 text-center overflow-hidden">
                 {!isPremium && (
                   <span className="absolute top-1.5 right-1.5 bg-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                    €3/mese
+                    {t.premium.price}
                   </span>
                 )}
-                <p className="text-[10px] text-primary font-bold uppercase tracking-widest mb-1">Premium</p>
+                <p className="text-[10px] text-primary font-bold uppercase tracking-widest mb-1">{t.premium.planPremium}</p>
                 <p className="text-3xl font-black text-primary">80</p>
                 <p className="text-[11px] text-primary/70 mt-0.5">{t.premium.perDay}</p>
               </div>
@@ -117,7 +116,7 @@ export function PremiumModal({ open, onClose }: PremiumModalProps) {
             {isPremium ? (
               <div className="w-full flex items-center justify-center gap-2 bg-primary/10 border border-primary/20 rounded-2xl py-4 mb-3">
                 <Crown className="w-5 h-5 text-primary" />
-                <span className="font-bold text-primary">Piano Premium attivo</span>
+                <span className="font-bold text-primary">{t.premium.activePlan}</span>
               </div>
             ) : !isSignedIn ? (
               <>
@@ -125,7 +124,7 @@ export function PremiumModal({ open, onClose }: PremiumModalProps) {
                   onClick={() => { onClose(); setLocation("/sign-up"); }}
                   className="w-full bg-gradient-to-r from-primary to-orange-500 text-white font-bold py-4 rounded-2xl text-base shadow-[0_4px_20px_rgba(30,75,204,0.35)] hover:opacity-90 active:scale-95 transition-all mb-3"
                 >
-                  Registrati — poi scegli Premium
+                  {t.premium.signUpFirst}
                 </button>
                 <p className="text-center text-xs text-muted-foreground">{t.premium.ctaSub}</p>
               </>

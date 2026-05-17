@@ -152,7 +152,7 @@ export function MobileNav() {
                 <Crown className="w-4 h-4 text-white" />
               </div>
             </div>
-            <span className="text-[10px] font-semibold">Premium</span>
+            <span className="text-[10px] font-semibold">{t.nav.premium}</span>
           </button>
 
           {/* Saved */}

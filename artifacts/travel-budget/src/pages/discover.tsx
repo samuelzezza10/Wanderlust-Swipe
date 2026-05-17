@@ -420,7 +420,7 @@ function PreSearchState({
                     <p className="text-sm font-medium truncate">{label}</p>
                     {entry.tripType && (
                       <p className="text-xs text-white/60 mt-0.5">
-                        {entry.tripType === "one_way" ? "→ one way" : "⇌ round trip"}
+                        {entry.tripType === "one_way" ? `→ ${t.filters.oneWay}` : `⇌ ${t.filters.roundTrip}`}
                       </p>
                     )}
                   </div>
@@ -1262,7 +1262,7 @@ export default function Discover() {
             {isLoadingMore && (
               <div className="flex items-center gap-2 mt-3 text-white/60 text-xs">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Caricamento nuovi risultati…</span>
+                <span>{t.discover.loadingMore}</span>
               </div>
             )}
             {/* Action buttons: ❌ ↩ ✓ + Filtri */}
@@ -1270,13 +1270,13 @@ export default function Discover() {
               <button onClick={() => handleSwipe("left")} className="rounded-full bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 68, height: 68 }}>
                 <X className="w-8 h-8 stroke-[2.5]" />
               </button>
-              <button onClick={handleUndo} disabled={history.length === 0} className="w-11 h-11 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform" title="Torna indietro">
+              <button onClick={handleUndo} disabled={history.length === 0} className="w-11 h-11 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform" title={t.onboarding.back}>
                 <RotateCcw className="w-4.5 h-4.5" />
               </button>
               <button onClick={() => handleSwipe("right")} className="rounded-full bg-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 68, height: 68 }}>
                 <Check className="w-8 h-8 stroke-[2.5]" />
               </button>
-              <button onClick={() => setFilterOpen(true)} className="w-11 h-11 rounded-full bg-white/20 shadow-md border border-white/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" title="Filtri">
+              <button onClick={() => setFilterOpen(true)} className="w-11 h-11 rounded-full bg-white/20 shadow-md border border-white/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" title={t.filters.title}>
                 <SlidersHorizontal className="w-4.5 h-4.5" />
               </button>
             </div>
@@ -1311,7 +1311,7 @@ export default function Discover() {
                 {isLoadingMore ? (
                   <div className="flex items-center gap-2 text-white/60 text-sm">
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Caricamento…</span>
+                    <span>{t.profile.loading}</span>
                   </div>
                 ) : !loadMoreExhausted ? (
                   <button
@@ -1703,7 +1703,7 @@ function TripDetailSheet({
                   <Plane className="w-4 h-4 text-primary" />
                   {trip.transport.type === "train" ? t.tripDetail.train : t.tripDetail.flight}
                   <span className="ml-auto text-xs font-normal text-muted-foreground">
-                    {trip.tripType === "one_way" ? "→ Solo andata" : "↕ Andata e ritorno"}
+                    {trip.tripType === "one_way" ? `→ ${t.filters.oneWay}` : `↕ ${t.filters.roundTrip}`}
                   </span>
                 </h3>
                 <TransportBlock
