@@ -320,32 +320,32 @@ function PreSearchState({ onOpenFilters, t }: { onOpenFilters: () => void; t: Re
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center"
+          className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center"
         >
-          <Plane className="w-7 h-7 text-primary" />
+          <Plane className="w-7 h-7 text-white" />
         </motion.div>
         <motion.div
           animate={{ y: [0, -8, 0] }}
           transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
-          className="w-16 h-16 rounded-2xl bg-[hsl(25,90%,55%)]/10 flex items-center justify-center"
+          className="w-16 h-16 rounded-2xl bg-white/25 flex items-center justify-center"
         >
-          <Hotel className="w-8 h-8 text-[hsl(25,90%,55%)]" />
+          <Hotel className="w-8 h-8 text-[hsl(25,90%,70%)]" />
         </motion.div>
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
-          className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center"
+          className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center"
         >
-          <TrainFront className="w-7 h-7 text-primary" />
+          <TrainFront className="w-7 h-7 text-white" />
         </motion.div>
       </div>
 
-      <h2 className="text-2xl font-black text-foreground mb-3">{t.discover.discoverTitle}</h2>
-      <p className="text-muted-foreground text-sm mb-10 max-w-xs leading-relaxed">{t.discover.discoverSub}</p>
+      <h2 className="text-2xl font-black text-white mb-3">{t.discover.discoverTitle}</h2>
+      <p className="text-white/75 text-sm mb-10 max-w-xs leading-relaxed">{t.discover.discoverSub}</p>
 
       <button
         onClick={onOpenFilters}
-        className="flex items-center gap-2 bg-primary text-white font-bold px-8 py-4 rounded-2xl shadow-[0_4px_16px_rgba(30,75,204,0.3)] hover:bg-primary/90 active:scale-95 transition-all"
+        className="flex items-center gap-2 bg-white text-primary font-bold px-8 py-4 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] hover:bg-white/90 active:scale-95 transition-all"
       >
         <SlidersHorizontal className="w-5 h-5" />
         {t.discover.setFilters}
@@ -587,12 +587,12 @@ export default function Discover() {
   /* ── Loading ── */
   if (generateTrips.isPending) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-primary">
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 px-8 text-center">
-            <Plane className="w-14 h-14 text-primary mb-1 animate-bounce" />
-            <p className="text-muted-foreground font-medium">{loadingMsgRef.current}</p>
-            <p className="text-xs text-primary font-semibold mt-3 bg-primary/10 px-4 py-1.5 rounded-full">
+            <Plane className="w-14 h-14 text-white mb-1 animate-bounce" />
+            <p className="text-white/80 font-medium">{loadingMsgRef.current}</p>
+            <p className="text-xs text-white font-semibold mt-3 bg-white/15 px-4 py-1.5 rounded-full">
               {filters.tripType === "one_way" ? t.filters.oneWayHint : t.filters.roundTripHint}
             </p>
           </div>
@@ -619,7 +619,7 @@ export default function Discover() {
   /* ── Pre-search (no filters applied yet) ── */
   if (!hasSearched) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-primary">
         {UsageBadge}
         {isOnline ? (
           <>
@@ -659,14 +659,14 @@ export default function Discover() {
     const isNoDirectTrain =
       filters.trainPreference === "direct" && !!filters.departureStation;
     return (
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-primary">
         {UsageBadge}
         <div className="flex-1 flex items-center justify-center flex-col p-6 text-center">
           {isNoDirectTrain ? (
             <>
               <div className="text-6xl mb-4">🚂</div>
-              <h2 className="text-xl font-bold mb-3">{t.discover.noDirectTrainTitle}</h2>
-              <p className="text-sm text-muted-foreground mb-8 max-w-xs leading-relaxed">
+              <h2 className="text-xl font-bold text-white mb-3">{t.discover.noDirectTrainTitle}</h2>
+              <p className="text-sm text-white/75 mb-8 max-w-xs leading-relaxed">
                 {t.discover.noDirectTrain}
               </p>
               <Button
@@ -675,22 +675,22 @@ export default function Discover() {
                   setFilters(updated);
                   loadTrips(updated);
                 }}
-                className="gap-2 mb-3"
+                className="gap-2 mb-3 bg-white text-primary hover:bg-white/90"
               >
                 <TrainFront className="w-4 h-4" />
                 {t.filters.trainWithChanges}
               </Button>
-              <Button onClick={() => setFilterOpen(true)} variant="outline" size="sm">
+              <Button onClick={() => setFilterOpen(true)} variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10">
                 {t.filters.edit}
               </Button>
             </>
           ) : (
             <>
               <div className="text-6xl mb-4">😭</div>
-              <h2 className="text-xl font-bold mb-2">{t.filters.noResults}</h2>
-              <p className="text-base text-muted-foreground mb-2 max-w-xs">{noResultsMsgRef.current}</p>
-              <p className="text-sm text-muted-foreground/70 mb-8 max-w-xs">{t.filters.noResultsSub}</p>
-              <Button onClick={() => setFilterOpen(true)} variant="outline" className="gap-2">
+              <h2 className="text-xl font-bold text-white mb-2">{t.filters.noResults}</h2>
+              <p className="text-base text-white/75 mb-2 max-w-xs">{noResultsMsgRef.current}</p>
+              <p className="text-sm text-white/55 mb-8 max-w-xs">{t.filters.noResultsSub}</p>
+              <Button onClick={() => setFilterOpen(true)} variant="outline" className="gap-2 border-white/40 text-white hover:bg-white/10">
                 <SlidersHorizontal className="w-4 h-4" />{t.filters.edit}
               </Button>
             </>
@@ -707,27 +707,27 @@ export default function Discover() {
   /* ── Seen all ── */
   if (currentIndex >= trips.length) {
     return (
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-primary">
         {UsageBadge}
         <div className="flex-1 flex items-center justify-center flex-col p-4 text-center">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-            <MapPin className="w-10 h-10 text-primary" />
+          <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-6">
+            <MapPin className="w-10 h-10 text-white" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">{t.discover.seenAll}</h2>
-          <p className="text-muted-foreground mb-8 max-w-sm">{t.discover.seenAllSub}</p>
+          <h2 className="text-2xl font-bold text-white mb-2">{t.discover.seenAll}</h2>
+          <p className="text-white/75 mb-8 max-w-sm">{t.discover.seenAllSub}</p>
           {!isOnline ? (
             <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-2 text-sm text-orange-500 font-medium mb-2">
+              <div className="flex items-center gap-2 text-sm text-orange-300 font-medium mb-2">
                 <WifiOff className="w-4 h-4" />
                 <span>{t.offline.searchDisabled}</span>
               </div>
-              <Button onClick={checkConnectivity} variant="outline" size="lg" className="gap-2">
+              <Button onClick={checkConnectivity} variant="outline" size="lg" className="gap-2 border-white/40 text-white hover:bg-white/10">
                 <RefreshCw className="w-4 h-4" />
                 {t.offline.banner}
               </Button>
             </div>
           ) : (
-            <Button onClick={() => loadTrips(filters)} size="lg" disabled={generateTrips.isPending}>
+            <Button onClick={() => loadTrips(filters)} size="lg" disabled={generateTrips.isPending} className="bg-white text-primary hover:bg-white/90">
               {t.discover.generateMore}
             </Button>
           )}
@@ -743,7 +743,7 @@ export default function Discover() {
   /* ── Main swipe deck ── */
   return (
     <>
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col bg-primary">
         <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} compact />
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
@@ -799,7 +799,7 @@ export default function Discover() {
             </button>
             <button
               onClick={() => setFilterOpen(true)}
-              className="w-11 h-11 rounded-full bg-card shadow-md border border-border flex items-center justify-center text-primary hover:scale-110 active:scale-95 transition-transform"
+              className="w-11 h-11 rounded-full bg-white/20 shadow-md border border-white/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform"
               title="Filtri"
             >
               <SlidersHorizontal className="w-4.5 h-4.5" />
