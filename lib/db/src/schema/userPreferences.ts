@@ -14,6 +14,7 @@ export const userPreferencesTable = pgTable("user_preferences", {
   onboardingCompleted: boolean("onboarding_completed").default(false).notNull(),
   tripSearchCount: integer("trip_search_count").default(0).notNull(),
   isPremium: boolean("is_premium").default(false).notNull(),
+  lastSearchDate: text("last_search_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

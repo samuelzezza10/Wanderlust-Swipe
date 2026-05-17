@@ -5,10 +5,9 @@
  * TravelBudget API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SubscriptionStatusPlan } from './subscriptionStatusPlan';
 
-export interface UsageStats {
-  searchCount: number;
+export interface SubscriptionStatus {
   isPremium: boolean;
-  freeLimit: number;
-  premiumLimit: number;
+  plan: SubscriptionStatusPlan;
 }

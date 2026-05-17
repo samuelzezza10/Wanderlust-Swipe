@@ -6,13 +6,15 @@ import {
   useSavePreferences,
   useGetSearchHistory,
   useGetUsage,
+  useUpgradeSubscription,
+  useDowngradeSubscription,
 } from "@workspace/api-client-react";
 import type { SearchHistoryEntry, UserPreferences } from "@workspace/api-client-react";
 import { Link, Redirect, useLocation } from "wouter";
 import {
   Settings, Shield, Award, Map, FileText, LogOut,
   Pencil, Check, X, Clock, Search, Zap, ChevronRight,
-  Plane, Calendar, Users, Banknote,
+  Plane, Calendar, Users, Banknote, Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
@@ -194,9 +196,14 @@ export default function Profile() {
     setLocation("/discover");
   }
 
-  const freeLimit = usage?.freeLimit ?? 5;
+  const freeLimit = usage?.freeLimit ?? 20;
+  const premiumLimit = usage?.premiumLimit ?? 80;
   const searchCount = usage?.searchCount ?? 0;
   const isPremium = usage?.isPremium ?? false;
+
+  const upgradeSubscription = useUpgradeSubscription();
+  const downgradeSubscription = useDowngradeSubscription();
+  const queryClient = useQueryClient();
 
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto w-full pb-24">
@@ -243,6 +250,79 @@ export default function Profile() {
           <div className="text-2xl font-bold">{searchCount}</div>
           <div className="text-xs text-muted-foreground leading-tight">{t.profile.searchesUsed}</div>
         </div>
+      </div>
+
+      {/* ── Plan ── */}
+      <div className="bg-card border rounded-2xl p-5 mb-4">
+        <h3 className="font-bold text-base flex items-center gap-2 mb-4">
+          <Crown className="w-4 h-4 text-amber-500" />
+          {t.premium.currentPlan}
+        </h3>
+
+        <div className="flex gap-3 mb-4">
+          <div className={`flex-1 rounded-xl border p-3 text-center transition-colors ${!isPremium ? "border-primary bg-primary/5" : "border-border bg-muted/40"}`}>
+            <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${!isPremium ? "text-primary" : "text-muted-foreground"}`}>Free</p>
+            <p className={`text-xl font-black ${!isPremium ? "text-primary" : "text-foreground"}`}>20</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{t.premium.perDay}</p>
+          </div>
+          <div className={`flex-1 rounded-xl border p-3 text-center relative overflow-hidden transition-colors ${isPremium ? "border-amber-400 bg-amber-400/5" : "border-border bg-muted/40"}`}>
+            {isPremium && <Crown className="absolute top-1.5 right-1.5 w-3 h-3 text-amber-500" />}
+            <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${isPremium ? "text-amber-600" : "text-muted-foreground"}`}>Premium</p>
+            <p className={`text-xl font-black ${isPremium ? "text-amber-600" : "text-foreground"}`}>80</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{t.premium.perDay}</p>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+            <span>{searchCount} / {isPremium ? premiumLimit : freeLimit} {t.premium.perDay}</span>
+            {!isPremium && searchCount >= freeLimit && (
+              <span className="text-destructive font-semibold">{t.premium.limitReachedTitle}</span>
+            )}
+          </div>
+          <div className="w-full bg-muted rounded-full h-2">
+            <div
+              className={`h-2 rounded-full transition-all ${!isPremium && searchCount >= freeLimit ? "bg-destructive" : isPremium ? "bg-amber-400" : "bg-primary"}`}
+              style={{ width: `${Math.min(100, (searchCount / (isPremium ? premiumLimit : freeLimit)) * 100)}%` }}
+            />
+          </div>
+        </div>
+
+        {!isPremium ? (
+          <button
+            onClick={() => upgradeSubscription.mutate(undefined, {
+              onSuccess: () => {
+                queryClient.invalidateQueries({ queryKey: ["usage"] });
+                queryClient.invalidateQueries({ queryKey: ["getUsage"] });
+                toast(t.premium.planPremium, { description: t.premium.premiumPlanDesc });
+              },
+            })}
+            disabled={upgradeSubscription.isPending}
+            className="w-full bg-gradient-to-r from-primary to-orange-500 text-white font-bold py-3 rounded-xl text-sm shadow-md hover:opacity-90 active:scale-95 transition-all disabled:opacity-60"
+          >
+            {upgradeSubscription.isPending ? "..." : `${t.premium.upgradeNow} — ${t.premium.price}`}
+          </button>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-semibold text-amber-600">{t.premium.planPremium}</span>
+            </div>
+            <button
+              onClick={() => downgradeSubscription.mutate(undefined, {
+                onSuccess: () => {
+                  queryClient.invalidateQueries({ queryKey: ["usage"] });
+                  queryClient.invalidateQueries({ queryKey: ["getUsage"] });
+                  toast(t.premium.planFree);
+                },
+              })}
+              disabled={downgradeSubscription.isPending}
+              className="text-xs text-muted-foreground hover:text-foreground underline disabled:opacity-60"
+            >
+              {t.premium.downgrade}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── My Preferences (inline edit) ── */}

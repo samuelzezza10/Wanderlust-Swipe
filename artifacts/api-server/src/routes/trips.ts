@@ -845,6 +845,7 @@ router.post("/trips/surprise", surpriseLimiter, (req, res) => {
 });
 
 const FREE_SEARCH_LIMIT = 20;
+const PREMIUM_SEARCH_LIMIT = 80;
 
 router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async (req, res) => {
   const {
@@ -873,6 +874,10 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
   const auth = getAuth(req);
   const userId = auth?.userId;
 
+  const today = new Date().toISOString().slice(0, 10);
+  let currentDailyCount = 0;
+  let currentIsPremium = false;
+
   if (userId) {
     try {
       const { db, userPreferencesTable } = await import("@workspace/db");
@@ -883,15 +888,17 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
         .from(userPreferencesTable)
         .where(eq(userPreferencesTable.clerkUserId, userId));
 
-      const count = prefs?.tripSearchCount ?? 0;
-      const premium = prefs?.isPremium ?? false;
+      currentDailyCount = prefs?.lastSearchDate === today ? (prefs?.tripSearchCount ?? 0) : 0;
+      currentIsPremium = prefs?.isPremium ?? false;
+      const limit = currentIsPremium ? PREMIUM_SEARCH_LIMIT : FREE_SEARCH_LIMIT;
 
-      if (!premium && count >= FREE_SEARCH_LIMIT) {
+      if (currentDailyCount >= limit) {
         return res.status(403).json({
           error: "limit_reached",
-          searchCount: count,
-          isPremium: false,
+          searchCount: currentDailyCount,
+          isPremium: currentIsPremium,
           freeLimit: FREE_SEARCH_LIMIT,
+          premiumLimit: PREMIUM_SEARCH_LIMIT,
         });
       }
     } catch (err) {
@@ -977,19 +984,14 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     results.push(tripOut as typeof trip);
   }
 
-  // ─── Freemium: increment search count (fire-and-forget) ───────
+  // ─── Freemium: increment daily search count (fire-and-forget) ─
   if (userId && results.length > 0) {
+    const newCount = currentDailyCount + 1;
     Promise.all([import("@workspace/db"), import("drizzle-orm")])
       .then(([{ db, userPreferencesTable }, { eq }]) =>
-        db.select({ count: userPreferencesTable.tripSearchCount })
-          .from(userPreferencesTable)
+        db.update(userPreferencesTable)
+          .set({ tripSearchCount: newCount, lastSearchDate: today })
           .where(eq(userPreferencesTable.clerkUserId, userId!))
-          .then(([row]) => {
-            if (!row) return;
-            return db.update(userPreferencesTable)
-              .set({ tripSearchCount: (row.count ?? 0) + 1 })
-              .where(eq(userPreferencesTable.clerkUserId, userId!));
-          })
       )
       .catch(() => {});
   }

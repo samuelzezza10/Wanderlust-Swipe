@@ -3,7 +3,7 @@ import { formatCurrency, formatDistance } from "@/lib/currency";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import {
   useGenerateTrips, useSaveTrip, useGetPreferences, useGetUsage,
-  useGetSearchHistory, useSaveSearchHistory,
+  useGetSearchHistory, useSaveSearchHistory, useUpgradeSubscription,
 } from "@workspace/api-client-react";
 import type { SearchHistoryEntry } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -232,12 +232,16 @@ function PremiumUpgradeModal({
   isGuest,
   t,
   onSignUp,
+  onUpgrade,
+  isUpgrading,
 }: {
   open: boolean;
   onClose: () => void;
   isGuest: boolean;
   t: ReturnType<typeof useI18n>["t"];
   onSignUp: () => void;
+  onUpgrade: () => void;
+  isUpgrading?: boolean;
 }) {
   if (!open) return null;
   const benefits = [t.premium.benefit1, t.premium.benefit2, t.premium.benefit3];
@@ -278,7 +282,7 @@ function PremiumUpgradeModal({
           <div className="flex-1 rounded-2xl border border-border bg-muted/40 p-3 text-center">
             <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide mb-1">Free</p>
             <p className="text-2xl font-black text-foreground">20</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">ricerche / mese</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">{t.premium.perDay}</p>
           </div>
           <div className="flex-1 rounded-2xl border-2 border-primary bg-primary/5 p-3 text-center relative overflow-hidden">
             <div className="absolute top-1.5 right-1.5">
@@ -286,7 +290,7 @@ function PremiumUpgradeModal({
             </div>
             <p className="text-xs text-primary font-semibold uppercase tracking-wide mb-1">Premium</p>
             <p className="text-2xl font-black text-primary">80</p>
-            <p className="text-[11px] text-primary/70 mt-0.5">ricerche / mese</p>
+            <p className="text-[11px] text-primary/70 mt-0.5">{t.premium.perDay}</p>
           </div>
         </div>
 
@@ -306,13 +310,11 @@ function PremiumUpgradeModal({
 
         {/* Price CTA */}
         <button
-          onClick={() => {
-            toast(t.premium.cta, { description: "Coming soon — we'll notify you!" });
-            onClose();
-          }}
-          className="w-full bg-gradient-to-r from-primary to-orange-500 text-white font-bold py-4 rounded-2xl text-base shadow-[0_4px_20px_rgba(30,75,204,0.35)] hover:opacity-90 active:scale-95 transition-all mb-3"
+          onClick={onUpgrade}
+          disabled={isUpgrading}
+          className="w-full bg-gradient-to-r from-primary to-orange-500 text-white font-bold py-4 rounded-2xl text-base shadow-[0_4px_20px_rgba(30,75,204,0.35)] hover:opacity-90 active:scale-95 transition-all mb-3 disabled:opacity-60"
         >
-          {t.premium.cta} — {t.premium.price}
+          {isUpgrading ? "..." : `${t.premium.cta} — ${t.premium.price}`}
         </button>
         <p className="text-center text-xs text-muted-foreground mb-4">{t.premium.ctaSub}</p>
 
@@ -509,6 +511,17 @@ export default function Discover() {
   const { data: usage, refetch: refetchUsage } = useGetUsage({
     query: { enabled: !!isSignedIn, queryKey: ["usage"] },
   });
+
+  const upgradeSubscription = useUpgradeSubscription();
+  const handleUpgrade = () => {
+    upgradeSubscription.mutate(undefined, {
+      onSuccess: () => {
+        void refetchUsage();
+        toast(t.premium.planPremium, { description: t.premium.premiumPlanDesc });
+        setShowPremiumModal(false);
+      },
+    });
+  };
 
   const { data: recentSearches, refetch: refetchHistory } = useGetSearchHistory({
     query: { enabled: !!isSignedIn, queryKey: ["search-history"] },
@@ -893,7 +906,7 @@ export default function Discover() {
         )}
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>
-          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} onUpgrade={handleUpgrade} isUpgrading={upgradeSubscription.isPending} />
         </AnimatePresence>
       </div>
     );
@@ -1032,7 +1045,7 @@ export default function Discover() {
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>
-          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} onUpgrade={handleUpgrade} isUpgrading={upgradeSubscription.isPending} />
         </AnimatePresence>
       </div>
     );
@@ -1068,7 +1081,7 @@ export default function Discover() {
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>
-          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+          <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} onUpgrade={handleUpgrade} isUpgrading={upgradeSubscription.isPending} />
         </AnimatePresence>
       </div>
     );
@@ -1187,7 +1200,7 @@ export default function Discover() {
       <ShareModal trip={shareTrip} onClose={() => setShareTrip(null)} />
 
       <AnimatePresence>
-        <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} />
+        <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} onUpgrade={handleUpgrade} isUpgrading={upgradeSubscription.isPending} />
       </AnimatePresence>
     </>
   );

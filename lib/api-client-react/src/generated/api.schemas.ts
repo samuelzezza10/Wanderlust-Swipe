@@ -324,6 +324,20 @@ export interface UsageStats {
   searchCount: number;
   isPremium: boolean;
   freeLimit: number;
+  premiumLimit: number;
+}
+
+export type SubscriptionStatusPlan = typeof SubscriptionStatusPlan[keyof typeof SubscriptionStatusPlan];
+
+
+export const SubscriptionStatusPlan = {
+  free: 'free',
+  premium: 'premium',
+} as const;
+
+export interface SubscriptionStatus {
+  isPremium: boolean;
+  plan: SubscriptionStatusPlan;
 }
 
 export interface SearchHistoryEntry {

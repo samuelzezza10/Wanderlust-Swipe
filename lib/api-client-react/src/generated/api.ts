@@ -25,6 +25,7 @@ import type {
   SavedTripInput,
   SearchHistoryEntry,
   SearchHistoryInput,
+  SubscriptionStatus,
   SurprisePreferences,
   TripPreferences,
   TripStats,
@@ -1012,4 +1013,144 @@ export function useGetUsage<TData = Awaited<ReturnType<typeof getUsage>>, TError
 
 
 
+
+export const getUpgradeSubscriptionUrl = () => {
+
+
+
+
+  return `/api/subscription/upgrade`
+}
+
+/**
+ * @summary Upgrade to premium plan
+ */
+export const upgradeSubscription = async ( options?: RequestInit): Promise<SubscriptionStatus> => {
+
+  return customFetch<SubscriptionStatus>(getUpgradeSubscriptionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getUpgradeSubscriptionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upgradeSubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upgradeSubscription>>, TError,void, TContext> => {
+
+const mutationKey = ['upgradeSubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upgradeSubscription>>, void> = () => {
+
+
+          return  upgradeSubscription(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpgradeSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof upgradeSubscription>>>
+
+    export type UpgradeSubscriptionMutationError = ErrorType<void>
+
+    /**
+ * @summary Upgrade to premium plan
+ */
+export const useUpgradeSubscription = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upgradeSubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upgradeSubscription>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getUpgradeSubscriptionMutationOptions(options));
+    }
+
+export const getDowngradeSubscriptionUrl = () => {
+
+
+
+
+  return `/api/subscription/downgrade`
+}
+
+/**
+ * @summary Downgrade to free plan
+ */
+export const downgradeSubscription = async ( options?: RequestInit): Promise<SubscriptionStatus> => {
+
+  return customFetch<SubscriptionStatus>(getDowngradeSubscriptionUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getDowngradeSubscriptionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downgradeSubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof downgradeSubscription>>, TError,void, TContext> => {
+
+const mutationKey = ['downgradeSubscription'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof downgradeSubscription>>, void> = () => {
+
+
+          return  downgradeSubscription(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DowngradeSubscriptionMutationResult = NonNullable<Awaited<ReturnType<typeof downgradeSubscription>>>
+
+    export type DowngradeSubscriptionMutationError = ErrorType<void>
+
+    /**
+ * @summary Downgrade to free plan
+ */
+export const useDowngradeSubscription = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof downgradeSubscription>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof downgradeSubscription>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDowngradeSubscriptionMutationOptions(options));
+    }
 

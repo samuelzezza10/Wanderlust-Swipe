@@ -231,6 +231,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/UsageStats"
 
+  /subscription/upgrade:
+    post:
+      operationId: upgradeSubscription
+      tags: [preferences]
+      summary: Upgrade to premium plan
+      responses:
+        "200":
+          description: Subscription upgraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+        "401":
+          description: Unauthorized
+
+  /subscription/downgrade:
+    post:
+      operationId: downgradeSubscription
+      tags: [preferences]
+      summary: Downgrade to free plan
+      responses:
+        "200":
+          description: Subscription downgraded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionStatus"
+        "401":
+          description: Unauthorized
+
 components:
   schemas:
     HealthStatus:
@@ -594,6 +624,7 @@ components:
         - searchCount
         - isPremium
         - freeLimit
+        - premiumLimit
       properties:
         searchCount:
           type: integer
@@ -601,6 +632,20 @@ components:
           type: boolean
         freeLimit:
           type: integer
+        premiumLimit:
+          type: integer
+
+    SubscriptionStatus:
+      type: object
+      required:
+        - isPremium
+        - plan
+      properties:
+        isPremium:
+          type: boolean
+        plan:
+          type: string
+          enum: [free, premium]
 
     SearchHistoryEntry:
       type: object

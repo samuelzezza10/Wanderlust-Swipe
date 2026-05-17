@@ -99,12 +99,15 @@ router.put("/preferences", requireAuth, async (req: any, res) => {
   }
 });
 
+const FREE_LIMIT = 20;
+const PREMIUM_LIMIT = 80;
+
 router.get("/usage", async (req: any, res) => {
   const auth = getAuth(req);
   const userId = auth?.userId;
 
   if (!userId) {
-    return res.json({ searchCount: 0, isPremium: false, freeLimit: 20 });
+    return res.json({ searchCount: 0, isPremium: false, freeLimit: FREE_LIMIT, premiumLimit: PREMIUM_LIMIT });
   }
 
   try {
@@ -113,10 +116,14 @@ router.get("/usage", async (req: any, res) => {
       .from(userPreferencesTable)
       .where(eq(userPreferencesTable.clerkUserId, userId));
 
+    const today = new Date().toISOString().slice(0, 10);
+    const count = prefs?.lastSearchDate === today ? (prefs?.tripSearchCount ?? 0) : 0;
+
     return res.json({
-      searchCount: prefs?.tripSearchCount ?? 0,
+      searchCount: count,
       isPremium: prefs?.isPremium ?? false,
-      freeLimit: 20,
+      freeLimit: FREE_LIMIT,
+      premiumLimit: PREMIUM_LIMIT,
     });
   } catch (err) {
     req.log.error({ err }, "Error fetching usage");

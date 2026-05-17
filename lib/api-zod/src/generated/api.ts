@@ -439,7 +439,26 @@ export const SaveSearchHistoryBody = zod.object({
 export const GetUsageResponse = zod.object({
   "searchCount": zod.number(),
   "isPremium": zod.boolean(),
-  "freeLimit": zod.number()
+  "freeLimit": zod.number(),
+  "premiumLimit": zod.number()
+})
+
+
+/**
+ * @summary Upgrade to premium plan
+ */
+export const UpgradeSubscriptionResponse = zod.object({
+  "isPremium": zod.boolean(),
+  "plan": zod.enum(['free', 'premium'])
+})
+
+
+/**
+ * @summary Downgrade to free plan
+ */
+export const DowngradeSubscriptionResponse = zod.object({
+  "isPremium": zod.boolean(),
+  "plan": zod.enum(['free', 'premium'])
 })
 
 
