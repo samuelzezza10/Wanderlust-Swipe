@@ -186,7 +186,7 @@ function ShareModal({
             <img src={getImgSrc(trip.imageUrl)} alt={trip.destination} className="w-14 h-14 rounded-xl object-cover shrink-0" />
             <div className="min-w-0">
               <p className="font-bold text-sm">{trip.destination}</p>
-              <p className="text-xs text-muted-foreground">{trip.country} · €{trip.totalPrice}/p</p>
+              <p className="text-xs text-muted-foreground">{trip.country}</p>
             </div>
           </div>
 
@@ -1615,7 +1615,7 @@ function TransportBlock({ label, transport, t, lang }: { label?: string; transpo
       <div className="space-y-2 text-sm">
         <div className="flex items-center justify-between">
           <span className="font-semibold">{transport.company}</span>
-          <span className="font-medium">{formatCurrency(transport.price, lang)}<span className="text-muted-foreground text-xs"> /p</span></span>
+          <span className="text-xs text-muted-foreground">{transport.isDirect ? t.tripDetail.direct : t.tripDetail.withStops}</span>
         </div>
         <div className="flex items-center">
           <div className="text-center min-w-[56px]">
@@ -1628,9 +1628,6 @@ function TransportBlock({ label, transport, t, lang }: { label?: string; transpo
               <div className="h-px flex-1 bg-border" />
               <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
             </div>
-            <Badge variant={transport.isDirect ? "default" : "outline"} className="text-[10px] px-2 py-0">
-              {transport.isDirect ? t.tripDetail.direct : t.tripDetail.withStops}
-            </Badge>
           </div>
           <div className="text-center min-w-[56px]">
             <p className="text-xs text-muted-foreground">{t.tripDetail.arrival}</p>
