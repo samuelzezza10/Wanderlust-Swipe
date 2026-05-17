@@ -442,6 +442,7 @@ export default function Discover() {
 
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [apiError, setApiError] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [history, setHistory] = useState<number[]>([]);
   const [detailTrip, setDetailTrip] = useState<TripSuggestion | null>(null);
@@ -565,6 +566,7 @@ export default function Discover() {
   const saveTrip = useSaveTrip();
 
   function loadTrips(f: TripFilters) {
+    setApiError(false);
     // ── Offline gate ───────────────────────────────────────────────
     if (!isOnline) {
       toast.error(t.offline.searchDisabled);
@@ -711,6 +713,12 @@ export default function Discover() {
               description: t.discover.rateLimitHint,
               duration: 8000,
             });
+          } else {
+            setApiError(true);
+            toast.error(t.discover.searchError, {
+              description: t.discover.searchErrorHint,
+              duration: 6000,
+            });
           }
         },
       }
@@ -805,6 +813,37 @@ export default function Discover() {
       </div>
     </div>
   ) : null;
+
+  /* ── API error state ── */
+  if (apiError && !generateTrips.isPending) {
+    return (
+      <div className="flex-1 flex flex-col bg-primary">
+        {UsageBadge}
+        <div className="flex-1 flex items-center justify-center flex-col p-6 text-center">
+          <div className="text-6xl mb-4">😵</div>
+          <h2 className="text-xl font-bold text-white mb-2">{t.discover.searchError}</h2>
+          <p className="text-sm text-white/70 mb-8 max-w-xs leading-relaxed">{t.discover.searchErrorHint}</p>
+          <Button
+            onClick={() => { setApiError(false); loadTrips(filters); }}
+            className="gap-2 bg-white text-primary hover:bg-white/90 mb-3"
+          >
+            <RefreshCw className="w-4 h-4" />
+            {t.discover.searchErrorRetry}
+          </Button>
+          <Button
+            onClick={() => setFilterOpen(true)}
+            variant="outline"
+            size="sm"
+            className="gap-2 border-white/40 text-white hover:bg-white/10"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            {t.filters.edit}
+          </Button>
+        </div>
+        <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
+      </div>
+    );
+  }
 
   /* ── Pre-search (no filters applied yet) ── */
   if (!hasSearched) {

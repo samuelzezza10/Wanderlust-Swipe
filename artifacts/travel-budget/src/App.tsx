@@ -13,6 +13,7 @@ import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { OfflineBanner } from "./components/offline-banner";
 
 import { Layout } from "./components/layout";
+import { ErrorBoundary } from "./components/error-boundary";
 import LandingPage from "./pages/landing";
 import SignInPage from "./pages/sign-in";
 import SignUpPage from "./pages/sign-up";
@@ -197,12 +198,14 @@ function ClerkProviderWithRoutes() {
 
 export default function App() {
   return (
-    <WouterRouter base={basePath}>
-      <LanguageProvider>
-        <NotificationsProvider>
-          <ClerkProviderWithRoutes />
-        </NotificationsProvider>
-      </LanguageProvider>
-    </WouterRouter>
+    <ErrorBoundary>
+      <WouterRouter base={basePath}>
+        <LanguageProvider>
+          <NotificationsProvider>
+            <ClerkProviderWithRoutes />
+          </NotificationsProvider>
+        </LanguageProvider>
+      </WouterRouter>
+    </ErrorBoundary>
   );
 }
