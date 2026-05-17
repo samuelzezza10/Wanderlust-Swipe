@@ -322,15 +322,7 @@ export function FilterSheet({
                 </button>
               ))}
             </div>
-            {draft.tripType === "one_way" ? (
-              <div className="flex items-start gap-2 bg-primary/8 border border-primary/20 rounded-xl px-3 py-2.5">
-                <span className="text-base shrink-0 leading-none mt-0.5">✅</span>
-                <div>
-                  <p className="text-xs font-semibold text-primary leading-snug">Solo andata selezionata</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Non inserire la data di ritorno — non è richiesta.</p>
-                </div>
-              </div>
-            ) : (
+            {draft.tripType === "round_trip" && (
               <p className="text-xs text-muted-foreground leading-relaxed">{t.filters.roundTripHint}</p>
             )}
           </div>
