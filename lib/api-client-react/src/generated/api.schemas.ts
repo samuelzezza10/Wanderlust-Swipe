@@ -298,3 +298,43 @@ export interface UsageStats {
   freeLimit: number;
 }
 
+export interface SearchHistoryEntry {
+  id: number;
+  /** @nullable */
+  departureLocation?: string | null;
+  /** @nullable */
+  arrivalLocation?: string | null;
+  /** @nullable */
+  departureDate?: string | null;
+  /** @nullable */
+  returnDate?: string | null;
+  /** @nullable */
+  budget?: number | null;
+  /** @nullable */
+  numberOfPeople?: number | null;
+  /** @nullable */
+  numberOfNights?: number | null;
+  /** @nullable */
+  tripType?: string | null;
+  createdAt: string;
+}
+
+export interface SearchHistoryInput {
+  /** @nullable */
+  departureLocation?: string | null;
+  /** @nullable */
+  arrivalLocation?: string | null;
+  /** @nullable */
+  departureDate?: string | null;
+  /** @nullable */
+  returnDate?: string | null;
+  /** @nullable */
+  budget?: number | null;
+  /** @nullable */
+  numberOfPeople?: number | null;
+  /** @nullable */
+  numberOfNights?: number | null;
+  /** @nullable */
+  tripType?: string | null;
+}
+

@@ -398,6 +398,39 @@ export const GetTripStatsResponse = zod.object({
 
 
 /**
+ * @summary Get recent search history for the current user
+ */
+export const GetSearchHistoryResponseItem = zod.object({
+  "id": zod.number(),
+  "departureLocation": zod.string().nullish(),
+  "arrivalLocation": zod.string().nullish(),
+  "departureDate": zod.string().nullish(),
+  "returnDate": zod.string().nullish(),
+  "budget": zod.number().nullish(),
+  "numberOfPeople": zod.number().nullish(),
+  "numberOfNights": zod.number().nullish(),
+  "tripType": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+export const GetSearchHistoryResponse = zod.array(GetSearchHistoryResponseItem)
+
+
+/**
+ * @summary Save a search to user history
+ */
+export const SaveSearchHistoryBody = zod.object({
+  "departureLocation": zod.string().nullish(),
+  "arrivalLocation": zod.string().nullish(),
+  "departureDate": zod.string().nullish(),
+  "returnDate": zod.string().nullish(),
+  "budget": zod.number().nullish(),
+  "numberOfPeople": zod.number().nullish(),
+  "numberOfNights": zod.number().nullish(),
+  "tripType": zod.string().nullish()
+})
+
+
+/**
  * @summary Get search usage for the current user
  */
 export const GetUsageResponse = zod.object({

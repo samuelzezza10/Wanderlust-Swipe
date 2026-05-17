@@ -186,6 +186,38 @@ paths:
               schema:
                 $ref: "#/components/schemas/TripStats"
 
+  /search-history:
+    get:
+      operationId: getSearchHistory
+      tags: [preferences]
+      summary: Get recent search history for the current user
+      responses:
+        "200":
+          description: List of recent searches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SearchHistoryEntry"
+    post:
+      operationId: saveSearchHistory
+      tags: [preferences]
+      summary: Save a search to user history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchHistoryInput"
+      responses:
+        "201":
+          description: Search saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchHistoryEntry"
+
   /usage:
     get:
       operationId: getUsage
@@ -560,3 +592,50 @@ components:
           type: boolean
         freeLimit:
           type: integer
+
+    SearchHistoryEntry:
+      type: object
+      required:
+        - id
+        - createdAt
+      properties:
+        id:
+          type: integer
+        departureLocation:
+          type: ["string", "null"]
+        arrivalLocation:
+          type: ["string", "null"]
+        departureDate:
+          type: ["string", "null"]
+        returnDate:
+          type: ["string", "null"]
+        budget:
+          type: ["integer", "null"]
+        numberOfPeople:
+          type: ["integer", "null"]
+        numberOfNights:
+          type: ["integer", "null"]
+        tripType:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    SearchHistoryInput:
+      type: object
+      properties:
+        departureLocation:
+          type: ["string", "null"]
+        arrivalLocation:
+          type: ["string", "null"]
+        departureDate:
+          type: ["string", "null"]
+        returnDate:
+          type: ["string", "null"]
+        budget:
+          type: ["integer", "null"]
+        numberOfPeople:
+          type: ["integer", "null"]
+        numberOfNights:
+          type: ["integer", "null"]
+        tripType:
+          type: ["string", "null"]

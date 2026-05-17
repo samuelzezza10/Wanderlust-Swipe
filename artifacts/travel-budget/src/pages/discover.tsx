@@ -1,6 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
-import { useGenerateTrips, useSaveTrip, useGetPreferences, useGetUsage } from "@workspace/api-client-react";
+import {
+  useGenerateTrips, useSaveTrip, useGetPreferences, useGetUsage,
+  useGetSearchHistory, useSaveSearchHistory,
+} from "@workspace/api-client-react";
+import type { SearchHistoryEntry } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -334,10 +338,22 @@ function PremiumUpgradeModal({
 }
 
 /* ─── Pre-search state ──────────────────────────────────────────────────── */
-function PreSearchState({ onOpenFilters, t }: { onOpenFilters: () => void; t: ReturnType<typeof useI18n>["t"] }) {
+function PreSearchState({
+  onOpenFilters,
+  t,
+  recentSearches,
+  onRepeat,
+}: {
+  onOpenFilters: () => void;
+  t: ReturnType<typeof useI18n>["t"];
+  recentSearches?: SearchHistoryEntry[];
+  onRepeat?: (entry: SearchHistoryEntry) => void;
+}) {
+  const recent = recentSearches?.slice(0, 3) ?? [];
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-      <div className="flex items-center justify-center gap-4 mb-8">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+      <div className="flex items-center justify-center gap-4 mb-7">
         <motion.div
           animate={{ y: [0, -10, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -361,16 +377,55 @@ function PreSearchState({ onOpenFilters, t }: { onOpenFilters: () => void; t: Re
         </motion.div>
       </div>
 
-      <h2 className="text-2xl font-black text-white mb-3">{t.discover.discoverTitle}</h2>
-      <p className="text-white/75 text-sm mb-10 max-w-xs leading-relaxed">{t.discover.discoverSub}</p>
+      <h2 className="text-2xl font-black text-white mb-2">{t.discover.discoverTitle}</h2>
+      <p className="text-white/75 text-sm mb-7 max-w-xs leading-relaxed">{t.discover.discoverSub}</p>
 
       <button
         onClick={onOpenFilters}
-        className="flex items-center gap-2 bg-white text-primary font-bold px-8 py-4 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] hover:bg-white/90 active:scale-95 transition-all"
+        className="flex items-center gap-2 bg-white text-primary font-bold px-8 py-4 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.25)] hover:bg-white/90 active:scale-95 transition-all mb-6"
       >
         <SlidersHorizontal className="w-5 h-5" />
         {t.discover.setFilters}
       </button>
+
+      {/* Recent searches */}
+      {recent.length > 0 && onRepeat && (
+        <div className="w-full max-w-sm">
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3">
+            {t.profile.recentSearches}
+          </p>
+          <div className="space-y-2">
+            {recent.map((entry) => {
+              const parts: string[] = [];
+              if (entry.departureLocation) parts.push(`${t.profile.departureFrom} ${entry.departureLocation}`);
+              if (entry.arrivalLocation && entry.arrivalLocation !== "Any")
+                parts.push(`→ ${entry.arrivalLocation}`);
+              if (entry.numberOfNights)
+                parts.push(`${entry.numberOfNights} ${entry.numberOfNights === 1 ? t.profile.night : t.profile.nights}`);
+              if (entry.budget) parts.push(`€${entry.budget}`);
+              const label = parts.join(" · ") || "—";
+
+              return (
+                <button
+                  key={entry.id}
+                  onClick={() => onRepeat(entry)}
+                  className="w-full flex items-center justify-between gap-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-xl px-4 py-3 text-left transition-colors active:scale-[0.98]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{label}</p>
+                    {entry.tripType && (
+                      <p className="text-xs text-white/60 mt-0.5">
+                        {entry.tripType === "one_way" ? "→ one way" : "⇌ round trip"}
+                      </p>
+                    )}
+                  </div>
+                  <RotateCcw className="w-4 h-4 shrink-0 text-white/60" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -434,6 +489,12 @@ export default function Discover() {
     query: { enabled: !!isSignedIn, queryKey: ["usage"] },
   });
 
+  const { data: recentSearches, refetch: refetchHistory } = useGetSearchHistory({
+    query: { enabled: !!isSignedIn, queryKey: ["search-history"] },
+  });
+
+  const saveToHistory = useSaveSearchHistory();
+
   // Initialise filter state from saved user preferences (runs once when prefs first load)
   const prefsInitializedRef = useRef(false);
   useEffect(() => {
@@ -459,6 +520,24 @@ export default function Discover() {
       localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
     } catch {}
   }, [filters]);
+
+  function handleRepeatSearch(entry: SearchHistoryEntry) {
+    const updated: Partial<TripFilters> = {
+      ...(entry.budget != null ? { budget: entry.budget } : {}),
+      ...(entry.numberOfPeople != null ? { numberOfPeople: entry.numberOfPeople } : {}),
+      ...(entry.numberOfNights != null ? { numberOfNights: entry.numberOfNights } : {}),
+      ...(entry.departureLocation ? { departureAirport: entry.departureLocation } : {}),
+      ...(entry.arrivalLocation && entry.arrivalLocation !== "Any"
+        ? { arrivalAirport: entry.arrivalLocation }
+        : {}),
+      ...(entry.tripType ? { tripType: entry.tripType as TripFilters["tripType"] } : {}),
+      ...(entry.departureDate ? { departureDate: entry.departureDate } : {}),
+      ...(entry.returnDate ? { returnDate: entry.returnDate } : {}),
+    };
+    const merged = { ...filters, ...updated };
+    setFilters(merged);
+    loadTrips(merged);
+  }
 
   const { isOnline, checkConnectivity } = useOnlineStatus();
 
@@ -560,13 +639,29 @@ export default function Discover() {
           setHasSearched(true);
           // Save results to client-side cache
           setCachedSearch(f as unknown as Record<string, unknown>, cleaned);
-          // Track guest searches
+          // Track guest searches / save to history
           if (!isSignedIn) {
             const newCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0") + 1;
             localStorage.setItem("guestSearchCount", String(newCount));
             setGuestCount(newCount);
           } else {
             refetchUsage();
+            // Save search to history (fire-and-forget)
+            saveToHistory.mutate(
+              {
+                data: {
+                  departureLocation: depLocation !== "Any" ? depLocation : null,
+                  arrivalLocation: arrLocation !== "Any" ? arrLocation : null,
+                  departureDate: f.departureDate || null,
+                  returnDate: tripType === "one_way" ? null : (f.returnDate || null),
+                  budget: effectiveBudget,
+                  numberOfPeople: f.numberOfPeople,
+                  numberOfNights: f.numberOfNights,
+                  tripType: tripType,
+                },
+              },
+              { onSuccess: () => refetchHistory() }
+            );
           }
         },
         onError: (err: unknown) => {
@@ -672,7 +767,12 @@ export default function Discover() {
         {isOnline ? (
           <>
             <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
-            <PreSearchState onOpenFilters={() => setFilterOpen(true)} t={t} />
+            <PreSearchState
+              onOpenFilters={() => setFilterOpen(true)}
+              t={t}
+              recentSearches={recentSearches ?? []}
+              onRepeat={handleRepeatSearch}
+            />
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">

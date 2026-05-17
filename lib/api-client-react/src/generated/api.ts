@@ -23,6 +23,8 @@ import type {
   HealthStatus,
   SavedTrip,
   SavedTripInput,
+  SearchHistoryEntry,
+  SearchHistoryInput,
   SurprisePreferences,
   TripPreferences,
   TripStats,
@@ -785,6 +787,154 @@ export function useGetTripStats<TData = Awaited<ReturnType<typeof getTripStats>>
 
 
 
+
+export const getGetSearchHistoryUrl = () => {
+
+
+
+
+  return `/api/search-history`
+}
+
+/**
+ * @summary Get recent search history for the current user
+ */
+export const getSearchHistory = async ( options?: RequestInit): Promise<SearchHistoryEntry[]> => {
+
+  return customFetch<SearchHistoryEntry[]>(getGetSearchHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSearchHistoryQueryKey = () => {
+    return [
+    `/api/search-history`
+    ] as const;
+    }
+
+
+export const getGetSearchHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getSearchHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSearchHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSearchHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSearchHistory>>> = ({ signal }) => getSearchHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSearchHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSearchHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getSearchHistory>>>
+export type GetSearchHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get recent search history for the current user
+ */
+
+export function useGetSearchHistory<TData = Awaited<ReturnType<typeof getSearchHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSearchHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSearchHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getSaveSearchHistoryUrl = () => {
+
+
+
+
+  return `/api/search-history`
+}
+
+/**
+ * @summary Save a search to user history
+ */
+export const saveSearchHistory = async (searchHistoryInput: SearchHistoryInput, options?: RequestInit): Promise<SearchHistoryEntry> => {
+
+  return customFetch<SearchHistoryEntry>(getSaveSearchHistoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      searchHistoryInput,)
+  }
+);}
+
+
+
+
+export const getSaveSearchHistoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveSearchHistory>>, TError,{data: BodyType<SearchHistoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveSearchHistory>>, TError,{data: BodyType<SearchHistoryInput>}, TContext> => {
+
+const mutationKey = ['saveSearchHistory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveSearchHistory>>, {data: BodyType<SearchHistoryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveSearchHistory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveSearchHistoryMutationResult = NonNullable<Awaited<ReturnType<typeof saveSearchHistory>>>
+    export type SaveSearchHistoryMutationBody = BodyType<SearchHistoryInput>
+    export type SaveSearchHistoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Save a search to user history
+ */
+export const useSaveSearchHistory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveSearchHistory>>, TError,{data: BodyType<SearchHistoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveSearchHistory>>,
+        TError,
+        {data: BodyType<SearchHistoryInput>},
+        TContext
+      > => {
+      return useMutation(getSaveSearchHistoryMutationOptions(options));
+    }
 
 export const getGetUsageUrl = () => {
 

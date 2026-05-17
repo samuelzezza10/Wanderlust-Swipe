@@ -10,6 +10,8 @@ export * from './healthStatus';
 export * from './hotelOption';
 export * from './savedTrip';
 export * from './savedTripInput';
+export * from './searchHistoryEntry';
+export * from './searchHistoryInput';
 export * from './surprisePreferences';
 export * from './surprisePreferencesAccommodationType';
 export * from './surprisePreferencesFlightPreference';

@@ -1,0 +1,130 @@
+AREA UTENTE + PRODUCTION SYSTEM SPEC (TRAVELBUDGET)
+
+The goal is to implement a complete user system and production-ready architecture to transform the app into a real SaaS travel platform.
+
+⸻
+
+1. USER DASHBOARD (AREA UTENTE)
+
+* personal dashboard after login
+* show:
+    * saved trips
+    * recent searches
+    * liked/swiped trips
+    * travel history
+* quick access buttons:
+    * new search
+    * saved trips
+    * profile settings
+
+⸻
+
+2. USER PROFILE SYSTEM
+    Each user must have:
+
+* name
+* email
+* profile picture (optional)
+* preferences:
+    * budget range
+    * favorite destinations
+    * travel style (cheap / comfort / luxury)
+* editable settings page
+
+⸻
+
+3. SAVED TRIPS SYSTEM
+
+* users can save any trip card
+* saved trips must include:
+    * full trip data
+    * price at time of saving
+    * timestamp
+* ability to:
+    * delete saved trips
+    * organize trips (optional tags)
+
+⸻
+
+4. SEARCH HISTORY SYSTEM
+
+* store last searches per user:
+    * origin
+    * destination
+    * dates
+    * filters
+* allow “repeat search” button
+
+⸻
+
+5. SESSION MANAGEMENT
+
+* persistent login sessions
+* user stays logged in after refresh
+* logout function
+* session expiry handling
+* prevent session conflicts across devices
+
+⸻
+
+6. PERSONALIZATION ENGINE (BASIC)
+
+* adapt results based on:
+    * previous searches
+    * saved trips
+    * budget behavior
+* prioritize similar destinations to past activity
+
+⸻
+
+7. DATA STORAGE RULES
+
+* all user data must be stored persistently
+* no reliance on frontend memory only
+* data must survive refresh and re-entry
+* structure must support multiple users safely
+
+⸻
+
+8. SECURITY REQUIREMENTS
+
+* user data isolation (no cross-user data leaks)
+* protected routes (dashboard only for logged users)
+* secure API access
+* prevent unauthorized access to saved trips
+
+⸻
+
+9. UI REQUIREMENTS (USER AREA)
+
+* clean dashboard layout
+* mobile-friendly
+* simple navigation:
+    * Home
+    * Search
+    * Saved
+    * Profile
+* no clutter, fast access to main actions
+
+⸻
+
+10. EMPTY STATES
+    If user has no data:
+
+* show friendly onboarding messages
+* suggest first search
+* guide user to save first trip
+
+⸻
+
+11. PRODUCTION GOAL
+    The user system must behave like a real SaaS product:
+
+* like Airbnb account system
+* like Booking user dashboard
+* like Spotify profile system
+
+⸻
+
+12. FINAL RULE
+    User data must be persistent, secure, and tied to authentication system. No temporary or lost session data allowed.
