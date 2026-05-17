@@ -362,6 +362,10 @@ const LOCATIONS: Location[] = [
   { name: "Arona", city: "Arona", kind: "station" },
   { name: "Ciriè", city: "Ciriè", kind: "station" },
   { name: "Aosta", city: "Aosta", kind: "station" },
+  { name: "Domodossola", city: "Domodossola", kind: "station" },
+  { name: "Verbania-Pallanza", city: "Verbania", kind: "station" },
+  { name: "Stresa", city: "Stresa", kind: "station" },
+  { name: "Omegna", city: "Omegna", kind: "station" },
 
   // ── Stazioni italiane — Liguria ─────────────────────────────────────────
   { name: "Savona", city: "Savona", kind: "station" },
@@ -408,6 +412,18 @@ const LOCATIONS: Location[] = [
   { name: "Palazzolo sull'Oglio", city: "Palazzolo sull'Oglio", kind: "station" },
   { name: "Chiari", city: "Chiari", kind: "station" },
   { name: "Montichiari", city: "Montichiari", kind: "station" },
+  { name: "Pioltello", city: "Pioltello", kind: "station" },
+  { name: "Magenta", city: "Magenta", kind: "station" },
+  { name: "Abbiategrasso", city: "Abbiategrasso", kind: "station" },
+  { name: "Cesano Maderno", city: "Cesano Maderno", kind: "station" },
+  { name: "Sesto Calende", city: "Sesto Calende", kind: "station" },
+  { name: "Cologno Monzese", city: "Cologno Monzese", kind: "station" },
+  { name: "San Giuliano Milanese", city: "San Giuliano Milanese", kind: "station" },
+  { name: "Melegnano", city: "Melegnano", kind: "station" },
+  { name: "Corsico", city: "Corsico", kind: "station" },
+  { name: "Segrate", city: "Segrate", kind: "station" },
+  { name: "Meda", city: "Meda", kind: "station" },
+  { name: "Settimo Milanese", city: "Settimo Milanese", kind: "station" },
 
   // ── Stazioni italiane — Trentino-Alto Adige e Friuli ────────────────────
   { name: "Trento", city: "Trento", kind: "station" },
@@ -432,6 +448,9 @@ const LOCATIONS: Location[] = [
   { name: "Chioggia", city: "Chioggia", kind: "station" },
   { name: "Jesolo", city: "Jesolo", kind: "station" },
   { name: "Portogruaro", city: "Portogruaro", kind: "station" },
+  { name: "Schio", city: "Schio", kind: "station" },
+  { name: "Thiene", city: "Thiene", kind: "station" },
+  { name: "Valdagno", city: "Valdagno", kind: "station" },
 
   // ── Stazioni italiane — Emilia-Romagna ──────────────────────────────────
   { name: "Reggio Emilia AV", city: "Reggio Emilia", kind: "station" },
@@ -503,6 +522,15 @@ const LOCATIONS: Location[] = [
   { name: "Sulmona", city: "Sulmona", kind: "station" },
   { name: "Avezzano", city: "Avezzano", kind: "station" },
   { name: "Vasto-San Salvo", city: "Vasto", kind: "station" },
+  { name: "Fiumicino", city: "Fiumicino", kind: "station" },
+  { name: "Anzio", city: "Anzio", kind: "station" },
+  { name: "Nettuno", city: "Nettuno", kind: "station" },
+  { name: "Ladispoli-Cerveteri", city: "Ladispoli", kind: "station" },
+  { name: "Pomezia-Santa Palomba", city: "Pomezia", kind: "station" },
+  { name: "Frascati", city: "Frascati", kind: "station" },
+  { name: "Albano Laziale", city: "Albano Laziale", kind: "station" },
+  { name: "Genzano di Roma", city: "Genzano di Roma", kind: "station" },
+  { name: "Isernia", city: "Isernia", kind: "station" },
 
   // ── Stazioni italiane — Campania ───────────────────────────────────────
   { name: "Salerno", city: "Salerno", kind: "station" },
@@ -522,6 +550,11 @@ const LOCATIONS: Location[] = [
   { name: "Capua", city: "Capua", kind: "station" },
   { name: "Pozzuoli", city: "Pozzuoli", kind: "station" },
   { name: "Campobasso", city: "Campobasso", kind: "station" },
+  { name: "Aversa", city: "Aversa", kind: "station" },
+  { name: "Afragola", city: "Afragola", kind: "station" },
+  { name: "Scafati", city: "Scafati", kind: "station" },
+  { name: "Maddaloni", city: "Maddaloni", kind: "station" },
+  { name: "Giugliano-Qualiano", city: "Giugliano in Campania", kind: "station" },
 
   // ── Stazioni italiane — Puglia ─────────────────────────────────────────
   { name: "Foggia", city: "Foggia", kind: "station" },
@@ -539,6 +572,16 @@ const LOCATIONS: Location[] = [
   { name: "Manfredonia", city: "Manfredonia", kind: "station" },
   { name: "Altamura", city: "Altamura", kind: "station" },
   { name: "Gravina in Puglia", city: "Gravina in Puglia", kind: "station" },
+  { name: "Bisceglie", city: "Bisceglie", kind: "station" },
+  { name: "Fasano", city: "Fasano", kind: "station" },
+  { name: "Ostuni", city: "Ostuni", kind: "station" },
+  { name: "Francavilla Fontana", city: "Francavilla Fontana", kind: "station" },
+  { name: "Massafra", city: "Massafra", kind: "station" },
+  { name: "Manduria", city: "Manduria", kind: "station" },
+  { name: "Gioia del Colle", city: "Gioia del Colle", kind: "station" },
+  { name: "Ruvo di Puglia", city: "Ruvo di Puglia", kind: "station" },
+  { name: "Mesagne", city: "Mesagne", kind: "station" },
+  { name: "Trinitapoli", city: "Trinitapoli", kind: "station" },
 
   // ── Stazioni italiane — Basilicata e Calabria ───────────────────────────
   { name: "Potenza Centrale", city: "Potenza", kind: "station" },
@@ -553,6 +596,14 @@ const LOCATIONS: Location[] = [
   { name: "Castrovillari", city: "Castrovillari", kind: "station" },
   { name: "Vibo Valentia", city: "Vibo Valentia", kind: "station" },
   { name: "Palmi", city: "Palmi", kind: "station" },
+  { name: "Villa San Giovanni", city: "Villa San Giovanni", kind: "station" },
+  { name: "Gioia Tauro", city: "Gioia Tauro", kind: "station" },
+  { name: "Locri", city: "Locri", kind: "station" },
+  { name: "Siderno", city: "Siderno", kind: "station" },
+  { name: "Rosarno", city: "Rosarno", kind: "station" },
+  { name: "Melito di Porto Salvo", city: "Melito di Porto Salvo", kind: "station" },
+  { name: "Pisticci", city: "Pisticci", kind: "station" },
+  { name: "Lavello", city: "Lavello", kind: "station" },
 
   // ── Stazioni italiane — Sicilia ─────────────────────────────────────────
   { name: "Messina Centrale", city: "Messina", kind: "station" },
@@ -573,6 +624,11 @@ const LOCATIONS: Location[] = [
   { name: "Sciacca", city: "Sciacca", kind: "station" },
   { name: "Alcamo", city: "Alcamo", kind: "station" },
   { name: "Barcellona Pozzo di Gotto", city: "Barcellona P.G.", kind: "station" },
+  { name: "Milazzo", city: "Milazzo", kind: "station" },
+  { name: "Licata", city: "Licata", kind: "station" },
+  { name: "Ribera", city: "Ribera", kind: "station" },
+  { name: "Comiso", city: "Comiso", kind: "station" },
+  { name: "Noto", city: "Noto", kind: "station" },
 
   // ── Stazioni italiane — Sardegna ────────────────────────────────────────
   { name: "Cagliari", city: "Cagliari", kind: "station" },
@@ -583,6 +639,9 @@ const LOCATIONS: Location[] = [
   { name: "Quartu Sant'Elena", city: "Quartu Sant'Elena", kind: "station" },
   { name: "Iglesias", city: "Iglesias", kind: "station" },
   { name: "Carbonia", city: "Carbonia", kind: "station" },
+  { name: "Porto Torres", city: "Porto Torres", kind: "station" },
+  { name: "Alghero", city: "Alghero", kind: "station" },
+  { name: "Tempio Pausania", city: "Tempio Pausania", kind: "station" },
 
   // ── Stazioni europee — Francia ──────────────────────────────────────────
   { name: "Parigi Gare de Lyon", city: "Parigi", kind: "station" },

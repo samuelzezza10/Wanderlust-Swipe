@@ -299,6 +299,12 @@ const en = {
       "Who said travel was expensive? {amount} left over! 💪",
       "You just outsmarted the travel industry by {amount}! 🤓",
     ],
+    trainNotDirectMessages: [
+      "No direct train? Pack snacks — you've got connections! 🚂😄",
+      "This train stops more than a tourist with a selfie stick 📸🚂",
+      "Direct? Overrated. Connections = more station sandwiches! 🥪",
+      "Your destination needs a scenic detour. Enjoy the ride! 🌄",
+    ],
   },
   notifications: {
     title: "Notifications",
@@ -699,6 +705,12 @@ const it: Translations = {
       "Guarda un po': {amount} in più nel borsello! 🐷",
       "Chi ha detto che viaggiare costa? Avanzano {amount}! 💪",
       "Hai fregato l'industria del turismo di {amount}! 🤓",
+    ],
+    trainNotDirectMessages: [
+      "Nessun diretto? Metti gli snack in borsa, si cambia! 🚂😄",
+      "Questo treno si ferma più di uno zio che racconta storie 📖🚂",
+      "Diretto? Sopravvalutato. I cambi = più panini in stazione! 🥪",
+      "La tua meta richiede un piccolo giro panoramico. Goditi! 🌄",
     ],
   },
   notifications: {
@@ -1101,6 +1113,12 @@ const es: Translations = {
       "¿Quién dijo que viajar era caro? ¡Sobran {amount}! 💪",
       "¡Le has ganado al turismo por {amount}! 🤓",
     ],
+    trainNotDirectMessages: [
+      "¿Sin directo? ¡Prepara snacks, tienes transbordos! 🚂😄",
+      "Este tren para más que un turista con selfie stick 📸🚂",
+      "¿Directo? Sobrevalorado. ¡Transbordos = más bocadillos! 🥪",
+      "Tu destino pide un pequeño desvío panorámico. ¡Disfruta! 🌄",
+    ],
   },
   notifications: {
     title: "Notificaciones",
@@ -1501,6 +1519,12 @@ const fr: Translations = {
       "Voilà {amount} de retour dans vos poches ! 🐷",
       "Qui a dit que voyager coûtait cher ? Il reste {amount} ! 💪",
       "Vous avez battu l'industrie du tourisme de {amount} ! 🤓",
+    ],
+    trainNotDirectMessages: [
+      "Pas de direct ? Prépare des snacks — tu as des correspondances ! 🚂😄",
+      "Ce train s'arrête plus qu'un touriste avec un selfie stick 📸🚂",
+      "Direct ? Surévalué. Correspondances = plus de sandwichs en gare ! 🥪",
+      "Ta destination demande un détour panoramique. Profite du voyage ! 🌄",
     ],
   },
   notifications: {
@@ -1903,6 +1927,12 @@ const de: Translations = {
       "Wer sagt, Reisen sei teuer? {amount} übrig! 💪",
       "Sie haben die Reisebranche um {amount} überlistet! 🤓",
     ],
+    trainNotDirectMessages: [
+      "Kein Direktzug? Pack Snacks ein — du hast Umstiege! 🚂😄",
+      "Dieser Zug hält öfter als ein Tourist mit Selfie-Stick 📸🚂",
+      "Direkt? Überschätzt. Umstiege = mehr Bahnhofssandwiches! 🥪",
+      "Dein Ziel braucht einen malerischen Umweg. Genieß die Fahrt! 🌄",
+    ],
   },
   notifications: {
     title: "Benachrichtigungen",
@@ -2303,6 +2333,12 @@ const zh: Translations = {
       "看看您，比预算多出 {amount}！🐷",
       "谁说旅行贵？剩余 {amount}！💪",
       "您在旅游行业省下了 {amount}！🤓",
+    ],
+    trainNotDirectMessages: [
+      "没有直达？备好零食，准备换乘！🚂😄",
+      "这趟火车停靠次数比拿自拍杆的游客还多 📸🚂",
+      "直达？被高估了。换乘=更多站台三明治！🥪",
+      "您的目的地需要一段风景路线，好好享受！🌄",
     ],
   },
   notifications: {

@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { formatCurrency, formatDistance } from "@/lib/currency";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import {
   useGenerateTrips, useSaveTrip, useGetPreferences, useGetUsage,
@@ -153,12 +154,12 @@ function ShareModal({
   trip: TripSuggestion | null;
   onClose: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [copied, setCopied] = useState(false);
 
   if (!trip) return null;
 
-  const shareText = `✈️ ${trip.destination}, ${trip.country} — ${trip.durationDays} notti a €${trip.totalPrice}/persona! Scoperto su TravelBudget 🌍`;
+  const shareText = `✈️ ${trip.destination}, ${trip.country} — ${trip.durationDays} notti a ${formatCurrency(trip.totalPrice, lang)}/persona! Scoperto su TravelBudget 🌍`;
   const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(shareText)}`;
 
@@ -349,6 +350,7 @@ function PreSearchState({
   recentSearches?: SearchHistoryEntry[];
   onRepeat?: (entry: SearchHistoryEntry) => void;
 }) {
+  const { lang } = useI18n();
   const recent = recentSearches?.slice(0, 3) ?? [];
 
   return (
@@ -402,7 +404,7 @@ function PreSearchState({
                 parts.push(`→ ${entry.arrivalLocation}`);
               if (entry.numberOfNights)
                 parts.push(`${entry.numberOfNights} ${entry.numberOfNights === 1 ? t.profile.night : t.profile.nights}`);
-              if (entry.budget) parts.push(`€${entry.budget}`);
+              if (entry.budget) parts.push(formatCurrency(entry.budget, lang));
               const label = parts.join(" · ") || "—";
 
               return (
@@ -436,7 +438,7 @@ const GUEST_SEARCH_LIMIT = 5;
 export default function Discover() {
   const { isSignedIn } = useAuth();
   const [, setLocation] = useLocation();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
@@ -1110,7 +1112,7 @@ function TripCard({
   budget?: number;
   numberOfPeople?: number;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-10, 10]);
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0]);
@@ -1123,7 +1125,7 @@ function TripCard({
   const savings = budget && budget > 0 ? budget - totalForAll : 0;
   const savingsMsg = savings > 10
     ? t.fun.savingsMessages[trip.id.charCodeAt(trip.id.length - 1) % t.fun.savingsMessages.length]
-      .replace("{amount}", `€${savings}`)
+      .replace("{amount}", formatCurrency(savings, lang))
     : null;
 
   return (
@@ -1202,13 +1204,13 @@ function TripCard({
               ) : (
                 <>
                   <span className="text-[11px] opacity-80">{trip.tripType === "one_way" ? "→" : "↕"}</span>
-                  <span>€{trip.tripType === "one_way" ? trip.transport.price : roundTripTransport}</span>
+                  <span>{formatCurrency(trip.tripType === "one_way" ? trip.transport.price : roundTripTransport, lang)}</span>
                 </>
               )}
             </div>
             <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
               <Hotel className="w-3.5 h-3.5 shrink-0" />
-              <span>${trip.hotel.pricePerNight}/nt</span>
+              <span>{formatCurrency(trip.hotel.pricePerNight, lang)}/nt</span>
             </div>
             <div className="flex items-center gap-0.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-sm">
               {"★".repeat(trip.hotel.stars)}{"☆".repeat(5 - trip.hotel.stars)}
@@ -1218,7 +1220,7 @@ function TripCard({
             <p className="text-sm text-white/80 line-clamp-2 pr-4 leading-relaxed">{trip.description}</p>
             <div className="text-right shrink-0">
               <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
-              <p className="text-2xl font-black">€{totalForAll}</p>
+              <p className="text-2xl font-black">{formatCurrency(totalForAll, lang)}</p>
             </div>
           </div>
         </div>
@@ -1228,14 +1230,14 @@ function TripCard({
 }
 
 /* ─── Transport block ────────────────────────────────────────────────────── */
-function TransportBlock({ label, transport, t }: { label?: string; transport: NonNullable<TripSuggestion["returnTransport"]>; t: ReturnType<typeof useI18n>["t"] }) {
+function TransportBlock({ label, transport, t, lang }: { label?: string; transport: NonNullable<TripSuggestion["returnTransport"]>; t: ReturnType<typeof useI18n>["t"]; lang: string }) {
   return (
     <div>
       {label && <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{label}</p>}
       <div className="space-y-2 text-sm">
         <div className="flex items-center justify-between">
           <span className="font-semibold">{transport.company}</span>
-          <span className="font-medium">${transport.price}<span className="text-muted-foreground text-xs"> /p</span></span>
+          <span className="font-medium">{formatCurrency(transport.price, lang)}<span className="text-muted-foreground text-xs"> /p</span></span>
         </div>
         <div className="flex items-center">
           <div className="text-center min-w-[56px]">
@@ -1274,7 +1276,7 @@ function TripDetailSheet({
   budget?: number;
   numberOfPeople?: number;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   return (
     <Sheet open={!!trip} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -1294,7 +1296,7 @@ function TripDetailSheet({
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-white/70 uppercase tracking-wider">{t.tripDetail.totalCost}</p>
-                    <p className="text-2xl font-bold">€{(numberOfPeople ?? 1) * trip.totalPrice}</p>
+                    <p className="text-2xl font-bold">{formatCurrency((numberOfPeople ?? 1) * trip.totalPrice, lang)}</p>
                     {numberOfPeople && numberOfPeople > 1 && (
                       <p className="text-xs text-white/60">{numberOfPeople} {t.tripDetail.perPerson.includes("person") ? "people" : "persone"}</p>
                     )}
@@ -1338,12 +1340,19 @@ function TripDetailSheet({
                   label={trip.tripType === "round_trip" ? t.tripDetail.outbound : undefined}
                   transport={trip.transport}
                   t={t}
+                  lang={lang}
                 />
                 {trip.tripType === "round_trip" && trip.returnTransport && (
                   <>
                     <div className="border-t border-border" />
-                    <TransportBlock label={t.tripDetail.returnJourney} transport={trip.returnTransport} t={t} />
+                    <TransportBlock label={t.tripDetail.returnJourney} transport={trip.returnTransport} t={t} lang={lang} />
                   </>
+                )}
+                {trip.transport.type === "train" && !trip.transport.isDirect && (
+                  <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-400/20 rounded-xl px-3 py-2 text-xs text-orange-700">
+                    <span className="text-base shrink-0">🚂</span>
+                    <p>{t.fun.trainNotDirectMessages[trip.destination.length % t.fun.trainNotDirectMessages.length]}</p>
+                  </div>
                 )}
               </section>
 
@@ -1357,9 +1366,9 @@ function TripDetailSheet({
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-semibold">{trip.hotel.name}</span>
                     <div className="text-right shrink-0">
-                      <p className="font-medium">${trip.hotel.pricePerNight}{t.tripDetail.perNight}</p>
+                      <p className="font-medium">{formatCurrency(trip.hotel.pricePerNight, lang)}{t.tripDetail.perNight}</p>
                       {trip.hotelTotalCost != null && (
-                        <p className="text-xs text-muted-foreground">{t.tripDetail.totalHotel}: ${trip.hotelTotalCost}</p>
+                        <p className="text-xs text-muted-foreground">{t.tripDetail.totalHotel}: {formatCurrency(trip.hotelTotalCost, lang)}</p>
                       )}
                     </div>
                   </div>
@@ -1376,7 +1385,7 @@ function TripDetailSheet({
                   <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Navigation className="w-3.5 h-3.5" />
-                      {trip.hotel.distanceFromCenter} {t.tripDetail.kmFromCenter}
+                      {formatDistance(trip.hotel.distanceFromCenter, lang)}
                     </span>
                     <span className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5" />
@@ -1407,9 +1416,9 @@ function TripDetailSheet({
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
                   <Plane className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
                   <p className="text-lg font-bold">
-                    €{trip.tripType === "one_way"
+                    {formatCurrency(trip.tripType === "one_way"
                       ? trip.transport.price
-                      : trip.transport.price + (trip.returnTransport?.price ?? 0)}
+                      : trip.transport.price + (trip.returnTransport?.price ?? 0), lang)}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {trip.tripType === "one_way" ? `${t.tripDetail.flight} →` : `${t.tripDetail.flight} ↕`}
@@ -1417,7 +1426,7 @@ function TripDetailSheet({
                 </div>
                 <div className="flex-1 bg-muted/40 rounded-xl p-3 text-center">
                   <Hotel className="w-4 h-4 mx-auto text-muted-foreground mb-1" />
-                  <p className="text-lg font-bold">${trip.hotelTotalCost ?? trip.hotel.pricePerNight}</p>
+                  <p className="text-lg font-bold">{formatCurrency(trip.hotelTotalCost ?? trip.hotel.pricePerNight, lang)}</p>
                   <p className="text-xs text-muted-foreground">{t.tripDetail.totalHotel}</p>
                 </div>
               </section>
