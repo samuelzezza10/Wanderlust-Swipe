@@ -73,7 +73,7 @@ export const DEFAULT_FILTERS: TripFilters = {
   elevator: false,
   petFriendly: false,
   tripType: "round_trip",
-  sortBy: "best_value",
+  sortBy: "cheapest",
   maxTravelTimeHours: null,
   departureTimeSlot: "any",
 };

@@ -344,6 +344,8 @@ const en = {
     fewerNights: "Try {n} nights",
     removeAccFilter: "Remove accommodation filter",
     editFilters: "Edit filters manually",
+    changeDates: "Try different travel dates",
+    removeFilters: "Remove advanced filters",
   },
   legal: {
     termsOfService: "Terms of Service",
@@ -773,6 +775,8 @@ const it: Translations = {
     fewerNights: "Prova con {n} notti",
     removeAccFilter: "Rimuovi filtro alloggio",
     editFilters: "Modifica filtri manualmente",
+    changeDates: "Prova date di viaggio diverse",
+    removeFilters: "Rimuovi filtri avanzati",
   },
   legal: {
     termsOfService: "Termini di servizio",
@@ -1202,6 +1206,8 @@ const es: Translations = {
     fewerNights: "Probar con {n} noches",
     removeAccFilter: "Eliminar filtro de alojamiento",
     editFilters: "Editar filtros manualmente",
+    changeDates: "Prueba fechas de viaje diferentes",
+    removeFilters: "Eliminar filtros avanzados",
   },
   legal: {
     termsOfService: "Términos de servicio",
@@ -1631,6 +1637,8 @@ const fr: Translations = {
     fewerNights: "Essayer {n} nuits",
     removeAccFilter: "Supprimer le filtre hébergement",
     editFilters: "Modifier les filtres manuellement",
+    changeDates: "Essayez d'autres dates de voyage",
+    removeFilters: "Supprimer les filtres avancés",
   },
   legal: {
     termsOfService: "Conditions d'utilisation",
@@ -2060,6 +2068,8 @@ const de: Translations = {
     fewerNights: "{n} Nächte versuchen",
     removeAccFilter: "Unterkunftsfilter entfernen",
     editFilters: "Filter manuell bearbeiten",
+    changeDates: "Andere Reisedaten ausprobieren",
+    removeFilters: "Erweiterte Filter entfernen",
   },
   legal: {
     termsOfService: "Nutzungsbedingungen",
@@ -2489,6 +2499,8 @@ const zh: Translations = {
     fewerNights: "试试 {n} 晚",
     removeAccFilter: "移除住宿筛选",
     editFilters: "手动编辑筛选",
+    changeDates: "尝试不同出行日期",
+    removeFilters: "移除高级筛选",
   },
   legal: {
     termsOfService: "服务条款",

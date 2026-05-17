@@ -13,7 +13,7 @@ import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
   Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
-  Crown, Zap, Sparkles, RefreshCw, Lightbulb,
+  Crown, Zap, Sparkles, RefreshCw, Lightbulb, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -767,6 +767,14 @@ export default function Discover() {
     }
   };
 
+  const handlePrev = () => {
+    if (currentIndex > 0) setCurrentIndex(currentIndex - 1);
+  };
+
+  const handleNext = () => {
+    if (currentIndex < trips.length - 1) setCurrentIndex(currentIndex + 1);
+  };
+
   /* ── Welcome splash ── */
   if (showSplash) {
     return (
@@ -931,6 +939,36 @@ export default function Discover() {
           apply: () => { const u = { ...filters, accommodationType: null }; setFilters(u); loadTrips(u); },
         });
       }
+      suggestions.push({
+        label: t.smartSuggestions.changeDates,
+        apply: () => setFilterOpen(true),
+      });
+      const hasAdvancedFilters =
+        filters.maxTravelTimeHours !== null ||
+        filters.departureTimeSlot !== "any" ||
+        filters.minHotelRating !== null ||
+        filters.propertyType !== "any" ||
+        filters.hotelStarsMin !== 1 ||
+        filters.hotelStarsMax !== 5;
+      if (hasAdvancedFilters) {
+        suggestions.push({
+          label: t.smartSuggestions.removeFilters,
+          apply: () => {
+            const u = {
+              ...filters,
+              maxTravelTimeHours: null,
+              departureTimeSlot: "any" as const,
+              minHotelRating: null,
+              propertyType: "any" as const,
+              accommodationType: null,
+              hotelStarsMin: 1,
+              hotelStarsMax: 5,
+            };
+            setFilters(u);
+            loadTrips(u);
+          },
+        });
+      }
     }
 
     return (
@@ -1043,6 +1081,26 @@ export default function Discover() {
         <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} compact />
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
+          {/* Card counter + prev/next navigation */}
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <button
+              onClick={handlePrev}
+              disabled={currentIndex === 0}
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-white/80 text-sm font-semibold tabular-nums">
+              {currentIndex + 1} / {trips.length}
+            </span>
+            <button
+              onClick={handleNext}
+              disabled={currentIndex >= trips.length - 1}
+              className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
           <div className="relative w-full max-w-sm aspect-[3/4]">
             <AnimatePresence>
               {trips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
