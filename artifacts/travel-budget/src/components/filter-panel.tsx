@@ -69,7 +69,7 @@ export const DEFAULT_FILTERS: TripFilters = {
   onlinePayment: false,
   elevator: false,
   petFriendly: false,
-  tripType: "round_trip",
+  tripType: "one_way",
 };
 
 export function countActiveFilters(f: TripFilters): number {
@@ -280,7 +280,7 @@ export function FilterSheet({
           <div className="space-y-3">
             <p className="text-sm font-semibold text-foreground">{t.filters.tripTypeLabel}</p>
             <div className="flex gap-2">
-              {(["round_trip", "one_way"] as const).map((v) => (
+              {(["one_way", "round_trip"] as const).map((v) => (
                 <button
                   key={v}
                   onClick={() => {

@@ -483,7 +483,7 @@ export default function Discover() {
           minHotelRating: f.minHotelRating,
           hotelStarsMin: f.hotelStarsMin !== 1 ? f.hotelStarsMin : null,
           hotelStarsMax: f.hotelStarsMax !== 5 ? f.hotelStarsMax : null,
-          tripType: f.tripType || "round_trip",
+          tripType: f.tripType || "one_way",
           hotelAmenities: [
             ...(f.freeCancellation ? ["free_cancellation"] : []),
             ...(f.breakfastIncluded ? ["breakfast"] : []),
