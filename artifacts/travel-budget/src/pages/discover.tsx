@@ -1593,20 +1593,9 @@ function TripCard({
             </div>
           </div>
 
-          {/* Row 3: budget remaining + total */}
+          {/* Row 3: total only */}
           <div className="flex items-end justify-between">
-            <div>
-              {savings > 0 ? (
-                <p className="text-xs font-semibold text-emerald-400">
-                  {t.tripDetail.budgetRemaining}: {formatCurrency(savings, lang)}
-                </p>
-              ) : savings < 0 ? (
-                <p className="text-xs font-semibold text-red-400">
-                  +{formatCurrency(Math.abs(savings), lang)} {t.tripDetail.overBudget}
-                </p>
-              ) : null}
-              <p className="text-[10px] text-white/50 mt-0.5">{trip.durationDays}n · {trip.tripType === "one_way" ? "→" : "↕"}</p>
-            </div>
+            <p className="text-[10px] text-white/50">{trip.durationDays}n · {trip.tripType === "one_way" ? "→" : "↕"}</p>
             <div className="text-right shrink-0">
               <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
               <p className="text-2xl font-black">{formatCurrency(totalForAll, lang)}</p>
@@ -1722,21 +1711,15 @@ function TripDetailSheet({
                 <h3 className="font-bold text-base flex items-center gap-2">
                   <Plane className="w-4 h-4 text-primary" />
                   {trip.transport.type === "train" ? t.tripDetail.train : t.tripDetail.flight}
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">
+                    {trip.tripType === "one_way" ? "→ Solo andata" : "↕ Andata e ritorno"}
+                  </span>
                 </h3>
-                {/* ONE-WAY: single leg, no sub-label needed (no return implied)
-                    ROUND-TRIP: "Andata" + "Ritorno" labels clarify both legs */}
                 <TransportBlock
-                  label={trip.tripType === "round_trip" ? t.tripDetail.outbound : undefined}
                   transport={trip.transport}
                   t={t}
                   lang={lang}
                 />
-                {trip.tripType === "round_trip" && trip.returnTransport && (
-                  <>
-                    <div className="border-t border-border" />
-                    <TransportBlock label={t.tripDetail.returnJourney} transport={trip.returnTransport} t={t} lang={lang} />
-                  </>
-                )}
                 {trip.transport.type === "train" && !trip.transport.isDirect && (
                   <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-400/20 rounded-xl px-3 py-2 text-xs text-orange-700">
                     <span className="text-base shrink-0">🚂</span>
