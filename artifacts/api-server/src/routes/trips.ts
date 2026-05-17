@@ -948,6 +948,24 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
       .catch(() => {});
   }
 
+  // ─── Rank by relevance score ──────────────────────────────────────
+  type NonNullTrip = NonNullable<(typeof results)[0]>;
+  const scoreTrip = (trip: NonNullTrip): number => {
+    let s = 0;
+    const totalForGroup = trip.totalPrice * (numberOfPeople as number);
+    const fit = 1 - totalForGroup / (budget as number);
+    s += Math.max(0, Math.min(50, fit * 50));
+    if (trip.transport.isDirect) s += 20;
+    s += (trip.hotel.rating / 10) * 15;
+    s += (trip.hotel.stars / 5) * 10;
+    s += Math.max(0, (1 - Math.min(trip.hotel.distanceFromCenter, 5) / 5) * 5);
+    return s;
+  };
+  results.sort((a, b) => {
+    if (!a || !b) return 0;
+    return scoreTrip(b) - scoreTrip(a);
+  });
+
   return res.json(results);
 });
 

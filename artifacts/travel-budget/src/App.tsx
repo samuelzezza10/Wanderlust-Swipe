@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { queryClient } from "./lib/queryClient";
 import { LanguageProvider, useI18n } from "./lib/i18n";
+import { NotificationsProvider } from "./lib/notifications";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { OfflineBanner } from "./components/offline-banner";
 
@@ -198,7 +199,9 @@ export default function App() {
   return (
     <WouterRouter base={basePath}>
       <LanguageProvider>
-        <ClerkProviderWithRoutes />
+        <NotificationsProvider>
+          <ClerkProviderWithRoutes />
+        </NotificationsProvider>
       </LanguageProvider>
     </WouterRouter>
   );

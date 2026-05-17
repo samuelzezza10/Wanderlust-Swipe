@@ -8,7 +8,7 @@ import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
   Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
-  Crown, Zap, Sparkles, RefreshCw,
+  Crown, Zap, Sparkles, RefreshCw, Lightbulb,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -16,12 +16,16 @@ import { toast } from "sonner";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { TripSuggestion } from "@workspace/api-client-react";
 import { useI18n } from "@/lib/i18n";
+import { useNotifications } from "@/lib/notifications";
+import { getCachedSearch, setCachedSearch } from "@/lib/searchCache";
 import {
   FilterBar,
   FilterSheet,
   DEFAULT_FILTERS,
   type TripFilters,
 } from "@/components/filter-panel";
+
+const FILTERS_STORAGE_KEY = "tb_discover_filters";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -386,7 +390,14 @@ export default function Discover() {
   const [detailTrip, setDetailTrip] = useState<TripSuggestion | null>(null);
   const [shareTrip, setShareTrip] = useState<TripSuggestion | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [filters, setFilters] = useState<TripFilters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<TripFilters>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) ?? "null") as TripFilters | null;
+      return stored ?? DEFAULT_FILTERS;
+    } catch {
+      return DEFAULT_FILTERS;
+    }
+  });
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [guestCount, setGuestCount] = useState(() =>
     parseInt(localStorage.getItem("guestSearchCount") ?? "0")
@@ -440,6 +451,15 @@ export default function Discover() {
     }
   }, [prefs]);
 
+  const { addNotification } = useNotifications();
+
+  // Persist filters to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(filters));
+    } catch {}
+  }, [filters]);
+
   const { isOnline, checkConnectivity } = useOnlineStatus();
 
   const generateTrips = useGenerateTrips();
@@ -461,6 +481,16 @@ export default function Discover() {
       }
     } else if (usage && !usage.isPremium && usage.searchCount >= usage.freeLimit) {
       setShowPremiumModal(true);
+      return;
+    }
+
+    // ── Check client-side cache first ─────────────────────────────
+    const cached = getCachedSearch<TripSuggestion>(f as unknown as Record<string, unknown>);
+    if (cached && cached.length > 0) {
+      setTrips(cached);
+      setCurrentIndex(0);
+      setHistory([]);
+      setHasSearched(true);
       return;
     }
 
@@ -528,6 +558,8 @@ export default function Discover() {
           setCurrentIndex(0);
           setHistory([]);
           setHasSearched(true);
+          // Save results to client-side cache
+          setCachedSearch(f as unknown as Record<string, unknown>, cleaned);
           // Track guest searches
           if (!isSignedIn) {
             const newCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0") + 1;
@@ -572,6 +604,7 @@ export default function Discover() {
     if (direction === "right") {
       if (isSignedIn) {
         saveTrip.mutate({ data: { tripData: trip, destination: trip.destination, totalPrice: trip.totalPrice, imageUrl: trip.imageUrl } });
+        addNotification(t.notifications.tripSaved, "trip_saved");
       } else {
         toast(t.discover.signUpToSave, {
           action: { label: t.landing.getStarted, onClick: () => setLocation("/sign-up") },
@@ -671,8 +704,46 @@ export default function Discover() {
 
   /* ── No results ── */
   if (trips.length === 0) {
-    const isNoDirectTrain =
-      filters.trainPreference === "direct" && !!filters.departureStation;
+    const isNoDirectTrain = filters.trainPreference === "direct" && !!filters.departureStation;
+
+    // Build smart suggestions based on current filters
+    interface Suggestion { label: string; apply: () => void }
+    const suggestions: Suggestion[] = [];
+    if (!isNoDirectTrain) {
+      if (filters.budget && filters.budget < 3000) {
+        const higher = Math.round(filters.budget * 1.25 / 100) * 100;
+        suggestions.push({
+          label: t.smartSuggestions.increaseBudget.replace("{amount}", String(higher)),
+          apply: () => { const u = { ...filters, budget: higher }; setFilters(u); loadTrips(u); },
+        });
+      }
+      if (filters.flightPreference === "direct") {
+        suggestions.push({
+          label: t.smartSuggestions.allowFlightStops,
+          apply: () => { const u = { ...filters, flightPreference: "any" as const }; setFilters(u); loadTrips(u); },
+        });
+      }
+      if (filters.trainPreference === "direct") {
+        suggestions.push({
+          label: t.smartSuggestions.allowTrainStops,
+          apply: () => { const u = { ...filters, trainPreference: "any" as const }; setFilters(u); loadTrips(u); },
+        });
+      }
+      if (filters.numberOfNights > 5) {
+        const fewer = Math.max(3, filters.numberOfNights - 2);
+        suggestions.push({
+          label: t.smartSuggestions.fewerNights.replace("{n}", String(fewer)),
+          apply: () => { const u = { ...filters, numberOfNights: fewer }; setFilters(u); loadTrips(u); },
+        });
+      }
+      if (filters.accommodationType && filters.accommodationType !== "standard") {
+        suggestions.push({
+          label: t.smartSuggestions.removeAccFilter,
+          apply: () => { const u = { ...filters, accommodationType: null }; setFilters(u); loadTrips(u); },
+        });
+      }
+    }
+
     return (
       <div className="flex-1 flex flex-col bg-primary">
         {UsageBadge}
@@ -704,7 +775,28 @@ export default function Discover() {
               <div className="text-6xl mb-4">😭</div>
               <h2 className="text-xl font-bold text-white mb-2">{t.filters.noResults}</h2>
               <p className="text-base text-white/75 mb-2 max-w-xs">{noResultsMsgRef.current}</p>
-              <p className="text-sm text-white/55 mb-8 max-w-xs">{t.filters.noResultsSub}</p>
+              <p className="text-sm text-white/55 mb-6 max-w-xs">{t.filters.noResultsSub}</p>
+
+              {suggestions.length > 0 && (
+                <div className="w-full max-w-xs mb-6">
+                  <div className="flex items-center gap-2 mb-3 justify-center">
+                    <Lightbulb className="w-4 h-4 text-[hsl(25,90%,70%)]" />
+                    <p className="text-sm font-semibold text-white/90">{t.smartSuggestions.title}</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {suggestions.slice(0, 3).map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={s.apply}
+                        className="w-full py-2.5 px-4 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-sm font-medium text-white transition-colors text-left"
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Button onClick={() => setFilterOpen(true)} variant="outline" className="gap-2 border-white/40 text-white hover:bg-white/10">
                 <SlidersHorizontal className="w-4 h-4" />{t.filters.edit}
               </Button>
