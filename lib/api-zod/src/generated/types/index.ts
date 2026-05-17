@@ -14,6 +14,7 @@ export * from './surprisePreferences';
 export * from './surprisePreferencesAccommodationType';
 export * from './surprisePreferencesFlightPreference';
 export * from './surprisePreferencesTrainPreference';
+export * from './surprisePreferencesTripType';
 export * from './transportOption';
 export * from './transportOptionType';
 export * from './tripPreferences';

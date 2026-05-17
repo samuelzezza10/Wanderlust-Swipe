@@ -9,6 +9,14 @@ export interface HealthStatus {
   status: string;
 }
 
+export type SurprisePreferencesTripType = typeof SurprisePreferencesTripType[keyof typeof SurprisePreferencesTripType];
+
+
+export const SurprisePreferencesTripType = {
+  one_way: 'one_way',
+  round_trip: 'round_trip',
+} as const;
+
 export type SurprisePreferencesFlightPreference = typeof SurprisePreferencesFlightPreference[keyof typeof SurprisePreferencesFlightPreference];
 
 
@@ -50,7 +58,12 @@ export interface SurprisePreferences {
   /** @nullable */
   numberOfPets?: number | null;
   departureDate: string;
-  returnDate: string;
+  /**
+     * Required for round_trip, must be null for one_way
+     * @nullable
+     */
+  returnDate?: string | null;
+  tripType: SurprisePreferencesTripType;
   departureLocation: string;
   numberOfNights: number;
   flightPreference?: SurprisePreferencesFlightPreference;

@@ -8,6 +8,7 @@
 import type { SurprisePreferencesAccommodationType } from './surprisePreferencesAccommodationType';
 import type { SurprisePreferencesFlightPreference } from './surprisePreferencesFlightPreference';
 import type { SurprisePreferencesTrainPreference } from './surprisePreferencesTrainPreference';
+import type { SurprisePreferencesTripType } from './surprisePreferencesTripType';
 
 export interface SurprisePreferences {
   language?: string;
@@ -20,7 +21,12 @@ export interface SurprisePreferences {
   /** @nullable */
   numberOfPets?: number | null;
   departureDate: string;
-  returnDate: string;
+  /**
+     * Required for round_trip, must be null for one_way
+     * @nullable
+     */
+  returnDate?: string | null;
+  tripType: SurprisePreferencesTripType;
   departureLocation: string;
   numberOfNights: number;
   flightPreference?: SurprisePreferencesFlightPreference;

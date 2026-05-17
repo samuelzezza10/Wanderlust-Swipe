@@ -50,6 +50,7 @@ interface SurpriseFilters {
   departureStation: string;
   departureDate: string;
   returnDate: string;
+  tripType: "one_way" | "round_trip";
   flightPreference: TripFilters["flightPreference"];
   trainPreference: TripFilters["trainPreference"];
   accommodationType: TripFilters["accommodationType"];
@@ -75,6 +76,7 @@ const DEFAULT_SURPRISE_FILTERS: SurpriseFilters = {
   departureStation: "",
   departureDate: "",
   returnDate: "",
+  tripType: "round_trip",
   flightPreference: "any",
   trainPreference: "any",
   accommodationType: null,
@@ -164,7 +166,9 @@ export default function SurprisePage() {
 
   function handleGenerate() {
     const depDate = filters.departureDate || new Date().toISOString();
-    const retDate = filters.returnDate || new Date(Date.now() + filters.numberOfNights * 86400000).toISOString();
+    const retDate = filters.tripType === "one_way"
+      ? null
+      : (filters.returnDate || new Date(Date.now() + filters.numberOfNights * 86400000).toISOString());
     const hotelAmenities = [
       ...(filters.freeCancellation ? ["free_cancellation"] : []),
       ...(filters.breakfastIncluded ? ["breakfast"] : []),
@@ -185,7 +189,8 @@ export default function SurprisePage() {
           numberOfNights: filters.numberOfNights,
           departureLocation: effectiveDep,
           departureDate: depDate,
-          returnDate: retDate,
+          returnDate: retDate ?? null,
+          tripType: filters.tripType,
           flightPreference: filters.flightPreference,
           trainPreference: filters.trainPreference,
           accommodationType: filters.accommodationType,
@@ -344,10 +349,27 @@ export default function SurprisePage() {
             />
           </div>
 
-          {/* Dates */}
+          {/* Trip type toggle */}
           <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground mb-1 block">{t.surprise.datesLabel} ✈️</label>
+            {(["one_way", "round_trip"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setFilters(f => ({ ...f, tripType: v, ...(v === "one_way" ? { returnDate: "" } : {}) }))}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                  filters.tripType === v
+                    ? "bg-primary text-white shadow-md shadow-primary/30"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {v === "round_trip" ? `🔄 ${t.filters.roundTrip}` : `✈️ ${t.filters.oneWay}`}
+              </button>
+            ))}
+          </div>
+
+          {/* Dates */}
+          <div className={`grid gap-2 ${filters.tripType === "one_way" ? "grid-cols-1" : "grid-cols-2"}`}>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t.filters.departureDate} ✈️</label>
               <input
                 type="date"
                 value={filters.departureDate ? filters.departureDate.split("T")[0] : ""}
@@ -358,18 +380,21 @@ export default function SurprisePage() {
                 className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm"
               />
             </div>
-            <div className="flex-1">
-              <label className="text-xs text-muted-foreground mb-1 block">{t.surprise.datesLabel} 🏠</label>
-              <input
-                type="date"
-                value={filters.returnDate ? filters.returnDate.split("T")[0] : ""}
-                onChange={(e) => {
-                  const d = e.target.value ? new Date(e.target.value).toISOString() : "";
-                  setFilters(f => ({ ...f, returnDate: d }));
-                }}
-                className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm"
-              />
-            </div>
+            {filters.tripType !== "one_way" && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">{t.filters.returnDate} 🏠</label>
+                <input
+                  type="date"
+                  value={filters.returnDate ? filters.returnDate.split("T")[0] : ""}
+                  min={filters.departureDate ? filters.departureDate.split("T")[0] : undefined}
+                  onChange={(e) => {
+                    const d = e.target.value ? new Date(e.target.value).toISOString() : "";
+                    setFilters(f => ({ ...f, returnDate: d }));
+                  }}
+                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm"
+                />
+              </div>
+            )}
           </div>
 
           {/* Hotel amenities */}

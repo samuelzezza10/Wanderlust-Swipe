@@ -757,6 +757,7 @@ router.post("/trips/surprise", surpriseLimiter, (req, res) => {
     hotelStarsMin = null,
     hotelStarsMax = null,
     minHotelRating = null,
+    tripType = "round_trip",
   } = req.body;
 
   const cleanDeparture = extractCityName(departureLocation as string);
@@ -795,7 +796,7 @@ router.post("/trips/surprise", surpriseLimiter, (req, res) => {
         accommodationType as AccommodationType,
         propertyType,
         `surprise-${Date.now()}-${attempt}`,
-        "round_trip",
+        (tripType === "one_way" ? "one_way" : "round_trip") as "one_way" | "round_trip",
       );
 
       if (!trip) continue;
