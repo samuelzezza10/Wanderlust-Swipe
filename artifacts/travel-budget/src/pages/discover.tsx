@@ -952,8 +952,8 @@ function TripCard({
                 <span className="text-xs max-w-[100px] truncate">{departureFrom.split(" (")[0].split(" ")[0]} → {trip.destination}</span>
               ) : (
                 <>
-                  <span className="text-[11px] opacity-80">↕</span>
-                  <span>${roundTripTransport}</span>
+                  <span className="text-[11px] opacity-80">{trip.tripType === "one_way" ? "→" : "↕"}</span>
+                  <span>€{trip.tripType === "one_way" ? trip.transport.price : roundTripTransport}</span>
                 </>
               )}
             </div>

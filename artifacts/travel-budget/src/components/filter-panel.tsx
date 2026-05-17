@@ -378,7 +378,7 @@ export function FilterSheet({
               <span className="font-bold text-sm w-20 text-right">€{draft.budget.toLocaleString()}</span>
             </div>
             <p className="text-xs text-primary/70 font-medium">
-              💡 {t.filters.budgetIncludes}
+              💡 {draft.tripType === "one_way" ? t.filters.budgetIncludesOneWay : t.filters.budgetIncludes}
             </p>
             {errors["budget"] && (
               <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
