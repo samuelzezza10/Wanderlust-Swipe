@@ -417,10 +417,8 @@ export function FilterSheet({
           {/* ── Budget ─────────────────────────────────────── */}
           <div ref={budgetRef} className={`space-y-3 rounded-xl transition-colors ${errors["budget"] ? "p-3 ring-2 ring-red-400" : ""}`}>
             <p className="text-sm font-semibold text-foreground">{t.filters.budget}</p>
-            <div className="flex items-center gap-2">
-              <input type="range" min={50} max={20000} step={1} value={draft.budget}
-                onChange={(e) => set("budget", Number(e.target.value))}
-                className="flex-1 accent-primary" />
+            <div className="flex items-center gap-3 border-2 border-border rounded-xl px-4 py-3 bg-background focus-within:border-primary transition-colors">
+              <span className="text-xl font-bold text-muted-foreground select-none">€</span>
               <input
                 type="number"
                 min={50}
@@ -430,7 +428,8 @@ export function FilterSheet({
                   const v = Math.max(50, Math.min(20000, parseInt(e.target.value, 10) || 50));
                   set("budget", v);
                 }}
-                className="w-20 text-right text-sm font-bold border border-border rounded-lg px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                className="flex-1 text-2xl font-black bg-transparent focus:outline-none text-foreground min-w-0"
+                placeholder="1000"
               />
             </div>
             {errors["budget"] && (

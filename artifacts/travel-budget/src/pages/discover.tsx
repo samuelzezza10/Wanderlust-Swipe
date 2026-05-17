@@ -1376,7 +1376,6 @@ function TripListCard({
   onInfo: () => void;
 }) {
   const totalForAll = trip.totalPrice * numberOfPeople;
-  const savings = budget > 0 ? budget - totalForAll : 0;
 
   return (
     <motion.div
@@ -1406,11 +1405,6 @@ function TripListCard({
                 <p className="text-white font-bold text-base leading-tight">{trip.destination}</p>
                 <p className="text-white/60 text-xs">{trip.country}</p>
               </div>
-              {savings > 0 && (
-                <span className="text-emerald-400 text-[10px] font-semibold shrink-0 mt-0.5">
-                  -{formatCurrency(savings, lang)}
-                </span>
-              )}
             </div>
 
             {/* Pills row */}
