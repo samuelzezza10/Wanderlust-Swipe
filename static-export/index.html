@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WanderlustSwipe — Scopri il tuo prossimo viaggio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════
+       LANDING
+  ═══════════════════════════════════════════════════════ -->
+  <section id="page-landing" class="page active">
+    <div class="landing-inner">
+      <div class="landing-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-1 0-1.5.5-1.5.5L14 8 5.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 4.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+      </div>
+
+      <h1 class="landing-title">Viaggiare senza pensieri</h1>
+      <p class="landing-sub">Scorri i suggerimenti di viaggio come una rivista patinata. Trova la tua prossima avventura d'impulso.</p>
+
+      <div class="landing-actions">
+        <button class="btn btn-primary" onclick="showPage('discover')">Inizia ora</button>
+        <button class="btn btn-outline" onclick="showPage('saved')">I miei viaggi salvati</button>
+      </div>
+
+      <p class="landing-guest" onclick="showPage('discover')">Continua come ospite →</p>
+
+      <div class="landing-features">
+        <div class="feature-pill">✈️ Swipe per scoprire</div>
+        <div class="feature-pill">💾 Salva i preferiti</div>
+        <div class="feature-pill">🌍 30+ destinazioni</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       DISCOVER
+  ═══════════════════════════════════════════════════════ -->
+  <section id="page-discover" class="page">
+    <div class="discover-header">
+      <div class="discover-counter">
+        <button class="counter-btn" id="btn-prev" onclick="prevCard()">‹</button>
+        <span id="card-counter">1 / 15</span>
+        <button class="counter-btn" id="btn-next" onclick="nextCard()">›</button>
+      </div>
+      <div class="view-toggle">
+        <button class="toggle-btn active" id="toggle-swipe" onclick="setViewMode('swipe')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+          Swipe
+        </button>
+        <button class="toggle-btn" id="toggle-list" onclick="setViewMode('list')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+          Lista
+        </button>
+      </div>
+    </div>
+
+    <!-- Swipe view -->
+    <div id="swipe-view" class="swipe-view">
+      <div class="deck-container" id="deck-container">
+        <!-- Cards injected by JS -->
+      </div>
+
+      <!-- Swipe feedback overlays -->
+      <div class="swipe-hint swipe-hint-left" id="hint-left">✕ Skip</div>
+      <div class="swipe-hint swipe-hint-right" id="hint-right">♥ Salva</div>
+
+      <!-- Action buttons -->
+      <div class="action-buttons">
+        <button class="action-btn action-skip" onclick="handleSwipe('left')" title="Salta">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <button class="action-btn action-undo" onclick="undoSwipe()" id="btn-undo" title="Annulla">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <button class="action-btn action-save" onclick="handleSwipe('right')" title="Salva">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        </button>
+        <button class="action-btn action-filter" onclick="showFilters()" title="Info">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- List view -->
+    <div id="list-view" class="list-view hidden">
+      <div id="trip-list" class="trip-list"></div>
+    </div>
+
+    <!-- Seen all screen -->
+    <div id="seen-all" class="seen-all hidden">
+      <div class="seen-all-icon">🗺️</div>
+      <h2>Hai visto tutto!</h2>
+      <p>Hai esplorato tutte le destinazioni disponibili.</p>
+      <button class="btn btn-white" onclick="resetDeck()">Ricomincia</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SAVED
+  ═══════════════════════════════════════════════════════ -->
+  <section id="page-saved" class="page">
+    <div class="page-header">
+      <h1>Viaggi Salvati</h1>
+    </div>
+    <div id="saved-container" class="saved-container">
+      <!-- Injected by JS -->
+    </div>
+    <div id="saved-empty" class="saved-empty hidden">
+      <div class="empty-icon">✈️</div>
+      <h2>Nessun viaggio salvato</h2>
+      <p>Fai swipe verso destra sui viaggi che ti piacciono per salvarli qui.</p>
+      <button class="btn btn-primary" onclick="showPage('discover')">Scopri destinazioni</button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PROFILE
+  ═══════════════════════════════════════════════════════ -->
+  <section id="page-profile" class="page">
+    <div class="page-header">
+      <h1>Profilo</h1>
+    </div>
+    <div class="profile-content">
+      <div class="profile-avatar">
+        <span>👤</span>
+      </div>
+      <p class="profile-name">Ospite</p>
+      <p class="profile-email">Accedi per salvare i tuoi viaggi nel cloud</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-saved">0</div>
+          <div class="stat-label">Salvati</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-seen">0</div>
+          <div class="stat-label">Visti</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-skipped">0</div>
+          <div class="stat-label">Saltati</div>
+        </div>
+      </div>
+
+      <div class="plan-card">
+        <div class="plan-badge">Free</div>
+        <div class="plan-info">
+          <div class="plan-name">Piano gratuito</div>
+          <div class="plan-desc">20 ricerche al giorno</div>
+        </div>
+        <button class="btn btn-premium" onclick="showPremiumModal()">
+          👑 Premium
+        </button>
+      </div>
+
+      <div class="settings-list">
+        <div class="setting-row">
+          <span>🌍 Lingua</span>
+          <span class="setting-value">Italiano</span>
+        </div>
+        <div class="setting-row">
+          <span>🌙 Tema</span>
+          <span class="setting-value">Scuro</span>
+        </div>
+        <div class="setting-row" onclick="resetAll()" style="cursor:pointer; color: var(--destructive)">
+          <span>🗑️ Reimposta tutto</span>
+          <span>›</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       BOTTOM NAV
+  ═══════════════════════════════════════════════════════ -->
+  <nav id="bottom-nav" class="bottom-nav hidden">
+    <button class="nav-item" id="nav-discover" onclick="showPage('discover')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      <span>Scopri</span>
+    </button>
+    <button class="nav-item" id="nav-saved" onclick="showPage('saved')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      <span>Salvati</span>
+      <span class="nav-badge hidden" id="nav-saved-badge">0</span>
+    </button>
+    <button class="nav-item" id="nav-profile" onclick="showPage('profile')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+      <span>Profilo</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TRIP DETAIL MODAL
+  ═══════════════════════════════════════════════════════ -->
+  <div id="trip-modal" class="modal-overlay hidden" onclick="closeModal(event)">
+    <div class="modal-sheet" id="modal-sheet">
+      <div class="modal-handle"></div>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       PREMIUM MODAL
+  ═══════════════════════════════════════════════════════ -->
+  <div id="premium-modal" class="modal-overlay hidden" onclick="closePremiumModal(event)">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="premium-content">
+        <div class="premium-crown">👑</div>
+        <h2>Passa a Premium</h2>
+        <p class="premium-sub">Sblocca tutto per soli €3/mese</p>
+
+        <div class="plan-compare">
+          <div class="plan-col">
+            <div class="plan-col-label muted">Free</div>
+            <div class="plan-col-num">20</div>
+            <div class="plan-col-unit">al giorno</div>
+          </div>
+          <div class="plan-col plan-col-premium">
+            <div class="plan-price-badge">€3/mese</div>
+            <div class="plan-col-label primary">Premium</div>
+            <div class="plan-col-num primary">80</div>
+            <div class="plan-col-unit primary">al giorno</div>
+          </div>
+        </div>
+
+        <ul class="perk-list">
+          <li>⚡ 80 ricerche al giorno (vs 20 nel piano Free)</li>
+          <li>✨ Risultati AI prioritari</li>
+          <li>🚫 Nessuna pubblicità</li>
+          <li>⭐ Hotel e voli migliori in cima</li>
+        </ul>
+
+        <button class="btn btn-premium-full" onclick="closePremiumModal()">Inizia prova gratuita</button>
+        <button class="btn-text-only" onclick="closePremiumModal()">Continua con il piano Free</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       TOAST
+  ═══════════════════════════════════════════════════════ -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
