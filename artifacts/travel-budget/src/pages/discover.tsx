@@ -1422,9 +1422,15 @@ function TripDetailSheet({
                     <span className="text-xs text-muted-foreground ml-1">({trip.hotel.stars}/5)</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Navigation className="w-3.5 h-3.5" />
+                    <span className="flex items-center gap-1.5 flex-wrap">
+                      <Navigation className="w-3.5 h-3.5 shrink-0" />
                       {formatDistance(trip.hotel.distanceFromCenter, lang)}
+                      <span className="text-[10px] bg-primary/10 text-primary rounded-full px-2 py-0.5 font-medium">
+                        {trip.hotel.distanceFromCenter <= 1 ? t.tripDetail.cityCenter
+                          : trip.hotel.distanceFromCenter <= 3 ? t.tripDetail.centralArea
+                          : trip.hotel.distanceFromCenter <= 8 ? t.tripDetail.connectedArea
+                          : t.tripDetail.outskirts}
+                      </span>
                     </span>
                     <span className="flex items-center gap-1">
                       <Star className="w-3.5 h-3.5" />
@@ -1470,6 +1476,44 @@ function TripDetailSheet({
                 </div>
               </section>
 
+
+              {/* Budget breakdown */}
+              {budget != null && (
+                <section className="bg-muted/40 rounded-2xl p-4">
+                  <h3 className="font-semibold text-sm mb-3">💰 {t.tripDetail.totalCost}</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <Plane className="w-3.5 h-3.5" />{t.tripDetail.transport}
+                      </span>
+                      <span className="font-semibold">
+                        {formatCurrency(
+                          (trip.transport.price + (trip.returnTransport?.price ?? 0)) * (numberOfPeople ?? 1),
+                          lang,
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1.5">
+                        <Hotel className="w-3.5 h-3.5" />{t.tripDetail.hotel}
+                      </span>
+                      <span className="font-semibold">{formatCurrency(trip.hotelTotalCost ?? 0, lang)}</span>
+                    </div>
+                    <div className="border-t border-border pt-2 flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">{t.tripDetail.budgetRemaining}</span>
+                      {(() => {
+                        const spent = (trip.transport.price + (trip.returnTransport?.price ?? 0)) * (numberOfPeople ?? 1) + (trip.hotelTotalCost ?? 0);
+                        const remaining = Math.max(0, budget - spent);
+                        return (
+                          <span className={`font-bold ${remaining > 0 ? "text-green-600" : "text-orange-500"}`}>
+                            {remaining > 0 ? `+${formatCurrency(remaining, lang)}` : formatCurrency(0, lang)}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </section>
+              )}
 
               {/* Price disclaimer */}
               <p className="text-[11px] text-muted-foreground/70 leading-relaxed px-1">

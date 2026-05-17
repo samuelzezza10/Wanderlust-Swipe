@@ -560,6 +560,15 @@ function createDynamicDestination(cityName: string): DestinationData {
   };
 }
 
+/* ─── Hotel distance category ────────────────────────────────────────────── */
+// Maps distance from city center (km) to a category key used by the frontend.
+function getDistanceCategory(km: number): "city_center" | "central" | "connected" | "outskirts" {
+  if (km <= 1) return "city_center";
+  if (km <= 3) return "central";
+  if (km <= 8) return "connected";
+  return "outskirts";
+}
+
 /* ─── Trip generator ─────────────────────────────────────────────────────── */
 // The function has two COMPLETELY SEPARATE code paths — one-way never
 // allocates, computes, or returns any return-journey variable whatsoever.
@@ -644,14 +653,16 @@ function generateTrip(
   // ─── Hotel shared data ────────────────────────────────────────
   const hotelName = hotelList[randomBetween(0, hotelList.length - 1)];
   const { amenities: amenitySet, features } = generateHotelFeatures(tier);
-  const distanceFromCenter = parseFloat((Math.random() * 4 + 0.3).toFixed(1));
-  const transportToHotelKm = parseFloat((Math.random() * 28 + 2).toFixed(1));
+  // Distance from center is tier-based: luxury → city centre, budget → outskirts
+  const [minDist, maxDist] = tier === "luxury" ? [0.2, 1.5] : tier === "standard" ? [0.8, 4.0] : [2.5, 9.5];
+  const distanceFromCenter = parseFloat((minDist + Math.random() * (maxDist - minDist)).toFixed(1));
+  const transportToHotelKm = parseFloat((Math.random() * 20 + 1).toFixed(1));
   const ratingMin = tier === "luxury" ? 7.5 : tier === "standard" ? 6.0 : 3.5;
   const ratingMax = tier === "luxury" ? 10 : tier === "standard" ? 8.8 : 7.5;
   const rating = parseFloat((ratingMin + Math.random() * (ratingMax - ratingMin)).toFixed(1));
 
   const fromCity = departureCity || "origin";
-  const hotel = { name: hotelName, stars, pricePerNight, distanceFromCenter, amenities: amenitySet, rating, imageUrl: null };
+  const hotel = { name: hotelName, stars, pricePerNight, distanceFromCenter, distanceCategory: getDistanceCategory(distanceFromCenter), amenities: amenitySet, rating, imageUrl: null };
   const sharedFields = {
     id, destination: dest.destination, country: dest.country, departureCity: fromCity,
     hotel, hotelTotalCost, description: dest.description, highlights: dest.highlights,
@@ -677,6 +688,11 @@ function generateTrip(
       tripType: "one_way" as const,
       totalPrice,
       pricePerPerson: totalPerPerson,
+      budgetBreakdown: {
+        transport: Math.round(outboundPrice * numberOfPeople),
+        accommodation: hotelTotalCost,
+        remaining: Math.max(0, budget - totalPrice),
+      },
       transport: {
         type: transportType,
         company: getCompany(),
@@ -717,6 +733,11 @@ function generateTrip(
     tripType: "round_trip" as const,
     totalPrice,
     pricePerPerson: totalPerPerson,
+    budgetBreakdown: {
+      transport: Math.round((outboundPrice + returnPrice) * numberOfPeople),
+      accommodation: hotelTotalCost,
+      remaining: Math.max(0, budget - totalPrice),
+    },
     transport: {
       type: transportType,
       company: getCompany(),
@@ -956,9 +977,10 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     const fit = 1 - totalForGroup / (budget as number);
     s += Math.max(0, Math.min(50, fit * 50));
     if (trip.transport.isDirect) s += 20;
-    s += (trip.hotel.rating / 10) * 15;
-    s += (trip.hotel.stars / 5) * 10;
-    s += Math.max(0, (1 - Math.min(trip.hotel.distanceFromCenter, 5) / 5) * 5);
+    s += (trip.hotel.rating / 10) * 12;
+    s += (trip.hotel.stars / 5) * 8;
+    // Distance from centre is a top priority: closer = significantly higher score
+    s += Math.max(0, (1 - Math.min(trip.hotel.distanceFromCenter, 8) / 8) * 20);
     return s;
   };
   results.sort((a, b) => {

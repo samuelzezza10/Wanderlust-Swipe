@@ -371,12 +371,44 @@ export function FilterSheet({
           {/* ── Budget ─────────────────────────────────────── */}
           <div ref={budgetRef} className={`space-y-3 rounded-xl transition-colors ${errors["budget"] ? "p-3 ring-2 ring-red-400" : ""}`}>
             <p className="text-sm font-semibold text-foreground">{t.filters.budget}</p>
-            <div className="flex items-center gap-3">
-              <input type="range" min={100} max={20000} step={100} value={draft.budget}
+            <div className="flex items-center gap-2">
+              <input type="range" min={50} max={20000} step={1} value={draft.budget}
                 onChange={(e) => set("budget", Number(e.target.value))}
                 className="flex-1 accent-primary" />
-              <span className="font-bold text-sm w-20 text-right">€{draft.budget.toLocaleString()}</span>
+              <input
+                type="number"
+                min={50}
+                max={20000}
+                value={draft.budget}
+                onChange={(e) => {
+                  const v = Math.max(50, Math.min(20000, parseInt(e.target.value, 10) || 50));
+                  set("budget", v);
+                }}
+                className="w-20 text-right text-sm font-bold border border-border rounded-lg px-2 py-1.5 bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              />
             </div>
+            {(() => {
+              const hotelPct = draft.accommodationType === "luxury" ? 0.55 : draft.accommodationType === "budget" ? 0.28 : 0.42;
+              const transportTotal = Math.round(draft.budget * (1 - hotelPct) * 0.88);
+              const hotelTotal = Math.round(draft.budget * hotelPct);
+              const buffer = Math.max(0, draft.budget - transportTotal - hotelTotal);
+              return (
+                <div className="grid grid-cols-3 gap-1.5">
+                  <div className="bg-primary/8 rounded-lg p-2 text-center">
+                    <p className="text-[10px] text-muted-foreground mb-0.5">{t.filters.budgetTransport}</p>
+                    <p className="text-xs font-bold text-primary">~€{transportTotal.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg p-2 text-center" style={{ backgroundColor: "hsl(25 90% 55% / 0.08)" }}>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">{t.filters.budgetHotel}</p>
+                    <p className="text-xs font-bold text-orange-500">~€{hotelTotal.toLocaleString()}</p>
+                  </div>
+                  <div className="rounded-lg p-2 text-center" style={{ backgroundColor: "hsl(142 71% 45% / 0.08)" }}>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">{t.filters.budgetBuffer}</p>
+                    <p className="text-xs font-bold text-green-600">~€{buffer.toLocaleString()}</p>
+                  </div>
+                </div>
+              );
+            })()}
             <p className="text-xs text-primary/70 font-medium">
               💡 {draft.tripType === "one_way" ? t.filters.budgetIncludesOneWay : t.filters.budgetIncludes}
             </p>
