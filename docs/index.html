@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="it" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>WanderlustSwipe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  COOKIE BANNER                                           ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<div id="cookie-banner" class="cookie-banner hidden">
+  <div class="cookie-content">
+    <p class="cookie-title">La tua privacy è importante</p>
+    <p class="cookie-text">Utilizziamo i cookie per migliorare la navigazione, mostrare contenuti personalizzati e analizzare il traffico. Cliccando su "Accetta tutto", acconsenti all'uso dei cookie.</p>
+    <div class="cookie-links">
+      <button class="cookie-link" onclick="showPage('privacy')">Informativa sulla privacy</button>
+      <button class="cookie-link" onclick="showPage('terms')">Termini di servizio</button>
+    </div>
+    <div class="cookie-actions">
+      <button class="btn-cookie-reject" onclick="rejectCookies()">Rifiuta</button>
+      <button class="btn-cookie-accept" onclick="acceptCookies()">Accetta tutto</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  LANDING                                                 ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<section id="page-landing" class="page page-active">
+  <!-- Language switcher -->
+  <div class="lang-switcher">
+    <button onclick="setLang('it')" class="lang-btn active" id="lang-it" title="Italiano">🇮🇹</button>
+    <button onclick="setLang('en')" class="lang-btn" id="lang-en" title="English">🇬🇧</button>
+    <button onclick="setLang('es')" class="lang-btn" id="lang-es" title="Español">🇪🇸</button>
+    <button onclick="setLang('fr')" class="lang-btn" id="lang-fr" title="Français">🇫🇷</button>
+    <button onclick="setLang('de')" class="lang-btn" id="lang-de" title="Deutsch">🇩🇪</button>
+    <button onclick="setLang('zh')" class="lang-btn" id="lang-zh" title="中文">🇨🇳</button>
+  </div>
+
+  <div class="landing-center">
+    <div class="landing-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-1 0-1.5.5-1.5.5L14 8 5.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 4.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+    </div>
+    <h1 class="landing-title" id="t-landing-title">Viaggiare senza pensieri</h1>
+    <p class="landing-sub" id="t-landing-sub">Scorri i suggerimenti di viaggio curati come una rivista patinata. Trova la tua prossima avventura d'impulso.</p>
+    <div class="landing-btns">
+      <button class="btn-primary w-full" onclick="showPage('discover')" id="t-landing-start">Inizia ora</button>
+      <button class="btn-outline w-full" onclick="showPage('discover')" id="t-landing-login">Accedi</button>
+    </div>
+    <button class="landing-guest" onclick="showPage('discover')" id="t-landing-guest">Continua come ospite</button>
+  </div>
+
+  <div class="landing-footer">
+    <button class="footer-link" onclick="showPage('privacy')">Informativa sulla privacy</button>
+    <span class="footer-sep">·</span>
+    <button class="footer-link" onclick="showPage('terms')">Termini di servizio</button>
+  </div>
+</section>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  DISCOVER                                                ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<section id="page-discover" class="page pb-nav">
+
+  <!-- Top bar -->
+  <div class="discover-topbar">
+    <div class="counter-group">
+      <button class="counter-btn" id="btn-prev" onclick="prevCard()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="counter-text" id="card-counter">1 / 15</span>
+      <button class="counter-btn" id="btn-next" onclick="nextCard()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="view-toggle-group">
+      <button class="view-toggle-btn active" id="toggle-swipe" onclick="setViewMode('swipe')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+        Swipe
+      </button>
+      <button class="view-toggle-btn" id="toggle-list" onclick="setViewMode('list')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+        Lista
+      </button>
+    </div>
+  </div>
+
+  <!-- ── SWIPE VIEW ── -->
+  <div id="swipe-view" class="swipe-view">
+    <div class="deck-wrap" id="deck-container"></div>
+    <!-- Swipe hint overlays -->
+    <div class="swipe-feedback swipe-like" id="hint-like">LIKE</div>
+    <div class="swipe-feedback swipe-nope" id="hint-nope">NOPE</div>
+    <!-- Action buttons -->
+    <div class="action-row">
+      <button class="action-skip" onclick="handleSwipe('left')" title="Salta">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <button class="action-undo" id="btn-undo" onclick="undoSwipe()" title="Annulla">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="action-save" onclick="handleSwipe('right')" title="Salva">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      </button>
+      <button class="action-filter" onclick="showFilterSheet()" title="Filtri">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="8" x2="16" y1="12" y2="12"/><line x1="12" x2="12" y1="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── LIST VIEW ── -->
+  <div id="list-view" class="list-view hidden">
+    <div id="trip-list" class="trip-list-inner"></div>
+  </div>
+
+  <!-- ── SEEN ALL ── -->
+  <div id="seen-all" class="seen-all hidden">
+    <div class="seen-all-emoji">🗺️</div>
+    <h2 class="seen-all-title" id="t-seen-title">Hai visto tutto!</h2>
+    <p class="seen-all-sub" id="t-seen-sub">Puoi ricominciare per trovare nuove destinazioni.</p>
+    <button class="btn-white mt-8" onclick="resetDeck()">Ricomincia dall'inizio</button>
+  </div>
+</section>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  SAVED                                                   ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<section id="page-saved" class="page pb-nav hidden">
+  <div class="page-head">
+    <h1 id="t-saved-title">Viaggi Salvati</h1>
+  </div>
+  <div id="saved-list" class="saved-scroll"></div>
+  <div id="saved-empty" class="empty-state hidden">
+    <div class="empty-emoji">✈️</div>
+    <h2 id="t-saved-empty">Nessun viaggio salvato</h2>
+    <p id="t-saved-empty-sub">Fai swipe verso destra sulle destinazioni che ti piacciono per salvarle qui.</p>
+    <button class="btn-primary mt-6" onclick="showPage('discover')" id="t-go-discover">Scopri destinazioni</button>
+  </div>
+</section>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  PROFILE                                                 ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<section id="page-profile" class="page pb-nav hidden">
+  <div class="page-head">
+    <h1 id="t-profile-title">Profilo</h1>
+  </div>
+  <div class="profile-scroll">
+    <!-- Avatar -->
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar">👤</div>
+      <p class="profile-name" id="t-profile-guest">Ospite</p>
+      <p class="profile-email" id="t-profile-sub">Accedi per salvare i tuoi viaggi nel cloud</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-box">
+        <p class="stat-num" id="stat-saved">0</p>
+        <p class="stat-lbl" id="t-stat-saved">Salvati</p>
+      </div>
+      <div class="stat-box">
+        <p class="stat-num" id="stat-seen">0</p>
+        <p class="stat-lbl" id="t-stat-seen">Visti</p>
+      </div>
+      <div class="stat-box">
+        <p class="stat-num" id="stat-skip">0</p>
+        <p class="stat-lbl" id="t-stat-skip">Saltati</p>
+      </div>
+    </div>
+
+    <!-- Plan card -->
+    <div class="plan-card">
+      <span class="plan-badge">Free</span>
+      <div class="plan-info">
+        <p class="plan-name" id="t-plan-name">Piano gratuito</p>
+        <p class="plan-desc" id="t-plan-desc">20 ricerche al giorno</p>
+      </div>
+      <button class="btn-premium-sm" onclick="showPremiumModal()" id="t-plan-upgrade">👑 Premium</button>
+    </div>
+
+    <!-- Settings -->
+    <div class="settings-card">
+      <div class="settings-row" onclick="showPage('privacy')">
+        <span>🔒 <span id="t-privacy">Informativa sulla privacy</span></span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="settings-row" onclick="showPage('terms')">
+        <span>📄 <span id="t-terms">Termini di servizio</span></span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="settings-row danger" onclick="confirmReset()">
+        <span>🗑️ <span id="t-reset">Reimposta tutto</span></span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  PRIVACY                                                 ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<section id="page-privacy" class="page pb-nav hidden">
+  <div class="page-head-back">
+    <button class="back-btn" onclick="goBack()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <h1>Privacy Policy</h1>
+  </div>
+  <div class="prose-page">
+    <h2>Informativa sulla Privacy</h2>
+    <p>WanderlustSwipe raccoglie dati minimi necessari al funzionamento del servizio. Non vendiamo dati a terzi.</p>
+    <h3>Dati raccolti</h3>
+    <p>I dati salvati localmente nel browser (localStorage) includono le tue preferenze di viaggio e i viaggi salvati.</p>
+    <h3>Cookie</h3>
+    <p>Utilizziamo cookie tecnici per il funzionamento del sito e, previa autorizzazione, cookie analitici per migliorare il servizio.</p>
+    <h3>Contatti</h3>
+    <p>Per qualsiasi richiesta relativa alla privacy: privacy@wanderlustswipe.app</p>
+  </div>
+</section>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  TERMS                                                   ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<section id="page-terms" class="page pb-nav hidden">
+  <div class="page-head-back">
+    <button class="back-btn" onclick="goBack()">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <h1>Termini di Servizio</h1>
+  </div>
+  <div class="prose-page">
+    <h2>Termini e Condizioni</h2>
+    <p>Utilizzando WanderlustSwipe accetti i seguenti termini di utilizzo del servizio.</p>
+    <h3>Utilizzo del servizio</h3>
+    <p>Il servizio è fornito "così com'è". I prezzi mostrati sono indicativi e possono variare al momento della prenotazione.</p>
+    <h3>Limitazione di responsabilità</h3>
+    <p>WanderlustSwipe non è responsabile per variazioni di prezzo o disponibilità degli alloggi e trasporti mostrati.</p>
+  </div>
+</section>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  BOTTOM NAV                                              ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<nav id="bottom-nav" class="bottom-nav hidden">
+  <!-- Discover -->
+  <button class="nav-btn" id="nav-discover" onclick="showPage('discover')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+    <span id="t-nav-discover">Scopri</span>
+  </button>
+
+  <!-- Premium Crown -->
+  <button class="nav-btn nav-premium" onclick="showPremiumModal()">
+    <div class="crown-glow">
+      <div class="crown-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 4-4-8-4 8-6-4zm3 16h14"/></svg>
+      </div>
+    </div>
+    <span id="t-nav-premium">Premium</span>
+  </button>
+
+  <!-- Saved -->
+  <button class="nav-btn" id="nav-saved" onclick="showPage('saved')">
+    <div class="nav-icon-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      <span class="nav-badge hidden" id="nav-saved-badge">0</span>
+    </div>
+    <span id="t-nav-saved">Salvati</span>
+  </button>
+
+  <!-- Profile -->
+  <button class="nav-btn" id="nav-profile" onclick="showPage('profile')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+    <span id="t-nav-profile">Profilo</span>
+  </button>
+
+  <!-- Bell -->
+  <button class="nav-btn" onclick="showNotifPanel()">
+    <div class="nav-icon-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span class="nav-badge hidden" id="nav-notif-badge">0</span>
+    </div>
+    <span id="t-nav-notif">Notifiche</span>
+  </button>
+</nav>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  TRIP DETAIL SHEET                                       ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<div id="detail-overlay" class="sheet-overlay hidden" onclick="closeDetail(event)">
+  <div class="sheet-panel" id="detail-panel">
+    <div class="sheet-handle"></div>
+    <!-- Hero image -->
+    <div class="detail-hero" id="detail-hero">
+      <img id="detail-img" src="" alt="" />
+      <div class="detail-hero-grad"></div>
+      <div class="detail-hero-content">
+        <div class="detail-hero-left">
+          <h2 id="detail-dest" class="detail-dest-title"></h2>
+          <p id="detail-country" class="detail-country"></p>
+        </div>
+        <div class="detail-hero-right">
+          <p class="detail-total-label" id="t-total-cost">COSTO TOTALE</p>
+          <p id="detail-price" class="detail-price-big"></p>
+        </div>
+      </div>
+      <button class="detail-share-btn" onclick="openShareForCurrent()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+      </button>
+    </div>
+
+    <div class="detail-scroll">
+      <!-- Overview -->
+      <div class="detail-section">
+        <h3 class="detail-section-title" id="t-overview">Panoramica</h3>
+        <p id="detail-desc" class="detail-desc-text"></p>
+      </div>
+
+      <!-- Highlights -->
+      <div class="detail-section" id="detail-highlights-section">
+        <h3 class="detail-section-title" id="t-highlights">Da non perdere</h3>
+        <div id="detail-highlights" class="detail-tags"></div>
+      </div>
+
+      <!-- Transport -->
+      <div class="detail-section detail-card-section">
+        <h3 class="detail-card-title" id="t-transport-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-primary"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-1 0-1.5.5-1.5.5L14 8 5.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 4.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+          <span id="t-transport-label">Trasporto</span>
+          <span id="detail-trip-type" class="detail-card-badge"></span>
+        </h3>
+        <div class="transport-row">
+          <div class="transport-company-row">
+            <span id="detail-company" class="transport-company"></span>
+            <span id="detail-direct" class="transport-direct"></span>
+          </div>
+          <div class="transport-times">
+            <div class="transport-time-col">
+              <p class="time-label" id="t-dep">Partenza</p>
+              <p id="detail-dep-time" class="time-val"></p>
+            </div>
+            <div class="transport-arrow">
+              <p id="detail-duration" class="time-label text-center"></p>
+              <div class="transport-line">
+                <div class="transport-line-bar"></div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              </div>
+            </div>
+            <div class="transport-time-col text-right">
+              <p class="time-label" id="t-arr">Arrivo</p>
+              <p id="detail-arr-time" class="time-val"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hotel -->
+      <div class="detail-section detail-card-section">
+        <h3 class="detail-card-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-primary"><path d="M3 22V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v15"/><path d="M2 22h20"/><path d="M6 11h4"/><path d="M14 11h4"/><path d="M6 15h4"/><path d="M14 15h4"/><path d="M10 22V18h4v4"/></svg>
+          <span id="t-hotel">Hotel</span>
+        </h3>
+        <div class="hotel-name-row">
+          <span id="detail-hotel-name" class="hotel-name"></span>
+          <div class="hotel-price-col">
+            <p id="detail-hotel-price" class="hotel-price-val"></p>
+            <p id="detail-hotel-total" class="hotel-total-val"></p>
+          </div>
+        </div>
+        <div id="detail-hotel-stars" class="hotel-stars"></div>
+        <div class="hotel-meta-row">
+          <span id="detail-hotel-dist" class="hotel-meta-item"></span>
+          <span id="detail-hotel-rating" class="hotel-meta-item"></span>
+        </div>
+        <div id="detail-amenities" class="amenities-wrap"></div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-3-row">
+        <div class="stats-3-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-muted mx-auto mb-1"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <p id="detail-nights" class="stats-3-num"></p>
+          <p class="stats-3-lbl" id="t-nights">notti</p>
+        </div>
+        <div class="stats-3-box">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-muted mx-auto mb-1"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <p id="detail-people" class="stats-3-num"></p>
+          <p class="stats-3-lbl" id="t-people">persone</p>
+        </div>
+        <div class="stats-3-box stats-3-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-primary mx-auto mb-1"><path d="M4 10h12"/><path d="M4 14h9"/><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 20c3 0 4.8-1.4 6.1-2.6"/><path d="m19 6 1 14"/><path d="m19 6-4 2"/></svg>
+          <p id="detail-total-num" class="stats-3-num primary-text"></p>
+          <p class="stats-3-lbl primary-text" id="t-total">Totale</p>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <p class="price-disclaimer">⚠️ I prezzi mostrati sono stimati e indicativi. Potrebbero variare al momento della prenotazione.</p>
+
+      <!-- Booking links -->
+      <div class="detail-card-section">
+        <p class="booking-title" id="t-book-title">Prenota ora</p>
+        <p class="booking-sub" id="t-book-sub">Ti portiamo sui migliori siti di prenotazione</p>
+        <div class="booking-links" id="detail-booking-links"></div>
+      </div>
+
+      <!-- CTA buttons -->
+      <div class="detail-cta">
+        <button class="btn-outline flex-1" onclick="openShareForCurrent()" id="t-share-trip">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/></svg>
+          Condividi
+        </button>
+        <button class="btn-primary flex-1" id="detail-save-btn" id="t-save-trip">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Salva viaggio
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  SHARE MODAL                                             ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<div id="share-overlay" class="sheet-overlay hidden" onclick="closeShare(event)">
+  <div class="sheet-panel share-panel">
+    <div class="sheet-handle"></div>
+    <div class="share-header">
+      <h3 class="share-title" id="t-share-title">Condividi viaggio</h3>
+      <button class="icon-close-btn" onclick="closeShare()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="share-preview" id="share-preview"></div>
+    <div class="share-btns">
+      <a id="share-wa" href="#" target="_blank" rel="noopener noreferrer" class="share-btn share-wa">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>WhatsApp</span>
+      </a>
+      <a id="share-fb" href="#" target="_blank" rel="noopener noreferrer" class="share-btn share-fb">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1877F2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+        <span>Facebook</span>
+      </a>
+      <button class="share-btn share-copy" onclick="copyShareText()" id="btn-copy">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+        <span id="t-copy">Copia testo</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  PREMIUM MODAL                                           ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<div id="premium-overlay" class="sheet-overlay hidden" onclick="closePremium(event)">
+  <div class="sheet-panel premium-panel">
+    <div class="sheet-handle"></div>
+    <div class="premium-body">
+      <div class="premium-crown-wrap">
+        <div class="premium-crown-circle">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 4-4-8-4 8-6-4zm3 16h14"/></svg>
+        </div>
+      </div>
+      <h2 class="premium-title" id="t-premium-title">Passa a Premium</h2>
+      <p class="premium-sub" id="t-premium-sub">Sblocca tutto per soli €3/mese</p>
+
+      <div class="plan-compare">
+        <div class="plan-col-free">
+          <p class="plan-col-label muted">Free</p>
+          <p class="plan-col-num">20</p>
+          <p class="plan-col-unit" id="t-per-day">al giorno</p>
+        </div>
+        <div class="plan-col-premium">
+          <span class="plan-price-chip" id="t-premium-price">€3/mese</span>
+          <p class="plan-col-label primary">Premium</p>
+          <p class="plan-col-num primary">80</p>
+          <p class="plan-col-unit primary" id="t-per-day2">al giorno</p>
+        </div>
+      </div>
+
+      <div class="perk-list">
+        <div class="perk-row">
+          <div class="perk-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+          <span id="t-perk1">80 ricerche al giorno</span>
+        </div>
+        <div class="perk-row">
+          <div class="perk-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <span id="t-perk2">Filtri avanzati sbloccati</span>
+        </div>
+        <div class="perk-row">
+          <div class="perk-icon"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg></div>
+          <span id="t-perk3">Risultati AI prioritari</span>
+        </div>
+      </div>
+
+      <button class="btn-premium-full" onclick="closePremium()" id="t-premium-cta">
+        Abbonati — €3/mese
+      </button>
+      <p class="premium-fine" id="t-premium-fine">Annulla in qualsiasi momento · Nessun impegno</p>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  FILTER SHEET                                            ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<div id="filter-overlay" class="sheet-overlay hidden" onclick="closeFilterSheet(event)">
+  <div class="sheet-panel filter-panel">
+    <div class="sheet-handle"></div>
+    <div class="filter-header">
+      <h3 id="t-filter-title">Filtri</h3>
+      <button class="icon-close-btn" onclick="closeFilterSheet()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="filter-scroll">
+      <div class="filter-group">
+        <label class="filter-label" id="t-f-budget">Budget totale (€)</label>
+        <input type="number" id="f-budget" class="filter-input" placeholder="2000" value="2000" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" id="t-f-people">Numero di persone</label>
+        <div class="stepper-row">
+          <button class="stepper-btn" onclick="stepFilter('f-people',-1)">−</button>
+          <input type="number" id="f-people" class="stepper-input" value="2" min="1" max="20" readonly />
+          <button class="stepper-btn" onclick="stepFilter('f-people',1)">+</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" id="t-f-nights">Numero di notti</label>
+        <div class="stepper-row">
+          <button class="stepper-btn" onclick="stepFilter('f-nights',-1)">−</button>
+          <input type="number" id="f-nights" class="stepper-input" value="5" min="1" max="30" readonly />
+          <button class="stepper-btn" onclick="stepFilter('f-nights',1)">+</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" id="t-f-dep">Partenza da</label>
+        <input type="text" id="f-departure" class="filter-input" placeholder="Milano, Roma, …" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" id="t-f-dest">Destinazione (opzionale)</label>
+        <input type="text" id="f-arrival" class="filter-input" placeholder="Qualsiasi" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" id="t-f-type">Tipo viaggio</label>
+        <div class="radio-row">
+          <label class="radio-label"><input type="radio" name="trip-type" value="round_trip" checked /> Andata e ritorno</label>
+          <label class="radio-label"><input type="radio" name="trip-type" value="one_way" /> Solo andata</label>
+        </div>
+      </div>
+    </div>
+    <div class="filter-footer">
+      <button class="btn-outline flex-1" onclick="resetFilters()" id="t-f-reset">Reimposta</button>
+      <button class="btn-primary flex-1" onclick="applyFilters()" id="t-f-apply">Applica</button>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  NOTIFICATIONS PANEL                                     ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<div id="notif-overlay" class="sheet-overlay hidden" onclick="closeNotif(event)">
+  <div class="sheet-panel notif-panel">
+    <div class="sheet-handle"></div>
+    <div class="notif-header">
+      <h3 id="t-notif-title">Notifiche</h3>
+      <button class="icon-close-btn" onclick="closeNotif()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div id="notif-list" class="notif-list">
+      <div class="notif-empty">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3;margin-bottom:12px"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+        <p id="t-notif-empty">Nessuna notifica</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ╔═══════════════════════════════════════════════════════════╗
+     ║  TOAST                                                   ║
+     ╚═══════════════════════════════════════════════════════════╝ -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
