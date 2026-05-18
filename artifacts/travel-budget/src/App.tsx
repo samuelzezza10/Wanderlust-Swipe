@@ -11,6 +11,7 @@ import { LanguageProvider, useI18n } from "./lib/i18n";
 import { NotificationsProvider } from "./lib/notifications";
 import { useOnlineStatus } from "./hooks/useOnlineStatus";
 import { OfflineBanner } from "./components/offline-banner";
+import { setBaseUrl } from "@workspace/api-client-react";
 
 import { Layout } from "./components/layout";
 import { ErrorBoundary } from "./components/error-boundary";
@@ -26,6 +27,14 @@ import PrivacyPolicy from "./pages/privacy";
 import TermsOfService from "./pages/terms";
 import SurprisePage from "./pages/surprise";
 import NotFound from "./pages/not-found";
+
+// When deployed to GitHub Pages (or any static host without a backend),
+// set VITE_API_BASE_URL to the URL of the deployed Replit API server,
+// e.g. https://your-api.your-user.replit.app
+const _apiBaseUrl = import.meta.env.VITE_API_BASE_URL as string | undefined;
+if (_apiBaseUrl) {
+  setBaseUrl(_apiBaseUrl);
+}
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
