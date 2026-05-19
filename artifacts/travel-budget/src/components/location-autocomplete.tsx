@@ -966,11 +966,18 @@ export function LocationAutocomplete({
     function updatePos() {
       if (!inputRef.current) return;
       const rect = inputRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const dropdownMaxH = 240;
+      const openUpward = spaceBelow < dropdownMaxH + 8 && rect.top > dropdownMaxH;
       setDropdownStyle({
         position: "fixed",
-        top: rect.bottom + 4,
+        ...(openUpward
+          ? { bottom: viewportHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
         left: rect.left,
         width: rect.width,
+        maxHeight: dropdownMaxH,
         zIndex: 9999,
       });
     }
