@@ -935,7 +935,7 @@ function renderDiscoverPreSearch() {
 
   return `
     <div class="discover-bg with-nav">
-      <!-- Usage badge -->
+      ${renderAppHeader()}
       ${renderUsageBadge()}
 
       <!-- Surprise banner -->
@@ -1001,6 +1001,33 @@ window.repeatSearch = function(idx) {
   doSearch();
 };
 
+/* ─── App Header (area utente persistente) ──────────────────────────────── */
+function renderAppHeader() {
+  const t = State.t;
+  const isSignedIn = State.isSignedIn;
+  const userName = isSignedIn ? (State.user.name || State.user.email || t.nav.profile) : t.nav.guestLabel;
+  const initials = userName.trim().split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || 'G';
+  return `
+    <header style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 8px;background:rgba(0,0,0,0.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.1)">
+      <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="navigate('/discover')">
+        <div style="width:28px;height:28px;background:white;border-radius:8px;display:flex;align-items:center;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 4c-2 0-4 1-5.5 2.5L10 10 1.8 8.2c-.5-.1-.9.3-.8.8l1.8 8.3c.1.5.6.9 1.1 1l8.1 1.8c.5.1 1-.3.9-.8L11.5 11"/></svg>
+        </div>
+        <span style="font-weight:800;font-size:15px;color:white;letter-spacing:-0.3px">TravelBudget</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button onclick="navigate('/saved')" style="background:rgba(255,255,255,0.15);border:none;border-radius:20px;padding:5px 10px;color:white;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px">
+          ${IC.heart} ${t.nav.saved}
+        </button>
+        <button onclick="navigate('/profile')" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:none;border-radius:20px;padding:5px 10px;cursor:pointer">
+          <div style="width:22px;height:22px;border-radius:50%;background:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--primary);flex-shrink:0">${initials}</div>
+          <span style="color:white;font-size:12px;font-weight:600;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isSignedIn ? userName.split(' ')[0] : t.nav.signIn}</span>
+        </button>
+      </div>
+    </header>
+  `;
+}
+
 function renderUsageBadge() {
   const t = State.t;
   let count = null;
@@ -1025,6 +1052,7 @@ function renderDiscoverNoResults() {
   const isNoDirectTrain = f.trainPreference === 'direct' && !!f.departureStation;
   return `
     <div class="discover-bg with-nav" style="overflow-y:auto">
+      ${renderAppHeader()}
       ${renderUsageBadge()}
       <div class="deck-seen-all">
         ${isNoDirectTrain ? `
@@ -1107,19 +1135,30 @@ function renderDiscoverSwipe(trips, idx) {
         <div class="card-body">
           <div class="card-dest">${tr.destination}</div>
           <div class="card-country">${IC.mapPin} ${tr.country}</div>
-          <div class="card-price-row">
+          <div class="card-chips" style="margin-bottom:6px">
+            <span class="card-chip" style="${tr.transport.direct ? 'background:rgba(34,197,94,0.65)' : ''}">${bf ? IC.plane : IC.train} ${tr.transport.company.split(' ')[0]}</span>
+            <span class="card-chip" style="${tr.transport.direct ? 'background:rgba(34,197,94,0.65)' : ''}">${tr.transport.direct ? '✓ Diretto' : '~ Scali'}</span>
+            ${tr.transport.departureTime ? `<span class="card-chip">${IC.clock} ${tr.transport.departureTime}${tr.transport.arrivalTime ? ' → ' + tr.transport.arrivalTime : ''}</span>` : ''}
+          </div>
+          <div class="card-chips" style="margin-bottom:8px">
+            <span class="card-chip">${IC.clock} ${tr.transport.duration}</span>
+            <span class="card-chip">${IC.hotel} ${'★'.repeat(tr.hotel.stars)}</span>
+            <span class="card-chip">🌙 ${f.numberOfNights}n</span>
+          </div>
+          <div class="card-price-row" style="margin-bottom:0">
             <div>
               <span class="card-price">€${tr.totalPrice.toLocaleString()}</span>
               <span class="card-price-label">${t.discover.total}</span>
             </div>
-            <button class="card-info-btn" onclick="openTripDetail('${tr.id}')" style="position:static">ℹ</button>
           </div>
-          <div class="card-chips">
-            <span class="card-chip">${bf ? IC.plane : IC.train} ${tr.transport.duration}</span>
-            <span class="card-chip">${IC.hotel} ${'★'.repeat(tr.hotel.stars)}</span>
-            <span class="card-chip">🌙 ${f.numberOfNights}n</span>
-          </div>
-          ${isTop ? `<p class="card-fun-caption">${caption(tr)}</p>` : ''}
+          ${isTop ? `
+          <button
+            class="prenota-cta-btn"
+            onclick="event.stopPropagation();openTripDetail('${tr.id}')"
+            style="width:100%;margin-top:10px;padding:10px;background:white;color:var(--primary);font-weight:700;border-radius:12px;font-size:13px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,0.18)"
+          >
+            ✈ Prenota ora
+          </button>` : ''}
         </div>
       </div>
     `;
@@ -1127,6 +1166,7 @@ function renderDiscoverSwipe(trips, idx) {
 
   return `
     <div class="discover-bg with-nav" style="overflow:hidden">
+      ${renderAppHeader()}
       ${renderUsageBadge()}
 
       <!-- Filter bar -->
@@ -1176,6 +1216,7 @@ function renderDiscoverList(trips) {
   const f = State.filters;
   return `
     <div class="discover-bg with-nav" style="overflow:hidden">
+      ${renderAppHeader()}
       ${renderUsageBadge()}
       <!-- Filter bar -->
       <div class="filter-bar-wrap">
@@ -1202,10 +1243,19 @@ function renderDiscoverList(trips) {
               <div>
                 <div class="list-trip-dest">${tr.destination}</div>
                 <div class="list-trip-country">${tr.country}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+                  <span style="font-size:11px;background:rgba(var(--primary-rgb,79,70,229),0.1);color:var(--primary);padding:2px 8px;border-radius:20px;font-weight:600">${tr.transport.type==='train'?'🚂':'✈'} ${tr.transport.company.split(' ')[0]}</span>
+                  <span style="font-size:11px;background:${tr.transport.direct?'rgba(34,197,94,0.12)':'rgba(0,0,0,0.06)'};color:${tr.transport.direct?'#16a34a':'#555'};padding:2px 8px;border-radius:20px;font-weight:600">${tr.transport.direct?'✓ Diretto':'~ Scali'}</span>
+                  ${tr.transport.departureTime?`<span style="font-size:11px;background:rgba(0,0,0,0.06);padding:2px 8px;border-radius:20px;color:#555">⏱ ${tr.transport.departureTime}${tr.transport.arrivalTime?' → '+tr.transport.arrivalTime:''}</span>`:''}
+                  <span style="font-size:11px;background:rgba(0,0,0,0.06);padding:2px 8px;border-radius:20px;color:#555">⏳ ${tr.transport.duration}</span>
+                </div>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:flex-end">
-                <div class="list-trip-price">€${tr.totalPrice.toLocaleString()}</div>
-                <div class="list-trip-meta">${IC.hotel} ${'★'.repeat(tr.hotel.stars)} · ${tr.durationDays}gg</div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px">
+                <div>
+                  <div class="list-trip-price">€${tr.totalPrice.toLocaleString()}</div>
+                  <div class="list-trip-meta">${IC.hotel} ${'★'.repeat(tr.hotel.stars)} · ${tr.durationDays}gg</div>
+                </div>
+                <button onclick="event.stopPropagation();openTripDetail('${tr.id}')" style="padding:8px 16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">✈ Prenota</button>
               </div>
             </div>
           </div>
