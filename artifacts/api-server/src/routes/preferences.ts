@@ -35,7 +35,7 @@ router.get("/preferences", requireAuth, async (req: any, res) => {
       .from(userPreferencesTable)
       .where(eq(userPreferencesTable.clerkUserId, req.userId));
 
-    if (!prefs) return res.status(404).json({ error: "No preferences found" });
+    if (!prefs) return res.json({ language: "it", isPremium: false, tripSearchCount: 0, onboardingCompleted: false, cookieConsent: false });
     return res.json(formatPrefs(prefs));
   } catch (err) {
     req.log.error({ err }, "Error fetching preferences");
