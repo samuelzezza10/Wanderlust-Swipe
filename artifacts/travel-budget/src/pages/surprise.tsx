@@ -276,7 +276,7 @@ export default function SurprisePage() {
             <div className="flex items-center gap-2 text-sm font-medium">
               <Wallet className="w-4 h-4 text-primary" />
               <span>{t.surprise.budgetLabel}</span>
-              <span className="text-xs text-muted-foreground ml-auto">✈️🏨 volo + hotel</span>
+              <span className="text-xs text-muted-foreground ml-auto">{t.surprise.budgetIncludesCompact}</span>
             </div>
             <div className="flex items-center gap-3 border-2 border-border rounded-xl px-4 py-2.5 bg-background focus-within:border-primary transition-colors">
               <span className="text-lg font-bold text-muted-foreground select-none">€</span>
@@ -351,7 +351,7 @@ export default function SurprisePage() {
 
           {/* Departure - transport toggle + single field */}
           <div className="space-y-2">
-            <p className="text-sm font-medium">Da dove parti?</p>
+            <p className="text-sm font-medium">{t.surprise.departureLabel}</p>
             <div className="flex rounded-xl border border-border overflow-hidden">
               <button
                 type="button"
@@ -363,7 +363,7 @@ export default function SurprisePage() {
                   transportMode === "flight" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <Plane className="w-3.5 h-3.5" /> ✈️ Aereo
+                <Plane className="w-3.5 h-3.5" /> ✈️ {t.surprise.byFlight}
               </button>
               <div className="w-px bg-border" />
               <button
@@ -376,7 +376,7 @@ export default function SurprisePage() {
                   transportMode === "train" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <TrainFront className="w-3.5 h-3.5" /> 🚆 Treno
+                <TrainFront className="w-3.5 h-3.5" /> 🚆 {t.surprise.byTrain}
               </button>
             </div>
             <LocationAutocomplete
@@ -575,7 +575,7 @@ export default function SurprisePage() {
                         </>
                       )}
                       <span>·</span>
-                      <span>{trip.transport.isDirect ? "Diretto" : "Con scalo"}</span>
+                      <span>{trip.transport.isDirect ? t.surprise.direct : t.surprise.withStop}</span>
                     </div>
 
                     {/* Hotel info */}

@@ -218,7 +218,7 @@ export function FilterBar({
         <div className="mt-2">
           <div className="flex items-center gap-1.5 mb-1.5 px-1">
             <Clock className="w-3 h-3 text-muted-foreground" />
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Ricerche recenti</span>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{t.profile.recentSearches}</span>
           </div>
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
             {recentSearches.map((s, i) => (
@@ -365,7 +365,6 @@ export function FilterSheet({
               >
                 <span className="text-xl">🔄</span>
                 <span>{t.filters.roundTrip}</span>
-                <span className={`text-[10px] font-normal ${draft.tripType === "round_trip" ? "text-white/70" : "text-muted-foreground"}`}>Andata e ritorno</span>
               </button>
               <button
                 onClick={() => setDraft((prev) => ({ ...prev, tripType: "one_way", returnDate: "", returnAirport: "", returnStation: "" }))}
@@ -377,7 +376,6 @@ export function FilterSheet({
               >
                 <span className="text-xl">→</span>
                 <span>{t.filters.oneWay}</span>
-                <span className={`text-[10px] font-normal ${draft.tripType === "one_way" ? "text-white/70" : "text-muted-foreground"}`}>Solo andata</span>
               </button>
             </div>
           </div>

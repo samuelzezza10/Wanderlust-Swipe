@@ -347,11 +347,11 @@ export default function Profile() {
 
         {/* ── Le tue informazioni ───────────────────────────── */}
         <SectionCard>
-          <SectionHeader label="Le tue informazioni" />
-          <Row icon={Banknote} label="Budget predefinito" value={prefs?.defaultBudget ? `€${prefs.defaultBudget}` : t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} />
-          <Row icon={MapPin} label="Partenza predefinita" value={prefs?.defaultDepartureLocation ?? t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} />
-          <Row icon={Users} label="Persone predefinite" value={prefs?.defaultNumberOfPeople ? `${prefs.defaultNumberOfPeople} ${t.profile.people}` : t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} />
-          <Row icon={Plane} label="Preferenza voli" value={prefs?.defaultFlightPreference ?? t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} last={!editingPrefs} />
+          <SectionHeader label={t.profile.yourInfo} />
+          <Row icon={Banknote} label={t.profile.defaultBudget} value={prefs?.defaultBudget ? `€${prefs.defaultBudget}` : t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} />
+          <Row icon={MapPin} label={t.profile.defaultDeparture} value={prefs?.defaultDepartureLocation ?? t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} />
+          <Row icon={Users} label={t.profile.defaultPeople} value={prefs?.defaultNumberOfPeople ? `${prefs.defaultNumberOfPeople} ${t.profile.people}` : t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} />
+          <Row icon={Plane} label={t.profile.flightPref} value={prefs?.defaultFlightPreference ?? t.profile.notSet} onClick={() => setEditingPrefs(!editingPrefs)} last={!editingPrefs} />
           {editingPrefs && (
             <div className="border-t border-border/60">
               <PreferencesEditor prefs={prefs} onDone={() => setEditingPrefs(false)} t={t} />
@@ -361,10 +361,10 @@ export default function Profile() {
 
         {/* ── Impostazioni account ──────────────────────────── */}
         <SectionCard>
-          <SectionHeader label="Impostazioni account" />
-          <Row icon={Settings} label="Dati personali" value={displayName} onClick={() => {}} />
-          <Row icon={Lock} label="Sicurezza e password" onClick={() => {}} />
-          <Row icon={CreditCard} label="Metodi di pagamento" onClick={() => {}} last />
+          <SectionHeader label={t.profile.accountSettings} />
+          <Row icon={Settings} label={t.profile.personalData} value={displayName} onClick={() => {}} />
+          <Row icon={Lock} label={t.profile.security} onClick={() => {}} />
+          <Row icon={CreditCard} label={t.profile.paymentMethods} onClick={() => {}} last />
         </SectionCard>
 
         {/* ── Ricerche recenti ──────────────────────────────── */}
@@ -411,9 +411,9 @@ export default function Profile() {
 
         {/* ── Link rapidi stile Booking ─────────────────────── */}
         <SectionCard>
-          <SectionHeader label="Viaggi" />
+          <SectionHeader label={t.profile.tripsSection} />
           <Row icon={Heart} label={t.nav.saved} value={`${stats?.totalSaved ?? 0} ${t.profile.tripsSaved}`} onClick={() => setLocation("/saved")} />
-          <Row icon={MapPin} label="Scopri nuovi viaggi" onClick={() => setLocation("/discover")} last />
+          <Row icon={MapPin} label={t.profile.discoverNew} onClick={() => setLocation("/discover")} last />
         </SectionCard>
 
         {/* ── Legale ───────────────────────────────────────── */}
