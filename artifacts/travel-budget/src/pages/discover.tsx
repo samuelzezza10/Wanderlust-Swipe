@@ -35,6 +35,70 @@ const FILTERS_STORAGE_KEY = "tb_discover_filters";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/* ─── Client-side filtering applied to any trip list ───────────────────── */
+function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSuggestion[] {
+  let out = [...trips];
+  const budget = f.budget || 9999;
+
+  // 1. Budget — hard cap (always respected)
+  const withinBudget = out.filter(t => t.totalPrice <= budget);
+  if (withinBudget.length > 0) out = withinBudget;
+
+  // 2. Flight preference
+  if (f.flightPreference === "direct") {
+    const direct = out.filter(t => t.transport.type !== "train" ? t.transport.isDirect : true);
+    if (direct.length > 0) out = direct;
+  }
+
+  // 3. Train preference
+  if (f.trainPreference === "direct") {
+    const direct = out.filter(t => t.transport.type === "train" ? t.transport.isDirect : true);
+    if (direct.length > 0) out = direct;
+  }
+
+  // 4. Hotel stars
+  const starsMin = f.hotelStarsMin ?? 1;
+  const starsMax = f.hotelStarsMax ?? 5;
+  if (starsMin > 1 || starsMax < 5) {
+    const byStars = out.filter(t => t.hotel.stars >= starsMin && t.hotel.stars <= starsMax);
+    if (byStars.length > 0) out = byStars;
+  }
+
+  // 5. Accommodation type
+  if (f.accommodationType === "budget") {
+    const b = out.filter(t => t.hotel.pricePerNight < 80);
+    if (b.length > 0) out = b;
+  } else if (f.accommodationType === "standard") {
+    const s = out.filter(t => t.hotel.pricePerNight >= 80 && t.hotel.pricePerNight < 140);
+    if (s.length > 0) out = s;
+  } else if (f.accommodationType === "luxury") {
+    const l = out.filter(t => t.hotel.stars >= 4 && t.hotel.pricePerNight >= 140);
+    if (l.length > 0) out = l;
+  }
+
+  // 6. Min hotel rating
+  if (f.minHotelRating != null) {
+    const byRating = out.filter(t => (t.hotel.rating ?? 0) >= (f.minHotelRating as number));
+    if (byRating.length > 0) out = byRating;
+  }
+
+  // 7. Arrival destination — soft match on destination/country
+  const arrLocation = (f.arrivalAirport || f.arrivalStation || "").toLowerCase().replace(/\s*\([^)]*\)/g, "").trim();
+  if (arrLocation && arrLocation !== "any" && arrLocation.length > 2) {
+    const dest = out.filter(t =>
+      t.destination.toLowerCase().includes(arrLocation) ||
+      (t.country ?? "").toLowerCase().includes(arrLocation)
+    );
+    if (dest.length > 0) out = dest;
+  }
+
+  // 8. Sort
+  if (f.sortBy === "cheapest") out.sort((a, b) => a.totalPrice - b.totalPrice);
+  else if (f.sortBy === "best_rating") out.sort((a, b) => (b.hotel.rating ?? 0) - (a.hotel.rating ?? 0));
+
+  return out;
+}
+
 /* ─── Fallback trips shown when the API is unavailable ─────────────────── */
 const FALLBACK_TRIPS: TripSuggestion[] = [
   {
@@ -755,7 +819,11 @@ export default function Discover() {
               })
             : data;
 
-          setTrips(cleaned);
+          // ── Client-side post-filter: enforce budget & prefs on API results ──
+          const clientFiltered = applyClientSideFilters(cleaned, f);
+          const finalTrips = clientFiltered.length > 0 ? clientFiltered : cleaned;
+
+          setTrips(finalTrips);
           setCurrentIndex(0);
           setHistory([]);
           setHasSearched(true);
@@ -804,16 +872,18 @@ export default function Discover() {
           if (status === 403) {
             setShowPremiumModal(true);
           } else if (status === 429) {
-            // Rate limited — silently show fallback trips so the UI is never empty
+            // Rate limited — silently show fallback trips filtered by current user filters
             if (trips.length === 0) {
-              setTrips(FALLBACK_TRIPS);
+              const fallback = applyClientSideFilters(FALLBACK_TRIPS, f);
+              setTrips(fallback.length > 0 ? fallback : FALLBACK_TRIPS);
               setCurrentIndex(0);
               setHasSearched(true);
             }
           } else {
-            // Any other error — silently fall back to curated trips so no error ever appears
+            // Any other error — silently fall back to curated trips filtered by current user filters
             if (trips.length === 0) {
-              setTrips(FALLBACK_TRIPS);
+              const fallback = applyClientSideFilters(FALLBACK_TRIPS, f);
+              setTrips(fallback.length > 0 ? fallback : FALLBACK_TRIPS);
               setCurrentIndex(0);
               setHasSearched(true);
             }
