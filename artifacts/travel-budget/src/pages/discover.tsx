@@ -1340,8 +1340,8 @@ export default function Discover() {
               <button onClick={handlePrev} disabled={currentIndex === 0} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform">
                 <ChevronLeft className="w-3.5 h-3.5" />
               </button>
-              <span className="text-white/80 text-sm font-semibold tabular-nums">
-                {currentIndex + 1} / {trips.length}{isLoadingMore ? "+" : ""}
+              <span className="text-white text-sm font-bold tabular-nums bg-black/30 px-3 py-1 rounded-full">
+                Card {currentIndex + 1} su {trips.length}{isLoadingMore ? "+" : ""}
               </span>
               <button onClick={handleNext} disabled={currentIndex >= trips.length - 1} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform">
                 <ChevronRight className="w-3.5 h-3.5" />
