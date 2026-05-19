@@ -37,7 +37,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Build shared libraries
         run: pnpm run typecheck:libs
@@ -45,7 +45,7 @@ jobs:
       - name: Build frontend for GitHub Pages
         env:
           PORT: "3001"
-          BASE_PATH: "/Wanderlust-Swipe"
+          BASE_PATH: "/Wanderlust-Swipe/"
           NODE_ENV: production
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
