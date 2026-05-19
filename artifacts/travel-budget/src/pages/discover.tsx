@@ -35,6 +35,62 @@ const FILTERS_STORAGE_KEY = "tb_discover_filters";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/* ─── Trip Variation Generator (fallback demo mode) ────────────────────── */
+// Expands 1-N base trips into `targetCount` realistic deterministic variants.
+function generateTripVariations(baseTrips: TripSuggestion[], targetCount: number): TripSuggestion[] {
+  if (!baseTrips.length) return [];
+  const result: TripSuggestion[] = [...baseTrips];
+
+  const flightCos = ['Ryanair','easyJet','Vueling','Iberia','Air Europa','Volotea','Wizz Air','Jet2','Transavia','Norwegian'];
+  const trainCos  = ['Trenitalia','Italo','ÖBB','FlixTrain','Intercity Express','TGV','Renfe','Thalys'];
+  const depTimes  = ['06:00','07:15','08:30','09:45','11:00','12:30','14:00','15:30','17:00','18:45','20:00','21:30','06:45','08:00','10:15','13:00','16:15','19:30'];
+  const hotelSfx  = ['Grand','Boutique','Plaza','Palace','Suites','Central','Classic','Premium','Riviera','Prestige','Lux','Garden','View','Select','Elite'];
+  const mults     = [0.82,0.88,0.93,0.97,1.00,1.03,1.07,1.12,1.17,1.22,0.85,0.91,0.96,1.01,1.06,1.10,1.15,1.20,0.87,0.94];
+
+  while (result.length < targetCount) {
+    const vi   = result.length;
+    const base = baseTrips[vi % baseTrips.length];
+    const mult = mults[vi % mults.length];
+    const dep  = depTimes[vi % depTimes.length];
+
+    const durStr = base.transport.duration || '2h 00m';
+    const durH   = parseInt(durStr.split('h')[0]) || 2;
+    const durM   = parseInt((durStr.split('h')[1] ?? '00').replace(/\D/g,'')) || 0;
+    const [dH, dM] = dep.split(':').map(Number);
+    const arrMins  = dH*60 + dM + durH*60 + durM;
+    const arrTime  = `${String(Math.floor(arrMins/60)%24).padStart(2,'0')}:${String(arrMins%60).padStart(2,'0')}`;
+
+    const isFlight = base.transport.type !== 'train';
+    const company  = isFlight ? flightCos[vi % flightCos.length] : trainCos[vi % trainCos.length];
+    const isDirect = (vi % 3) !== 1;
+    const starsDelta = vi % 3 === 0 ? 1 : vi % 3 === 1 ? -1 : 0;
+    const stars      = Math.max(1, Math.min(5, base.hotel.stars + starsDelta));
+    const rating     = Math.min(9.8, Math.max(6.5, parseFloat(((base.hotel.rating ?? 8.0) + (vi%5-2)*0.15).toFixed(1))));
+
+    result.push({
+      ...base,
+      id: `${base.id}-v${vi}`,
+      totalPrice: Math.round(base.totalPrice * mult / 10) * 10,
+      transport: {
+        ...base.transport,
+        company,
+        departureTime: dep,
+        arrivalTime: arrTime,
+        isDirect,
+        price: Math.round(base.transport.price * mult / 5) * 5,
+      },
+      hotel: {
+        ...base.hotel,
+        name: `${base.destination} ${hotelSfx[vi % hotelSfx.length]}`,
+        stars,
+        rating,
+        pricePerNight: Math.round(base.hotel.pricePerNight * mult),
+      },
+    });
+  }
+  return result;
+}
+
 /* ─── Client-side filtering applied to any trip list ───────────────────── */
 function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSuggestion[] {
   let out = [...trips];
@@ -79,14 +135,18 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
     if (byRating.length > 0) out = byRating;
   }
 
-  // 7. Arrival destination — soft match on destination/country
+  // 7. Arrival destination — STRICT: if set, show ONLY that destination
   const arrLocation = (f.arrivalAirport || f.arrivalStation || "").toLowerCase().replace(/\s*\([^)]*\)/g, "").trim();
   if (arrLocation && arrLocation !== "any" && arrLocation.length > 2) {
-    const dest = out.filter(t =>
+    const matched = out.filter(t =>
       t.destination.toLowerCase().includes(arrLocation) ||
       (t.country ?? "").toLowerCase().includes(arrLocation)
     );
-    if (dest.length > 0) out = dest;
+    if (matched.length > 0) {
+      // Expand matched destination trips to 20 realistic variations
+      out = generateTripVariations(matched, 20);
+    }
+    // If zero matches → keep all trips as alternatives (never empty)
   }
 
   // 8. Sort
