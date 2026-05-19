@@ -1,6 +1,6 @@
-import { useClerk } from "@clerk/react";
+import { useClerk, useAuth } from "@clerk/react";
 import { Link } from "wouter";
-import { Plane, Compass, Heart, User, LogOut } from "lucide-react";
+import { Plane, Compass, Heart, User, LogOut, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -9,6 +9,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function DesktopNav() {
   const { signOut } = useClerk();
+  const { isSignedIn } = useAuth();
   const { t } = useI18n();
 
   return (
@@ -34,10 +35,40 @@ export function DesktopNav() {
 
         <LanguageSwitcher />
 
-        <Button variant="ghost" size="sm" onClick={() => signOut({ redirectUrl: basePath || "/" })} className="text-muted-foreground" data-testid="button-logout">
-          <LogOut className="w-4 h-4 mr-2" />
-          {t.nav.logOut}
-        </Button>
+        {isSignedIn ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => signOut({ redirectUrl: basePath || "/" })}
+            className="text-muted-foreground"
+            data-testid="button-logout"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            {t.nav.logOut}
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="text-muted-foreground"
+            >
+              <Link href="/sign-in">
+                <LogIn className="w-4 h-4 mr-2" />
+                {t.nav.signIn ?? "Accedi"}
+              </Link>
+            </Button>
+            <Button
+              size="sm"
+              asChild
+            >
+              <Link href="/sign-up">
+                {t.nav.signUp ?? "Registrati"}
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
     </nav>
   );
