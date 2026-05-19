@@ -14,6 +14,7 @@ export interface TripFilters {
   numberOfPeople: number;
   numberOfChildren: number;
   numberOfPets: number;
+  numberOfRooms: number;
   departureDate: string;
   returnDate: string;
   numberOfNights: number;
@@ -24,8 +25,10 @@ export interface TripFilters {
   accommodationType: "budget" | "standard" | "luxury" | null;
   departureAirport: string;
   arrivalAirport: string;
+  returnAirport: string;
   departureStation: string;
   arrivalStation: string;
+  returnStation: string;
   hotelStarsMin: number;
   hotelStarsMax: number;
   // Hotel features
@@ -39,7 +42,7 @@ export interface TripFilters {
   elevator: boolean;
   petFriendly: boolean;
   tripType: "one_way" | "round_trip";
-  sortBy: "best_value" | "cheapest" | "fastest" | "best_rating";
+  sortBy: "best_value" | "cheapest" | "best_rating";
   maxTravelTimeHours: number | null;
   departureTimeSlot: "morning" | "afternoon" | "evening" | "any";
 }
@@ -49,6 +52,7 @@ export const DEFAULT_FILTERS: TripFilters = {
   numberOfPeople: 2,
   numberOfChildren: 0,
   numberOfPets: 0,
+  numberOfRooms: 1,
   departureDate: "",
   returnDate: "",
   numberOfNights: 7,
@@ -59,8 +63,10 @@ export const DEFAULT_FILTERS: TripFilters = {
   accommodationType: null,
   departureAirport: "",
   arrivalAirport: "",
+  returnAirport: "",
   departureStation: "",
   arrivalStation: "",
+  returnStation: "",
   hotelStarsMin: 1,
   hotelStarsMax: 5,
   freeCancellation: false,
@@ -84,6 +90,7 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.numberOfPeople !== DEFAULT_FILTERS.numberOfPeople) n++;
   if (f.numberOfChildren > 0) n++;
   if (f.numberOfPets > 0) n++;
+  if (f.numberOfRooms > 1) n++;
   if (f.departureDate) n++;
   if (f.returnDate) n++;
   if (f.numberOfNights !== DEFAULT_FILTERS.numberOfNights) n++;
@@ -94,8 +101,10 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.accommodationType !== null) n++;
   if (f.departureAirport) n++;
   if (f.arrivalAirport) n++;
+  if (f.returnAirport) n++;
   if (f.departureStation) n++;
   if (f.arrivalStation) n++;
+  if (f.returnStation) n++;
   if (f.hotelStarsMin !== 1 || f.hotelStarsMax !== 5) n++;
   if (f.freeCancellation) n++;
   if (f.breakfastIncluded) n++;
@@ -129,6 +138,7 @@ export function FilterBar({
   if (filters.tripType === "one_way") chips.push(`✈️ ${t.filters.oneWay}`);
   if (filters.numberOfChildren > 0) chips.push(`${filters.numberOfChildren} ${t.filters.children.toLowerCase()}`);
   if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${t.filters.pets.toLowerCase()}`);
+  if (filters.numberOfRooms > 1) chips.push(`🛏 ${filters.numberOfRooms} stanze`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
   if (filters.trainPreference === "direct") chips.push(`🚂 ${t.filters.trainDirect}`);
@@ -146,7 +156,7 @@ export function FilterBar({
       : t.filters.hostelOnly,
   );
   if (filters.sortBy !== "best_value") {
-    const sl: Record<string, string> = { cheapest: t.filters.sortCheapest, fastest: t.filters.sortFastest, best_rating: t.filters.sortBestRating };
+    const sl: Record<string, string> = { cheapest: t.filters.sortCheapest, best_rating: t.filters.sortBestRating };
     chips.push(`📊 ${sl[filters.sortBy] ?? filters.sortBy}`);
   }
   if (filters.departureTimeSlot !== "any") {
@@ -325,7 +335,7 @@ export function FilterSheet({
                 <span className={`text-[10px] font-normal ${draft.tripType === "round_trip" ? "text-white/70" : "text-muted-foreground"}`}>Andata e ritorno</span>
               </button>
               <button
-                onClick={() => setDraft((prev) => ({ ...prev, tripType: "one_way", returnDate: "" }))}
+                onClick={() => setDraft((prev) => ({ ...prev, tripType: "one_way", returnDate: "", returnAirport: "", returnStation: "" }))}
                 className={`flex-1 flex flex-col items-center gap-1 py-3.5 rounded-xl text-sm font-bold transition-all border-2 ${
                   draft.tripType === "one_way"
                     ? "bg-primary text-white border-primary shadow-md shadow-primary/30"
@@ -352,11 +362,10 @@ export function FilterSheet({
 
           {/* ── Ordina per ───────────────────────────────────── */}
           <FilterSection label={t.filters.sortBy}>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {([
                 { value: "best_value", emoji: "🏆", label: t.filters.sortBestValue },
                 { value: "cheapest", emoji: "💰", label: t.filters.sortCheapest },
-                { value: "fastest", emoji: "⚡", label: t.filters.sortFastest },
                 { value: "best_rating", emoji: "⭐", label: t.filters.sortBestRating },
               ] as const).map(({ value, emoji, label }) => (
                 <button
@@ -384,7 +393,7 @@ export function FilterSheet({
                 type="button"
                 onClick={() => {
                   setTransportMode("flight");
-                  setDraft(prev => ({ ...prev, departureStation: "", arrivalStation: "" }));
+                  setDraft(prev => ({ ...prev, departureStation: "", arrivalStation: "", returnStation: "" }));
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
                   transportMode === "flight" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
@@ -397,7 +406,7 @@ export function FilterSheet({
                 type="button"
                 onClick={() => {
                   setTransportMode("train");
-                  setDraft(prev => ({ ...prev, departureAirport: "", arrivalAirport: "" }));
+                  setDraft(prev => ({ ...prev, departureAirport: "", arrivalAirport: "", returnAirport: "" }));
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
                   transportMode === "train" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
@@ -407,13 +416,13 @@ export function FilterSheet({
               </button>
             </div>
 
-            {/* Booking.com-style location card */}
-            <div className={`border-2 rounded-2xl overflow-hidden transition-colors ${
+            {/* Booking.com-style location card — NO overflow-hidden so dropdowns are visible */}
+            <div className={`border-2 rounded-2xl transition-colors ${
               (errors["departure"] || errors["arrival"]) ? "border-red-400" : "border-border"
             }`}>
               {/* Departure */}
-              <div ref={departureRef} className={`p-3 ${errors["departure"] ? "bg-red-50" : "bg-background"}`}>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <div ref={departureRef} className={`p-3 rounded-t-2xl ${errors["departure"] ? "bg-red-50" : "bg-background"}`}>
+                <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
                   {transportMode === "flight"
                     ? <><Plane className="w-3 h-3" /> Aeroporto di partenza</>
                     : <><TrainFront className="w-3 h-3" /> Stazione di partenza</>}
@@ -424,6 +433,11 @@ export function FilterSheet({
                   placeholder={transportMode === "flight" ? t.filters.departureAirport : t.filters.departureStation}
                   filter={transportMode === "flight" ? "airport" : "station"}
                 />
+                {errors["departure"] && (
+                  <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1">
+                    <span>⚠️</span>{errors["departure"]}
+                  </p>
+                )}
               </div>
 
               {/* Divider with swap indicator */}
@@ -434,9 +448,10 @@ export function FilterSheet({
               </div>
 
               {/* Arrival */}
-              <div ref={arrivalRef} className={`p-3 ${errors["arrival"] ? "bg-red-50" : "bg-background"}`}>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
-                  🏁 {transportMode === "flight" ? "Aeroporto di arrivo" : "Stazione di arrivo"}
+              <div ref={arrivalRef} className={`p-3 ${draft.tripType !== "one_way" ? "" : "rounded-b-2xl"} ${errors["arrival"] ? "bg-red-50" : "bg-background"}`}>
+                <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <span>🏁</span>
+                  {transportMode === "flight" ? "Aeroporto di arrivo" : "Stazione di arrivo"}
                 </p>
                 <LocationAutocomplete
                   value={transportMode === "flight" ? draft.arrivalAirport : draft.arrivalStation}
@@ -444,14 +459,32 @@ export function FilterSheet({
                   placeholder={transportMode === "flight" ? t.filters.arrivalAirport : t.filters.arrivalStation}
                   filter={transportMode === "flight" ? "airport" : "station"}
                 />
+                {errors["arrival"] && (
+                  <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1">
+                    <span>⚠️</span>{errors["arrival"]}
+                  </p>
+                )}
               </div>
-            </div>
 
-            {(errors["departure"] || errors["arrival"]) && (
-              <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
-                <span>⚠️</span>{errors["departure"] ?? errors["arrival"]}
-              </p>
-            )}
+              {/* Return location — only for round trip */}
+              {draft.tripType !== "one_way" && (
+                <>
+                  <div className="relative h-px bg-border" />
+                  <div className="p-3 rounded-b-2xl bg-background">
+                    <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                      <span>🔄</span>
+                      {transportMode === "flight" ? "Aeroporto di ritorno (partenza)" : "Stazione di ritorno (partenza)"}
+                    </p>
+                    <LocationAutocomplete
+                      value={transportMode === "flight" ? draft.returnAirport : draft.returnStation}
+                      onChange={(v) => set(transportMode === "flight" ? "returnAirport" : "returnStation", v)}
+                      placeholder={transportMode === "flight" ? "Stesso dell'arrivo (opzionale)" : "Stessa dell'arrivo (opzionale)"}
+                      filter={transportMode === "flight" ? "airport" : "station"}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* ── Budget ─────────────────────────────────────── */}
@@ -499,12 +532,13 @@ export function FilterSheet({
             )}
           </div>
 
-          {/* ── Persone ────────────────────────────────────── */}
+          {/* ── Persone + Stanze ───────────────────────────── */}
           <FilterSection label={t.filters.travelers}>
-            <div className="flex gap-6 flex-wrap">
+            <div className="flex gap-4 flex-wrap">
               <Stepper label={t.filters.travelers} value={draft.numberOfPeople} min={1} max={12} onChange={(v) => set("numberOfPeople", v)} />
               <Stepper label={t.filters.children} value={draft.numberOfChildren} min={0} max={10} onChange={(v) => set("numberOfChildren", v)} />
               <Stepper label={t.filters.pets} value={draft.numberOfPets} min={0} max={5} onChange={(v) => set("numberOfPets", v)} />
+              <Stepper label="Stanze" value={draft.numberOfRooms} min={1} max={10} onChange={(v) => set("numberOfRooms", v)} />
             </div>
           </FilterSection>
 
@@ -637,7 +671,7 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* ── Max aeroporto → hotel ──────────────────────── */}
+          {/* ── Max dist aeroporto → hotel ─────────────────── */}
           <FilterSection label={t.filters.maxAirportDist}>
             <div className="flex items-center gap-3">
               <input type="range" min={5} max={100} step={5} value={draft.maxDistanceFromAirportKm ?? 100}
