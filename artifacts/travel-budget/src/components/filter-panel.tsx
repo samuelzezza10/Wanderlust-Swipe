@@ -4,10 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   SlidersHorizontal, X, Minus, Plus, ChevronRight, Star,
-  Check, Plane, TrainFront,
+  Check, Plane, TrainFront, Clock, RotateCcw,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
+
+export interface RecentSearchChip {
+  label: string;
+  sublabel?: string;
+  onClick: () => void;
+}
 
 export interface TripFilters {
   budget: number;
@@ -126,9 +132,11 @@ export function countActiveFilters(f: TripFilters): number {
 export function FilterBar({
   filters,
   onEdit,
+  recentSearches,
 }: {
   filters: TripFilters;
   onEdit: () => void;
+  recentSearches?: RecentSearchChip[];
 }) {
   const { t } = useI18n();
   const activeCount = countActiveFilters(filters);
@@ -198,6 +206,27 @@ export function FilterBar({
               {chip}
             </Badge>
           ))}
+        </div>
+      )}
+
+      {recentSearches && recentSearches.length > 0 && (
+        <div className="mt-2">
+          <div className="flex items-center gap-1.5 mb-1.5 px-1">
+            <Clock className="w-3 h-3 text-muted-foreground" />
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Ricerche recenti</span>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+            {recentSearches.map((s, i) => (
+              <button
+                key={i}
+                onClick={s.onClick}
+                className="shrink-0 flex items-center gap-1.5 bg-muted/60 hover:bg-muted border border-border rounded-full px-3 py-1.5 text-xs font-medium text-foreground transition-colors active:scale-95"
+              >
+                <RotateCcw className="w-3 h-3 text-muted-foreground" />
+                <span className="max-w-[140px] truncate">{s.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -303,7 +332,7 @@ export function FilterSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="bottom" className="h-[92dvh] p-0 rounded-t-3xl overflow-hidden flex flex-col">
+      <SheetContent side="bottom" className="h-[100dvh] p-0 rounded-none overflow-hidden flex flex-col">
         <SheetHeader className="px-5 pt-5 pb-3 border-b flex-row items-center justify-between">
           <SheetTitle className="text-lg">{t.filters.title}</SheetTitle>
           <div className="flex gap-2 items-center">
