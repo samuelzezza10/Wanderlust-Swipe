@@ -54,7 +54,7 @@ export interface TripFilters {
 }
 
 export const DEFAULT_FILTERS: TripFilters = {
-  budget: 3000,
+  budget: 0,
   numberOfPeople: 2,
   numberOfChildren: 0,
   numberOfPets: 0,
@@ -128,6 +128,12 @@ export function countActiveFilters(f: TripFilters): number {
   return n;
 }
 
+function currencySymbolFor(lang: string): string {
+  if (lang === "zh") return "¥";
+  if (lang === "en") return "$";
+  return "€";
+}
+
 /* ─── Elegant filter bar ────────────────────────────────────────────────── */
 export function FilterBar({
   filters,
@@ -138,12 +144,13 @@ export function FilterBar({
   onEdit: () => void;
   recentSearches?: RecentSearchChip[];
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const currencySymbol = currencySymbolFor(lang);
   const activeCount = countActiveFilters(filters);
   const departure = filters.departureAirport || filters.departureStation || "";
 
   const chips: string[] = [];
-  if (filters.tripType === "one_way") chips.push(`✈️ ${t.filters.oneWay}`);
+  if (filters.tripType === "one_way") chips.push(t.filters.oneWay);
   if (filters.numberOfChildren > 0) chips.push(`${filters.numberOfChildren} ${t.filters.children.toLowerCase()}`);
   if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${t.filters.pets.toLowerCase()}`);
   if (filters.numberOfRooms > 1) chips.push(`🛏 ${filters.numberOfRooms} stanze`);
@@ -151,8 +158,6 @@ export function FilterBar({
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
   if (filters.trainPreference === "direct") chips.push(`🚂 ${t.filters.trainDirect}`);
   if (filters.trainPreference === "with_stops") chips.push(`🚂 ${t.filters.trainWithChanges}`);
-  if (filters.hotelStarsMin !== 1 || filters.hotelStarsMax !== 5)
-    chips.push(`${"⭐".repeat(filters.hotelStarsMin)}–${"⭐".repeat(filters.hotelStarsMax)}`);
   if (filters.breakfastIncluded) chips.push(`🍳 ${t.filters.breakfastIncluded}`);
   if (filters.freeCancellation) chips.push(`✅ ${t.filters.freeCancellation}`);
   if (filters.parkingAvailable) chips.push(`🅿 ${t.filters.parkingAvailable}`);
@@ -186,8 +191,8 @@ export function FilterBar({
           <p className="font-bold text-sm text-foreground leading-tight">{t.filters.title}</p>
           <p className="text-xs text-muted-foreground truncate mt-0.5">
             {departure
-              ? `${departure.split(" (")[0]} · €${filters.budget.toLocaleString()} · ${filters.numberOfPeople}p · ${filters.numberOfNights}n`
-              : `€${filters.budget.toLocaleString()} · ${filters.numberOfPeople}p · ${filters.numberOfNights}n`}
+              ? `${departure.split(" (")[0]} · ${currencySymbol}${filters.budget.toLocaleString()} · ${filters.numberOfPeople}p · ${filters.numberOfNights}n`
+              : `${currencySymbol}${filters.budget > 0 ? filters.budget.toLocaleString() : "—"} · ${filters.numberOfPeople}p · ${filters.numberOfNights}n`}
           </p>
         </div>
         {activeCount > 0 ? (
@@ -245,7 +250,8 @@ export function FilterSheet({
   onClose: () => void;
   onApply: (f: TripFilters) => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const currencySymbol = currencySymbolFor(lang);
   const [draft, setDraft] = useState<TripFilters>(filters);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [tried, setTried] = useState(false);
@@ -277,7 +283,7 @@ export function FilterSheet({
       const arrCity = arr.split(" (")[0].trim().toLowerCase();
       if (depCity === arrCity) errs["arrival"] = t.filters.sameLocation;
     }
-    if (f.budget == null || f.budget < 0) errs["budget"] = t.filters.invalidBudget;
+    if (f.budget == null || f.budget <= 0) errs["budget"] = t.filters.invalidBudget;
 
     return errs;
   };
@@ -322,7 +328,10 @@ export function FilterSheet({
       return;
     }
 
-    onApply(draft);
+    const finalDraft: TripFilters = transportMode === "flight"
+      ? { ...draft, departureStation: "", arrivalStation: "", returnStation: "" }
+      : { ...draft, departureAirport: "", arrivalAirport: "", returnAirport: "" };
+    onApply(finalDraft);
     onClose();
   };
 
@@ -400,13 +409,14 @@ export function FilterSheet({
                 <button
                   key={value}
                   onClick={() => set("sortBy", value)}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-semibold transition-colors ${
+                  className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border text-[11px] font-semibold transition-colors ${
                     draft.sortBy === value
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border bg-background text-foreground"
                   }`}
                 >
-                  <span>{emoji}</span><span>{label}</span>
+                  <span className="text-lg leading-none">{emoji}</span>
+                  <span className="text-center leading-tight">{label}</span>
                 </button>
               ))}
             </div>
@@ -420,10 +430,7 @@ export function FilterSheet({
             <div className="flex rounded-xl border border-border overflow-hidden">
               <button
                 type="button"
-                onClick={() => {
-                  setTransportMode("flight");
-                  setDraft(prev => ({ ...prev, departureStation: "", arrivalStation: "", returnStation: "" }));
-                }}
+                onClick={() => setTransportMode("flight")}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
                   transportMode === "flight" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
                 }`}
@@ -433,10 +440,7 @@ export function FilterSheet({
               <div className="w-px bg-border" />
               <button
                 type="button"
-                onClick={() => {
-                  setTransportMode("train");
-                  setDraft(prev => ({ ...prev, departureAirport: "", arrivalAirport: "", returnAirport: "" }));
-                }}
+                onClick={() => setTransportMode("train")}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
                   transportMode === "train" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
                 }`}
@@ -502,12 +506,12 @@ export function FilterSheet({
                   <div className="p-3 rounded-b-2xl bg-background">
                     <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
                       <span>🔄</span>
-                      {transportMode === "flight" ? "Aeroporto di ritorno (partenza)" : "Stazione di ritorno (partenza)"}
+                      {transportMode === "flight" ? "Aeroporto di ritorno" : "Stazione di ritorno"}
                     </p>
                     <LocationAutocomplete
                       value={transportMode === "flight" ? draft.returnAirport : draft.returnStation}
                       onChange={(v) => set(transportMode === "flight" ? "returnAirport" : "returnStation", v)}
-                      placeholder={transportMode === "flight" ? "Stesso dell'arrivo (opzionale)" : "Stessa dell'arrivo (opzionale)"}
+                      placeholder={transportMode === "flight" ? t.filters.arrivalAirport : t.filters.arrivalStation}
                       filter={transportMode === "flight" ? "airport" : "station"}
                     />
                   </div>
@@ -523,7 +527,7 @@ export function FilterSheet({
               <p className="text-xs text-muted-foreground mt-0.5">✈️🏨 Include volo + hotel</p>
             </div>
             <div className="flex items-center gap-3 border-2 border-border rounded-xl px-4 py-3 bg-background focus-within:border-primary transition-colors">
-              <span className="text-xl font-bold text-muted-foreground select-none">€</span>
+              <span className="text-xl font-bold text-muted-foreground select-none">{currencySymbol}</span>
               <input
                 type="number"
                 min={0}
@@ -735,15 +739,6 @@ export function FilterSheet({
               ]}
               value={draft.accommodationType ?? "null"}
               onChange={(v) => set("accommodationType", v === "null" ? null : (v as TripFilters["accommodationType"]))}
-            />
-          </FilterSection>
-
-          {/* ── Stelle hotel ───────────────────────────────── */}
-          <FilterSection label={t.filters.hotelStars}>
-            <StarRangePicker
-              min={draft.hotelStarsMin}
-              max={draft.hotelStarsMax}
-              onChange={(min, max) => setDraft((prev) => ({ ...prev, hotelStarsMin: min, hotelStarsMax: max }))}
             />
           </FilterSection>
 
