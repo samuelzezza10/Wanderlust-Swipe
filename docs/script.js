@@ -68,7 +68,7 @@ const IC = {
 const TRANSLATIONS = {
   en: {
     landing: { title:"Wanderlust made effortless", subtitle:"Swipe through curated trip suggestions like a glossy travel magazine. Find your next adventure on a whim.", getStarted:"Get Started", logIn:"Log In", continueAsGuest:"Continue as Guest" },
-    nav: { discover:"Discover", saved:"Saved", profile:"Profile", logOut:"Log out", premium:"Premium" },
+    nav: { discover:"Discover", saved:"Saved", profile:"Profile", logOut:"Log out", premium:"Premium", signIn:"Sign in", signUp:"Sign up", guestLabel:"Guest" },
     discover: { loading:"Finding perfect getaways...", seenAll:"You've seen them all!", seenAllSub:"We can find more amazing destinations based on your preferences.", generateMore:"Generate More Trips", total:"Total", like:"LIKE", nope:"NOPE", rateLimitError:"Too many requests. Please wait a moment.", rateLimitHint:"Our system detected unusual activity.", searchError:"Something went wrong", searchErrorHint:"Please try again or adjust your filters", searchErrorRetry:"Try again", signUpToSave:"Sign up to save your favourite trips!", shareTrip:"Share trip", shareWhatsapp:"WhatsApp", shareFacebook:"Facebook", shareCopy:"Copy text", copied:"Copied!", discoverTitle:"Where do you want to go?", discoverSub:"Set your filters to discover trips that fit your budget", setFilters:"Set filters", welcomeTitle:"Welcome to TravelBudget", welcomeSub:"Discover the journey of your dreams", welcomeStart:"Start exploring", noDirectTrainTitle:"No direct train from here! 😅", noDirectTrain:"Sadly, no direct trains leave from your station… Try 'With connections'! 🚂", loadingMore:"Loading more results…", infoBtn:"Info" },
     premium: { title:"Upgrade to Premium", subtitle:"You've used all your free searches", guestSubtitle:"You've used all 5 guest searches. Sign up for 20 free searches!", price:"€3/month", benefit1:"80 searches per day", benefit2:"Advanced destination filters", benefit3:"Priority results", cta:"Activate Premium", ctaSub:"Cancel anytime · Billed monthly", orSignUp:"Sign up for 20 free searches", searchesLeft:"of 20 free daily searches used", limitReachedTitle:"Daily limit reached", perDay:"searches/day", planFree:"Free Plan", planPremium:"Premium Plan", upgradeNow:"Upgrade now", currentPlan:"Your plan", managePlan:"Manage", freePlanDesc:"20 searches per day, free forever", premiumPlanDesc:"80 searches per day, full experience", downgrade:"Downgrade to free", alreadyMember:"You are already a Premium member 🎉", unlockFor:"Unlock everything for only €3/month", activePlan:"Premium plan active", signUpFirst:"Sign up — then choose Premium" },
     offline: { banner:"No internet connection", title:"You're offline 🌐", subtitle:"Showing your last loaded trips.", noCache:"Connect to the internet to discover trips", searchDisabled:"Search requires an internet connection", reconnected:"Connection restored! 🚀", showingCached:"Showing cached trips ✈️" },
@@ -91,7 +91,7 @@ const TRANSLATIONS = {
 // Italian (full, from source)
 TRANSLATIONS.it = {
   landing: { title:"Viaggiare senza pensieri", subtitle:"Scorri i suggerimenti di viaggio curati come una rivista patinata. Trova la tua prossima avventura d'impulso.", getStarted:"Inizia ora", logIn:"Accedi", continueAsGuest:"Continua come ospite" },
-  nav: { discover:"Scopri", saved:"Salvati", profile:"Profilo", logOut:"Esci", premium:"Premium" },
+  nav: { discover:"Scopri", saved:"Salvati", profile:"Profilo", logOut:"Esci", premium:"Premium", signIn:"Accedi", signUp:"Registrati", guestLabel:"Ospite" },
   discover: { loading:"Cerchiamo le mete perfette...", seenAll:"Hai visto tutto!", seenAllSub:"Possiamo trovare altre destinazioni fantastiche in base alle tue preferenze.", generateMore:"Genera altri viaggi", total:"Totale", like:"MI PIACE", nope:"NO", rateLimitError:"Troppe richieste. Attendi qualche istante.", rateLimitHint:"Il sistema ha rilevato attività insolita.", searchError:"Qualcosa è andato storto", searchErrorHint:"Riprova tra qualche secondo o modifica i filtri", searchErrorRetry:"Riprova", signUpToSave:"Registrati per salvare i tuoi viaggi preferiti!", shareTrip:"Condividi viaggio", shareWhatsapp:"WhatsApp", shareFacebook:"Facebook", shareCopy:"Copia testo", copied:"Copiato!", discoverTitle:"Dove vuoi andare?", discoverSub:"Imposta i filtri per scoprire i viaggi perfetti per il tuo budget", setFilters:"Scegli i filtri", welcomeTitle:"Benvenuto su TravelBudget", welcomeSub:"Scopri il viaggio dei tuoi sogni", welcomeStart:"Inizia a scoprire", noDirectTrainTitle:"Nessun diretto da qui! 😅", noDirectTrain:"Purtroppo dalla tua stazione non parte nessun treno diretto… Prova 'Con cambio'! 🚂", loadingMore:"Caricamento nuovi risultati…", infoBtn:"Info" },
   premium: { title:"Passa a Premium", subtitle:"Hai esaurito tutte le ricerche gratuite", guestSubtitle:"Hai usato le 5 ricerche ospite. Registrati per 20 ricerche gratuite!", price:"€3/mese", benefit1:"80 ricerche al giorno", benefit2:"Filtri destinazione avanzati", benefit3:"Risultati prioritari", cta:"Attiva Premium", ctaSub:"Disdici quando vuoi · Fatturazione mensile", orSignUp:"Registrati per 20 ricerche gratuite", searchesLeft:"di 20 ricerche giornaliere gratuite usate", limitReachedTitle:"Limite giornaliero raggiunto", perDay:"ricerche/giorno", planFree:"Piano Free", planPremium:"Piano Premium", upgradeNow:"Passa a Premium", currentPlan:"Il tuo piano", managePlan:"Gestisci", freePlanDesc:"20 ricerche al giorno, sempre gratis", premiumPlanDesc:"80 ricerche al giorno, esperienza completa", downgrade:"Torna al piano gratuito", alreadyMember:"Sei già membro Premium 🎉", unlockFor:"Sblocca tutto per soli €3/mese", activePlan:"Piano Premium attivo", signUpFirst:"Registrati — poi scegli Premium" },
   offline: { banner:"Nessuna connessione internet", title:"Sei offline 🌐", subtitle:"Mostro gli ultimi viaggi caricati.", noCache:"Connettiti a internet per scoprire i viaggi", searchDisabled:"La ricerca richiede una connessione internet", reconnected:"Connessione ripristinata! 🚀", showingCached:"Mostro i viaggi salvati ✈️" },
@@ -125,7 +125,7 @@ function deepMerge(target, source) {
 // Spanish translations (abbreviated, falling back to English for missing)
 TRANSLATIONS.es = deepMerge({
   landing: { title:"Viajar sin esfuerzo", subtitle:"Desliza sugerencias de viaje seleccionadas como una revista de lujo. Encuentra tu próxima aventura.", getStarted:"Comenzar", logIn:"Iniciar sesión", continueAsGuest:"Continuar como invitado" },
-  nav: { discover:"Descubrir", saved:"Guardados", profile:"Perfil", logOut:"Cerrar sesión", premium:"Premium" },
+  nav: { discover:"Descubrir", saved:"Guardados", profile:"Perfil", logOut:"Cerrar sesión", premium:"Premium", signIn:"Iniciar sesión", signUp:"Registrarse", guestLabel:"Invitado" },
   discover: { discoverTitle:"¿Adónde quieres ir?", discoverSub:"Configura los filtros para descubrir viajes perfectos para tu presupuesto", setFilters:"Elegir filtros", like:"ME GUSTA", nope:"NO", welcomeSub:"Descubre el viaje de tus sueños", welcomeStart:"Empezar a explorar", generateMore:"Generar más viajes", seenAll:"¡Lo has visto todo!", infoBtn:"Info" },
   premium: { title:"Pasa a Premium", cta:"Activar Premium", price:"€3/mes", benefit1:"80 búsquedas al día", benefit2:"Filtros de destino avanzados", benefit3:"Resultados prioritarios" },
   saved: { title:"Viajes guardados", empty:"Aún no hay viajes guardados", goToDiscover:"Ir a Descubrir" },
@@ -138,7 +138,7 @@ TRANSLATIONS.es = deepMerge({
 // French
 TRANSLATIONS.fr = deepMerge({
   landing: { title:"Le voyage sans effort", subtitle:"Faites défiler des suggestions de voyage soigneusement sélectionnées. Trouvez votre prochaine aventure.", getStarted:"Commencer", logIn:"Se connecter", continueAsGuest:"Continuer en tant qu'invité" },
-  nav: { discover:"Découvrir", saved:"Enregistrés", profile:"Profil", logOut:"Se déconnecter", premium:"Premium" },
+  nav: { discover:"Découvrir", saved:"Enregistrés", profile:"Profil", logOut:"Se déconnecter", premium:"Premium", signIn:"Se connecter", signUp:"S'inscrire", guestLabel:"Invité" },
   discover: { discoverTitle:"Où voulez-vous aller ?", discoverSub:"Configurez les filtres pour découvrir des voyages parfaits pour votre budget", setFilters:"Choisir les filtres", like:"J'AIME", nope:"NON", welcomeSub:"Découvrez le voyage de vos rêves", welcomeStart:"Commencer à explorer", generateMore:"Générer plus de voyages", seenAll:"Vous avez tout vu !", infoBtn:"Info" },
   premium: { title:"Passer à Premium", cta:"Activer Premium", price:"3€/mois", benefit1:"80 recherches par jour", benefit2:"Filtres de destination avancés", benefit3:"Résultats prioritaires" },
   saved: { title:"Voyages enregistrés", empty:"Pas encore de voyages enregistrés", goToDiscover:"Aller à Découvrir" },
@@ -151,7 +151,7 @@ TRANSLATIONS.fr = deepMerge({
 // German
 TRANSLATIONS.de = deepMerge({
   landing: { title:"Reisen leicht gemacht", subtitle:"Wischen Sie durch kuratierte Reisevorschläge wie ein glänzendes Reisemagazin. Finden Sie Ihr nächstes Abenteuer.", getStarted:"Loslegen", logIn:"Anmelden", continueAsGuest:"Als Gast fortfahren" },
-  nav: { discover:"Entdecken", saved:"Gespeichert", profile:"Profil", logOut:"Abmelden", premium:"Premium" },
+  nav: { discover:"Entdecken", saved:"Gespeichert", profile:"Profil", logOut:"Abmelden", premium:"Premium", signIn:"Anmelden", signUp:"Registrieren", guestLabel:"Gast" },
   discover: { discoverTitle:"Wohin möchten Sie reisen?", discoverSub:"Filter einstellen, um Reisen innerhalb Ihres Budgets zu entdecken", setFilters:"Filter wählen", like:"MAG ICH", nope:"NEIN", welcomeSub:"Entdecken Sie die Reise Ihrer Träume", welcomeStart:"Entdecken starten", generateMore:"Mehr Reisen generieren", seenAll:"Du hast alles gesehen!", infoBtn:"Info" },
   premium: { title:"Auf Premium upgraden", cta:"Premium aktivieren", price:"3€/Monat", benefit1:"80 Suchen pro Tag", benefit2:"Erweiterte Zielfilter", benefit3:"Prioritätsergebnisse" },
   saved: { title:"Gespeicherte Reisen", empty:"Noch keine gespeicherten Reisen", goToDiscover:"Zu Entdecken" },
@@ -164,7 +164,7 @@ TRANSLATIONS.de = deepMerge({
 // Chinese
 TRANSLATIONS.zh = deepMerge({
   landing: { title:"轻松实现旅行梦想", subtitle:"像翻阅旅行杂志一样滑动精选旅行建议，随性发现您的下一段冒险。", getStarted:"立即开始", logIn:"登录", continueAsGuest:"以游客身份继续" },
-  nav: { discover:"探索", saved:"收藏", profile:"个人", logOut:"退出", premium:"高级版" },
+  nav: { discover:"探索", saved:"收藏", profile:"个人", logOut:"退出", premium:"高级版", signIn:"登录", signUp:"注册", guestLabel:"访客" },
   discover: { discoverTitle:"您想去哪里？", discoverSub:"设置筛选条件，发现适合您预算的行程", setFilters:"设置筛选", like:"喜欢", nope:"跳过", welcomeSub:"发现您梦寐以求的旅行", welcomeStart:"开始探索", generateMore:"生成更多行程", seenAll:"您已看完所有！", infoBtn:"详情" },
   premium: { title:"升级到高级版", cta:"激活高级版", price:"€3/月", benefit1:"每天80次搜索", benefit2:"高级目的地筛选", benefit3:"优先结果" },
   saved: { title:"收藏的行程", empty:"暂无收藏行程", goToDiscover:"前往探索" },
@@ -1005,8 +1005,8 @@ window.repeatSearch = function(idx) {
 function renderAppHeader() {
   const t = State.t;
   const isSignedIn = State.isSignedIn;
-  const userName = isSignedIn ? (State.user.name || State.user.email || t.nav.profile) : t.nav.guestLabel;
-  const initials = userName.trim().split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || 'G';
+  const userName = isSignedIn ? (State.user.name || State.user.email || t.nav.profile || 'User') : (t.nav.guestLabel || 'Ospite');
+  const initials = (userName || 'G').trim().split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() || 'G';
   return `
     <header style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 8px;background:rgba(0,0,0,0.25);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.1)">
       <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="navigate('/discover')">
