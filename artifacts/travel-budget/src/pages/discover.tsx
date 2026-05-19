@@ -742,6 +742,12 @@ export default function Discover() {
               description: t.discover.rateLimitHint,
               duration: 8000,
             });
+          } else if (!hasSearched) {
+            // Auto-search failed (user hasn't manually searched yet) — stay on
+            // pre-search screen so they can set filters and retry, rather than
+            // showing the full error state which looks like a crash.
+            toast.error(t.discover.searchError, { duration: 4000 });
+            autoSearchFiredRef.current = false;
           } else {
             setApiError(true);
             toast.error(t.discover.searchError, {
