@@ -872,9 +872,7 @@ window.obNext = function() {
 function getFilteredTrips() {
   let trips = [...MOCK_TRIPS];
   const f = State.filters;
-  // Budget filter
-  trips = trips.filter(tr => tr.totalPrice <= (f.budget || 99999));
-  // People
+  // Budget: demo mode — show all trips regardless of price
   // Flight/train preference
   if (f.flightPreference === 'direct') trips = trips.filter(tr => tr.transport.type !== 'train' ? tr.transport.direct : true);
   if (f.trainPreference === 'direct') trips = trips.filter(tr => tr.transport.type === 'train' ? tr.transport.direct : true);
@@ -897,7 +895,8 @@ function getFilteredTrips() {
     const getDur = tr => { const d = tr.transport.duration || ''; const [h,m] = d.split(/[hm]/).filter(Boolean).map(Number); return (h||0)*60+(m||0); };
     return getDur(a) - getDur(b);
   });
-  return trips;
+  // Max 20 cards
+  return trips.slice(0, 20);
 }
 
 function renderDiscover() {
@@ -1187,7 +1186,7 @@ function renderDiscoverSwipe(trips, idx) {
           <button class="view-toggle-btn ${State.viewMode==='swipe'?'active':''}" onclick="setViewMode('swipe')">${IC.layers} Swipe</button>
           <button class="view-toggle-btn ${State.viewMode==='list'?'active':''}" onclick="setViewMode('list')">${IC.listLayout} Lista</button>
         </div>
-        <span class="deck-counter">${idx + 1} / ${trips.length}</span>
+        <span class="deck-counter">Card ${idx + 1} su ${trips.length}</span>
       </div>
 
       <!-- Deck -->
