@@ -984,6 +984,40 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     results.push(tripOut as typeof trip);
   }
 
+  // ─── Relaxed fallback: if strict filters yielded nothing, retry ignoring
+  //     amenity/hotel-type/star/rating/distance constraints so users always
+  //     see at least a handful of trips instead of an empty result.
+  if (results.length === 0) {
+    const fallbackSeen = new Set<string>();
+    let fallbackAttempts = 0;
+    while (results.length < 8 && fallbackAttempts < 200) {
+      fallbackAttempts++;
+      const trip = generateTrip(
+        matchedDest,
+        cleanDeparture,
+        budget,
+        numberOfPeople,
+        numberOfNights,
+        flightPreference,
+        trainPreference,
+        "standard" as AccommodationType,
+        "any",
+        `fallback-${Date.now()}-${fallbackAttempts}`,
+        tripType as "one_way" | "round_trip",
+      );
+      if (!trip) continue;
+      if (flightPreference === "direct" && trip.transport.type === "flight" && !trip.transport.isDirect) continue;
+      if (trainPreference === "direct" && trip.transport.type === "train" && !trip.transport.isDirect) continue;
+
+      const dedupKey = `${trip.hotel.name}|${Math.round(trip.totalPrice / (budget * 0.05))}`;
+      if (fallbackSeen.has(dedupKey)) continue;
+      fallbackSeen.add(dedupKey);
+      const { _features, ...tripOut } = trip;
+      if (tripType === "one_way") delete (tripOut as Record<string, unknown>).returnTransport;
+      results.push(tripOut as typeof trip);
+    }
+  }
+
   // ─── Freemium: increment daily search count (fire-and-forget) ─
   if (userId && results.length > 0) {
     const newCount = currentDailyCount + 1;
