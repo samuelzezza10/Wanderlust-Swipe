@@ -741,10 +741,10 @@ export default function Discover() {
               duration: 8000,
             });
           } else {
-            // Never show a full-page error — if no trips loaded yet, reset to pre-search
+            // Never show a full-page error — if no trips loaded yet, return to pre-search
+            // Do NOT reset autoSearchFiredRef to avoid an infinite retry loop
             if (trips.length === 0) {
               setHasSearched(false);
-              autoSearchFiredRef.current = false;
             }
             toast.error(t.discover.searchError, { duration: 4000 });
           }
