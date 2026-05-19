@@ -380,7 +380,7 @@ export function FilterSheet({
                     : "bg-background text-foreground border-border hover:border-primary/40"
                 }`}
               >
-                <span className="text-xl">✈️</span>
+                <span className="text-xl">→</span>
                 <span>{t.filters.oneWay}</span>
                 <span className={`text-[10px] font-normal ${draft.tripType === "one_way" ? "text-white/70" : "text-muted-foreground"}`}>Solo andata</span>
               </button>
