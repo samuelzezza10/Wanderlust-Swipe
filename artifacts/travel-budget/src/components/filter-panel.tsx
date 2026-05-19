@@ -54,7 +54,7 @@ export interface TripFilters {
 }
 
 export const DEFAULT_FILTERS: TripFilters = {
-  budget: 0,
+  budget: 2000,
   numberOfPeople: 2,
   numberOfChildren: 0,
   numberOfPets: 0,
@@ -279,7 +279,6 @@ export function FilterSheet({
       const arrCity = arr.split(" (")[0].trim().toLowerCase();
       if (depCity === arrCity) errs["arrival"] = t.filters.sameLocation;
     }
-    if (f.budget == null || f.budget <= 0) errs["budget"] = t.filters.invalidBudget;
 
     return errs;
   };

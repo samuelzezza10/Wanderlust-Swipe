@@ -454,7 +454,9 @@ export default function Discover() {
   const [filters, setFilters] = useState<TripFilters>(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(FILTERS_STORAGE_KEY) ?? "null") as TripFilters | null;
-      return stored ?? DEFAULT_FILTERS;
+      if (!stored) return DEFAULT_FILTERS;
+      // Upgrade stored budget=0 to the default (2000) so searches always work
+      return stored.budget > 0 ? stored : { ...stored, budget: DEFAULT_FILTERS.budget };
     } catch {
       return DEFAULT_FILTERS;
     }
