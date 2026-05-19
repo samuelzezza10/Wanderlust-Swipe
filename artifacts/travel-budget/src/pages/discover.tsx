@@ -134,7 +134,7 @@ function WelcomeSplash({ onDismiss }: { onDismiss: () => void }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 1.1 }}
+        transition={{ delay: 0.6 }}
       >
         <button
           onClick={onDismiss}
@@ -467,6 +467,7 @@ export default function Discover() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreExhausted, setLoadMoreExhausted] = useState(false);
   const seenHotelNamesRef = useRef<Set<string>>(new Set());
+  const autoSearchFiredRef = useRef(false);
 
   // Welcome splash — show once per session
   const [showSplash, setShowSplash] = useState(() => {
@@ -847,6 +848,16 @@ export default function Discover() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, trips.length, hasSearched]);
 
+  // Auto-search on splash dismiss (or on first mount if splash already seen)
+  // so users immediately see trips without having to manually set filters
+  useEffect(() => {
+    if (!showSplash && !hasSearched && isOnline && !autoSearchFiredRef.current) {
+      autoSearchFiredRef.current = true;
+      loadTrips(filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSplash, isOnline]);
+
   const handleSwipe = (direction: "left" | "right") => {
     if (currentIndex >= trips.length) return;
     const trip = trips[currentIndex];
@@ -1174,7 +1185,7 @@ export default function Discover() {
                 </Button>
               )}
               <Button onClick={() => loadTrips(filters)} size="lg" variant="outline" disabled={generateTrips.isPending} className="border-white/40 text-white hover:bg-white/10">
-                {t.discover.generateMore} (reset)
+                <RefreshCw className="w-4 h-4 mr-2" />{t.discover.generateMore}
               </Button>
             </div>
           )}
@@ -1187,11 +1198,32 @@ export default function Discover() {
     );
   }
 
+  /* ── Recent searches → chips for FilterBar ── */
+  const recentChips = (recentSearches ?? []).slice(0, 5).map((entry) => {
+    const parts: string[] = [];
+    if (entry.departureLocation) parts.push(entry.departureLocation.split(" (")[0]);
+    if (entry.arrivalLocation && entry.arrivalLocation !== "Any")
+      parts.push("→ " + entry.arrivalLocation.split(" (")[0]);
+    else parts.push("→ Any");
+    if (entry.numberOfNights) parts.push(`${entry.numberOfNights}n`);
+    return {
+      label: parts.join(" "),
+      onClick: () => handleRepeatSearch(entry),
+    };
+  });
+
   /* ── Main swipe / list deck ── */
   return (
     <>
       <div className="flex-1 flex flex-col bg-primary overflow-hidden">
         <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} compact />
+
+        {/* ── Filter bar with recent searches ── */}
+        <FilterBar
+          filters={filters}
+          onEdit={() => setFilterOpen(true)}
+          recentSearches={recentChips.length > 0 ? recentChips : undefined}
+        />
 
         {/* ── Top bar: counter + view toggle ── */}
         <div className="flex items-center justify-between px-4 pt-2 pb-1">
@@ -1209,7 +1241,7 @@ export default function Discover() {
             </div>
           ) : (
             <span className="text-white/80 text-sm font-semibold">
-              {trips.length}{isLoadingMore ? "+" : ""} risultati
+              {trips.length}{isLoadingMore ? "+" : ""} {t.discover.nResults}
             </span>
           )}
           {/* Mode toggle */}
@@ -1224,7 +1256,7 @@ export default function Discover() {
               onClick={() => setViewMode("list")}
               className={`flex items-center gap-1 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all ${viewMode === "list" ? "bg-white text-primary shadow-sm" : "text-white/70 hover:text-white"}`}
             >
-              <LayoutList className="w-3.5 h-3.5" /> Lista
+              <LayoutList className="w-3.5 h-3.5" /> {t.discover.viewList}
             </button>
           </div>
         </div>
@@ -1435,13 +1467,13 @@ function TripListCard({
               onClick={onInfo}
               className="flex-1 h-8 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
             >
-              <Info className="w-3.5 h-3.5" /> Info
+              <Info className="w-3.5 h-3.5" /> {t.discover.infoBtn}
             </button>
             <button
               onClick={onSave}
               className="flex-1 h-8 rounded-xl bg-green-500/80 hover:bg-green-500 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
             >
-              <Check className="w-3.5 h-3.5" /> Save
+              <Check className="w-3.5 h-3.5" /> {t.tripDetail.saveTrip}
             </button>
           </div>
         </div>
