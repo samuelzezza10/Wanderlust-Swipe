@@ -325,60 +325,6 @@ export default function Profile() {
         )}
       </div>
 
-      {/* ── My Preferences (inline edit) ── */}
-      <div className="bg-card border rounded-2xl p-5 mb-4">
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="font-bold text-base flex items-center gap-2">
-            <Settings className="w-4 h-4 text-muted-foreground" />
-            {t.profile.preferences}
-          </h3>
-          {!editingPrefs && (
-            <button
-              onClick={() => setEditingPrefs(true)}
-              className="text-xs text-primary font-medium flex items-center gap-1 hover:opacity-80"
-            >
-              <Pencil className="w-3 h-3" />
-              {t.profile.editPreferences}
-            </button>
-          )}
-        </div>
-
-        {!editingPrefs ? (
-          <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <div className="flex justify-between">
-              <span className="flex items-center gap-1.5"><Banknote className="w-3.5 h-3.5" /> Budget</span>
-              <span className="font-medium text-foreground">
-                {prefs?.defaultBudget ? `€${prefs.defaultBudget}` : t.profile.notSet}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="flex items-center gap-1.5"><Plane className="w-3.5 h-3.5" /> {t.onboarding.departureCity}</span>
-              <span className="font-medium text-foreground">
-                {prefs?.defaultDepartureLocation || t.profile.notSet}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {t.onboarding.numberOfPeople}</span>
-              <span className="font-medium text-foreground">
-                {prefs?.defaultNumberOfPeople ?? t.profile.notSet}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="flex items-center gap-1.5"><Plane className="w-3.5 h-3.5" /> {t.onboarding.flight}</span>
-              <span className="font-medium text-foreground">
-                {prefs?.defaultFlightPreference === "direct"
-                  ? t.onboarding.directOnly
-                  : prefs?.defaultFlightPreference === "with_stops"
-                  ? t.onboarding.withStops
-                  : t.onboarding.any}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <PreferencesEditor prefs={prefs} onDone={() => setEditingPrefs(false)} t={t} />
-        )}
-      </div>
-
       {/* ── Recent searches ── */}
       <div className="bg-card border rounded-2xl p-5 mb-4">
         <h3 className="font-bold text-base flex items-center gap-2 mb-3">
