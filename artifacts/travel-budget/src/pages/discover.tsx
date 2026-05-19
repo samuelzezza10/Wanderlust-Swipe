@@ -38,11 +38,8 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 /* ─── Client-side filtering applied to any trip list ───────────────────── */
 function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSuggestion[] {
   let out = [...trips];
-  const budget = f.budget || 9999;
 
-  // 1. Budget — hard cap (always respected)
-  const withinBudget = out.filter(t => t.totalPrice <= budget);
-  if (withinBudget.length > 0) out = withinBudget;
+  // Budget: shown regardless — demo mode, never hide trips based on price
 
   // 2. Flight preference
   if (f.flightPreference === "direct") {
@@ -96,7 +93,8 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
   if (f.sortBy === "cheapest") out.sort((a, b) => a.totalPrice - b.totalPrice);
   else if (f.sortBy === "best_rating") out.sort((a, b) => (b.hotel.rating ?? 0) - (a.hotel.rating ?? 0));
 
-  return out;
+  // 9. Max 20 cards
+  return out.slice(0, 20);
 }
 
 /* ─── Fallback trips shown when the API is unavailable ─────────────────── */
