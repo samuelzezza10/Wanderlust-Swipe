@@ -3,7 +3,7 @@ import { slowDown } from "express-slow-down";
 
 const rateLimitMessage = () => ({
   error: "rate_limit_exceeded",
-  message: "Unusual activity detected. Please try again later.",
+  message: "Too many requests. Please try again later.",
 });
 
 /**
@@ -21,13 +21,13 @@ export const globalLimiter = rateLimit({
 });
 
 /**
- * Trip generation hard limit — 30 req / 10 min per IP.
- * Generation is the most expensive endpoint (AI + DB writes). A real user
- * rarely needs more than a handful of searches in 10 minutes.
+ * Trip generation hard limit — 100 req / 10 min per IP.
+ * Generous enough for active users applying filters repeatedly while still
+ * preventing automated abuse.
  */
 export const tripGenerateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 30,
+  limit: 100,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: rateLimitMessage,
@@ -35,23 +35,26 @@ export const tripGenerateLimiter = rateLimit({
 
 /**
  * Progressive slow-down on trip generation.
- * After 10 requests in 5 min, add 500 ms per extra request (max 5 s).
+ * After 20 requests in 5 min, add 500 ms per extra request (max 5 s).
  * Invisible to normal users, makes bots crawl.
  */
 export const tripGenerateSlowDown = slowDown({
   windowMs: 5 * 60 * 1000,
-  delayAfter: 10,
-  delayMs: 500,
+  delayAfter: 20,
+  delayMs: (used, req) => {
+    const delayAfter = req.slowDown.limit;
+    return (used - delayAfter) * 500;
+  },
   maxDelayMs: 5000,
+  validate: { delayMs: false },
 });
 
 /**
- * Surprise trips — 40 req / 10 min per IP.
- * Slightly more generous than generate because it's stateless and cheaper.
+ * Surprise trips — 100 req / 10 min per IP.
  */
 export const surpriseLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 40,
+  limit: 100,
   standardHeaders: "draft-8",
   legacyHeaders: false,
   message: rateLimitMessage,
