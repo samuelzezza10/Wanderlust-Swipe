@@ -30,6 +30,9 @@ const en = {
     profile: "Profile",
     logOut: "Log out",
     premium: "Premium",
+    signIn: "Sign in",
+    signUp: "Sign up",
+    guestLabel: "Guest",
   },
   discover: {
     loading: "Finding perfect getaways...",
@@ -506,6 +509,9 @@ const it: Translations = {
     profile: "Profilo",
     logOut: "Esci",
     premium: "Premium",
+    signIn: "Accedi",
+    signUp: "Registrati",
+    guestLabel: "Ospite",
   },
   discover: {
     loading: "Cerchiamo le mete perfette...",
@@ -982,6 +988,9 @@ const es: Translations = {
     profile: "Perfil",
     logOut: "Cerrar sesión",
     premium: "Premium",
+    signIn: "Iniciar sesión",
+    signUp: "Registrarse",
+    guestLabel: "Invitado",
   },
   discover: {
     loading: "Buscando escapadas perfectas...",
@@ -1458,6 +1467,9 @@ const fr: Translations = {
     profile: "Profil",
     logOut: "Se déconnecter",
     premium: "Premium",
+    signIn: "Se connecter",
+    signUp: "S'inscrire",
+    guestLabel: "Invité",
   },
   discover: {
     loading: "Nous cherchons les meilleures escapades...",
@@ -1934,6 +1946,9 @@ const de: Translations = {
     profile: "Profil",
     logOut: "Abmelden",
     premium: "Premium",
+    signIn: "Anmelden",
+    signUp: "Registrieren",
+    guestLabel: "Gast",
   },
   discover: {
     loading: "Wir suchen die perfekten Reiseziele...",
@@ -2410,6 +2425,9 @@ const zh: Translations = {
     profile: "个人资料",
     logOut: "退出",
     premium: "Premium",
+    signIn: "登录",
+    signUp: "注册",
+    guestLabel: "访客",
   },
   discover: {
     loading: "正在寻找完美行程...",
