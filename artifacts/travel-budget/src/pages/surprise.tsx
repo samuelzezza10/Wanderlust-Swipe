@@ -67,7 +67,7 @@ interface SurpriseFilters {
 }
 
 const DEFAULT_SURPRISE_FILTERS: SurpriseFilters = {
-  budget: 2000,
+  budget: 0,
   numberOfPeople: 2,
   numberOfChildren: 0,
   numberOfPets: 0,
@@ -283,18 +283,18 @@ export default function SurprisePage() {
               <input
                 type="number"
                 min={0}
-                max={2000}
+                max={20000}
                 value={filters.budget || ""}
                 onChange={(e) => {
-                  const v = Math.max(0, Math.min(2000, parseInt(e.target.value, 10) || 0));
+                  const v = Math.max(0, Math.min(20000, parseInt(e.target.value, 10) || 0));
                   setFilters(f => ({ ...f, budget: v }));
                 }}
                 className="flex-1 text-xl font-black bg-transparent focus:outline-none text-foreground min-w-0"
-                placeholder="0 – 2000"
+                placeholder="0"
               />
             </div>
             <div className="flex gap-1.5 flex-wrap">
-              {[300, 500, 800, 1200, 2000].map((v) => (
+              {[500, 1000, 2000, 5000, 10000].map((v) => (
                 <button
                   key={v}
                   type="button"
