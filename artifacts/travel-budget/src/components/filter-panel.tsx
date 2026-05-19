@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   SlidersHorizontal, X, Minus, Plus, ChevronRight, Star,
-  Check,
+  Check, Plane, TrainFront,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
@@ -210,6 +210,9 @@ export function FilterSheet({
   const [draft, setDraft] = useState<TripFilters>(filters);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [tried, setTried] = useState(false);
+  const [transportMode, setTransportMode] = useState<"flight" | "train">(() =>
+    (filters.departureStation || filters.arrivalStation) ? "train" : "flight"
+  );
 
   const contentRef = useRef<HTMLDivElement>(null);
   const departureRef = useRef<HTMLDivElement>(null);
@@ -217,10 +220,10 @@ export function FilterSheet({
   const datesRef = useRef<HTMLDivElement>(null);
   const budgetRef = useRef<HTMLDivElement>(null);
 
-  const validate = (f: TripFilters): Record<string, string> => {
+  const validate = (f: TripFilters, mode: "flight" | "train"): Record<string, string> => {
     const errs: Record<string, string> = {};
-    const dep = f.departureAirport || f.departureStation;
-    const arr = f.arrivalAirport || f.arrivalStation;
+    const dep = mode === "flight" ? f.departureAirport : f.departureStation;
+    const arr = mode === "flight" ? f.arrivalAirport : f.arrivalStation;
 
     if (!dep) errs["departure"] = t.filters.missingDeparture;
     if (!arr) errs["arrival"] = t.filters.missingArrival;
@@ -235,18 +238,25 @@ export function FilterSheet({
       const arrCity = arr.split(" (")[0].trim().toLowerCase();
       if (depCity === arrCity) errs["arrival"] = t.filters.sameLocation;
     }
-    if (!f.budget || f.budget <= 0) errs["budget"] = t.filters.invalidBudget;
+    if (f.budget == null || f.budget < 0) errs["budget"] = t.filters.invalidBudget;
 
     return errs;
   };
 
   useEffect(() => {
-    if (tried) setErrors(validate(draft));
-  }, [draft, tried]);
+    if (tried) setErrors(validate(draft, transportMode));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, tried, transportMode]);
 
   const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) { setDraft(filters); setErrors({}); setTried(false); }
-    else onClose();
+    if (isOpen) {
+      setDraft(filters);
+      setErrors({});
+      setTried(false);
+      setTransportMode((filters.departureStation || filters.arrivalStation) ? "train" : "flight");
+    } else {
+      onClose();
+    }
   };
 
   const set = <K extends keyof TripFilters>(key: K, val: TripFilters[K]) =>
@@ -257,7 +267,7 @@ export function FilterSheet({
 
   const handleApply = () => {
     setTried(true);
-    const errs = validate(draft);
+    const errs = validate(draft, transportMode);
     setErrors(errs);
 
     if (Object.keys(errs).length > 0) {
@@ -302,29 +312,31 @@ export function FilterSheet({
           <div className="space-y-3">
             <p className="text-sm font-semibold text-foreground">{t.filters.tripTypeLabel}</p>
             <div className="flex gap-2">
-              {(["one_way", "round_trip"] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => {
-                    setDraft((prev) => ({
-                      ...prev,
-                      tripType: v,
-                      ...(v === "one_way" ? { returnDate: "" } : {}),
-                    }));
-                  }}
-                  className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${
-                    draft.tripType === v
-                      ? "bg-primary text-white shadow-md shadow-primary/30"
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {v === "round_trip" ? `🔄 ${t.filters.roundTrip}` : `✈️ ${t.filters.oneWay}`}
-                </button>
-              ))}
+              <button
+                onClick={() => setDraft((prev) => ({ ...prev, tripType: "round_trip" }))}
+                className={`flex-1 flex flex-col items-center gap-1 py-3.5 rounded-xl text-sm font-bold transition-all border-2 ${
+                  draft.tripType === "round_trip"
+                    ? "bg-primary text-white border-primary shadow-md shadow-primary/30"
+                    : "bg-background text-foreground border-border hover:border-primary/40"
+                }`}
+              >
+                <span className="text-xl">🔄</span>
+                <span>{t.filters.roundTrip}</span>
+                <span className={`text-[10px] font-normal ${draft.tripType === "round_trip" ? "text-white/70" : "text-muted-foreground"}`}>Andata e ritorno</span>
+              </button>
+              <button
+                onClick={() => setDraft((prev) => ({ ...prev, tripType: "one_way", returnDate: "" }))}
+                className={`flex-1 flex flex-col items-center gap-1 py-3.5 rounded-xl text-sm font-bold transition-all border-2 ${
+                  draft.tripType === "one_way"
+                    ? "bg-primary text-white border-primary shadow-md shadow-primary/30"
+                    : "bg-background text-foreground border-border hover:border-primary/40"
+                }`}
+              >
+                <span className="text-xl">✈️</span>
+                <span>{t.filters.oneWay}</span>
+                <span className={`text-[10px] font-normal ${draft.tripType === "one_way" ? "text-white/70" : "text-muted-foreground"}`}>Solo andata</span>
+              </button>
             </div>
-            {draft.tripType === "round_trip" && (
-              <p className="text-xs text-muted-foreground leading-relaxed">{t.filters.roundTripHint}</p>
-            )}
           </div>
 
           {/* ── Validation banner ───────────────────────────── */}
@@ -362,75 +374,123 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* ── Partenza ────────────────────────────────────── */}
-          <div ref={departureRef} className="space-y-3">
-            <p className="text-sm font-semibold text-foreground">{t.filters.departureAirport}</p>
-            <div className={`rounded-xl transition-colors ${errors["departure"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
-              <LocationAutocomplete
-                value={draft.departureAirport}
-                onChange={(v) => set("departureAirport", v)}
-                placeholder={t.filters.departureAirport}
-                filter="airport"
-              />
-            </div>
-            <div className={`rounded-xl transition-colors ${errors["departure"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
-              <LocationAutocomplete
-                value={draft.departureStation}
-                onChange={(v) => set("departureStation", v)}
-                placeholder={t.filters.departureStation}
-                filter="station"
-              />
-            </div>
-            {errors["departure"] && (
-              <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
-                <span>⚠️</span>{errors["departure"]}
-              </p>
-            )}
-          </div>
+          {/* ── Trasporto + Rotte (stile Booking.com) ─────── */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">Come vuoi viaggiare?</p>
 
-          {/* ── Destinazione ────────────────────────────────── */}
-          <div ref={arrivalRef} className="space-y-3">
-            <p className="text-sm font-semibold text-foreground">{t.filters.arrivalAirport}</p>
-            <div className={`rounded-xl transition-colors ${errors["arrival"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
-              <LocationAutocomplete
-                value={draft.arrivalAirport}
-                onChange={(v) => set("arrivalAirport", v)}
-                placeholder={t.filters.arrivalAirport}
-                filter="airport"
-              />
+            {/* Transport mode toggle */}
+            <div className="flex rounded-xl border border-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setTransportMode("flight");
+                  setDraft(prev => ({ ...prev, departureStation: "", arrivalStation: "" }));
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
+                  transportMode === "flight" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <Plane className="w-4 h-4" /> ✈️ Aereo
+              </button>
+              <div className="w-px bg-border" />
+              <button
+                type="button"
+                onClick={() => {
+                  setTransportMode("train");
+                  setDraft(prev => ({ ...prev, departureAirport: "", arrivalAirport: "" }));
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
+                  transportMode === "train" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <TrainFront className="w-4 h-4" /> 🚆 Treno
+              </button>
             </div>
-            <div className={`rounded-xl transition-colors ${errors["arrival"] ? "ring-2 ring-red-400 ring-offset-1" : ""}`}>
-              <LocationAutocomplete
-                value={draft.arrivalStation}
-                onChange={(v) => set("arrivalStation", v)}
-                placeholder={t.filters.arrivalStation}
-                filter="station"
-              />
+
+            {/* Booking.com-style location card */}
+            <div className={`border-2 rounded-2xl overflow-hidden transition-colors ${
+              (errors["departure"] || errors["arrival"]) ? "border-red-400" : "border-border"
+            }`}>
+              {/* Departure */}
+              <div ref={departureRef} className={`p-3 ${errors["departure"] ? "bg-red-50" : "bg-background"}`}>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  {transportMode === "flight"
+                    ? <><Plane className="w-3 h-3" /> Aeroporto di partenza</>
+                    : <><TrainFront className="w-3 h-3" /> Stazione di partenza</>}
+                </p>
+                <LocationAutocomplete
+                  value={transportMode === "flight" ? draft.departureAirport : draft.departureStation}
+                  onChange={(v) => set(transportMode === "flight" ? "departureAirport" : "departureStation", v)}
+                  placeholder={transportMode === "flight" ? t.filters.departureAirport : t.filters.departureStation}
+                  filter={transportMode === "flight" ? "airport" : "station"}
+                />
+              </div>
+
+              {/* Divider with swap indicator */}
+              <div className="relative h-px bg-border">
+                <div className="absolute right-4 -top-3.5 w-7 h-7 rounded-full bg-background border-2 border-border flex items-center justify-center text-xs text-muted-foreground select-none pointer-events-none font-bold">
+                  ⇅
+                </div>
+              </div>
+
+              {/* Arrival */}
+              <div ref={arrivalRef} className={`p-3 ${errors["arrival"] ? "bg-red-50" : "bg-background"}`}>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                  🏁 {transportMode === "flight" ? "Aeroporto di arrivo" : "Stazione di arrivo"}
+                </p>
+                <LocationAutocomplete
+                  value={transportMode === "flight" ? draft.arrivalAirport : draft.arrivalStation}
+                  onChange={(v) => set(transportMode === "flight" ? "arrivalAirport" : "arrivalStation", v)}
+                  placeholder={transportMode === "flight" ? t.filters.arrivalAirport : t.filters.arrivalStation}
+                  filter={transportMode === "flight" ? "airport" : "station"}
+                />
+              </div>
             </div>
-            {errors["arrival"] && (
+
+            {(errors["departure"] || errors["arrival"]) && (
               <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
-                <span>⚠️</span>{errors["arrival"]}
+                <span>⚠️</span>{errors["departure"] ?? errors["arrival"]}
               </p>
             )}
           </div>
 
           {/* ── Budget ─────────────────────────────────────── */}
           <div ref={budgetRef} className={`space-y-3 rounded-xl transition-colors ${errors["budget"] ? "p-3 ring-2 ring-red-400" : ""}`}>
-            <p className="text-sm font-semibold text-foreground">{t.filters.budget}</p>
+            <div>
+              <p className="text-sm font-semibold text-foreground">{t.filters.budget}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">✈️🏨 Include volo + hotel</p>
+            </div>
             <div className="flex items-center gap-3 border-2 border-border rounded-xl px-4 py-3 bg-background focus-within:border-primary transition-colors">
               <span className="text-xl font-bold text-muted-foreground select-none">€</span>
               <input
                 type="number"
-                min={50}
+                min={0}
                 max={20000}
-                value={draft.budget}
+                value={draft.budget || ""}
                 onChange={(e) => {
-                  const v = Math.max(50, Math.min(20000, parseInt(e.target.value, 10) || 50));
+                  const v = Math.max(0, Math.min(20000, parseInt(e.target.value, 10) || 0));
                   set("budget", v);
                 }}
                 className="flex-1 text-2xl font-black bg-transparent focus:outline-none text-foreground min-w-0"
-                placeholder="1000"
+                placeholder="0 – 20000"
               />
+            </div>
+            {/* Quick preset chips */}
+            <div className="flex gap-2 flex-wrap">
+              {[500, 1000, 2000, 5000, 10000].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => set("budget", v)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                    draft.budget === v
+                      ? "bg-primary text-white border-primary"
+                      : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                  }`}
+                >
+                  €{v.toLocaleString()}
+                </button>
+              ))}
             </div>
             {errors["budget"] && (
               <p className="text-xs text-red-500 font-medium flex items-center gap-1.5">
