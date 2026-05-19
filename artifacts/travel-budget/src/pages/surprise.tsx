@@ -150,6 +150,7 @@ export default function SurprisePage() {
   const { data: prefs } = useGetPreferences({ query: { enabled: !!isSignedIn, queryKey: ["preferences"] } });
 
   const [filters, setFilters] = useState<SurpriseFilters>(DEFAULT_SURPRISE_FILTERS);
+  const [transportMode, setTransportMode] = useState<"flight" | "train">("flight");
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
@@ -271,15 +272,42 @@ export default function SurprisePage() {
         <div className="mx-4 mt-3 bg-card rounded-2xl shadow-lg border p-4 flex flex-col gap-3">
 
           {/* Budget */}
-          <div className="flex items-center justify-between">
+          <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-medium">
               <Wallet className="w-4 h-4 text-primary" />
               <span>{t.surprise.budgetLabel}</span>
+              <span className="text-xs text-muted-foreground ml-auto">✈️🏨 volo + hotel</span>
             </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setFilters(f => ({ ...f, budget: Math.max(300, f.budget - 200) }))} className="w-7 h-7 rounded-full border flex items-center justify-center text-sm hover:bg-muted transition-colors disabled:opacity-30" disabled={filters.budget <= 300}>−</button>
-              <span className="font-bold text-primary min-w-[60px] text-center">€{filters.budget.toLocaleString()}</span>
-              <button onClick={() => setFilters(f => ({ ...f, budget: Math.min(20000, f.budget + 200) }))} className="w-7 h-7 rounded-full border flex items-center justify-center text-sm hover:bg-muted transition-colors">+</button>
+            <div className="flex items-center gap-3 border-2 border-border rounded-xl px-4 py-2.5 bg-background focus-within:border-primary transition-colors">
+              <span className="text-lg font-bold text-muted-foreground select-none">€</span>
+              <input
+                type="number"
+                min={0}
+                max={2000}
+                value={filters.budget || ""}
+                onChange={(e) => {
+                  const v = Math.max(0, Math.min(2000, parseInt(e.target.value, 10) || 0));
+                  setFilters(f => ({ ...f, budget: v }));
+                }}
+                className="flex-1 text-xl font-black bg-transparent focus:outline-none text-foreground min-w-0"
+                placeholder="0 – 2000"
+              />
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {[300, 500, 800, 1200, 2000].map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setFilters(f => ({ ...f, budget: v }))}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                    filters.budget === v
+                      ? "bg-primary text-white border-primary"
+                      : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                  }`}
+                >
+                  €{v}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -321,31 +349,47 @@ export default function SurprisePage() {
             </div>
           </div>
 
-          {/* Departure airport */}
-          <div>
-            <div className="flex items-center gap-1.5 text-sm font-medium mb-1.5">
-              <Plane className="w-4 h-4 text-primary" />
-              <span>{t.surprise.departureAirport}</span>
+          {/* Departure - transport toggle + single field */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Da dove parti?</p>
+            <div className="flex rounded-xl border border-border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => {
+                  setTransportMode("flight");
+                  setFilters(f => ({ ...f, departureStation: "" }));
+                }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold transition-colors ${
+                  transportMode === "flight" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <Plane className="w-3.5 h-3.5" /> ✈️ Aereo
+              </button>
+              <div className="w-px bg-border" />
+              <button
+                type="button"
+                onClick={() => {
+                  setTransportMode("train");
+                  setFilters(f => ({ ...f, departureAirport: "" }));
+                }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold transition-colors ${
+                  transportMode === "train" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                <TrainFront className="w-3.5 h-3.5" /> 🚆 Treno
+              </button>
             </div>
             <LocationAutocomplete
-              value={filters.departureAirport}
-              onChange={(v) => setFilters(f => ({ ...f, departureAirport: v }))}
-              placeholder={prefs?.defaultDepartureLocation || "Roma FCO, Milano MXP…"}
-              filter="airport"
-            />
-          </div>
-
-          {/* Departure station */}
-          <div>
-            <div className="flex items-center gap-1.5 text-sm font-medium mb-1.5">
-              <TrainFront className="w-4 h-4 text-primary" />
-              <span>{t.surprise.departureStation}</span>
-            </div>
-            <LocationAutocomplete
-              value={filters.departureStation}
-              onChange={(v) => setFilters(f => ({ ...f, departureStation: v }))}
-              placeholder="Roma Termini, Milano Centrale…"
-              filter="station"
+              value={transportMode === "flight" ? filters.departureAirport : filters.departureStation}
+              onChange={(v) => setFilters(f => ({
+                ...f,
+                departureAirport: transportMode === "flight" ? v : "",
+                departureStation: transportMode === "train" ? v : "",
+              }))}
+              placeholder={transportMode === "flight"
+                ? (prefs?.defaultDepartureLocation || "Roma FCO, Milano MXP…")
+                : "Roma Termini, Milano Centrale…"}
+              filter={transportMode === "flight" ? "airport" : "station"}
             />
           </div>
 
