@@ -35,6 +35,74 @@ const FILTERS_STORAGE_KEY = "tb_discover_filters";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/* ─── Fallback trips shown when the API is unavailable ─────────────────── */
+const FALLBACK_TRIPS: TripSuggestion[] = [
+  {
+    id: "fb-1", destination: "Roma", country: "Italia", totalPrice: 480, durationDays: 4,
+    description: "La città eterna con Colosseo, Vaticano e cucina straordinaria.", tripType: "round_trip",
+    highlights: ["Colosseo", "Vaticano", "Fontana di Trevi"], imageUrl: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=80",
+    transport: { type: "train", company: "Trenitalia", price: 45, duration: "3h 00m", isDirect: true, departureTime: "09:00", arrivalTime: "12:00" },
+    hotel: { name: "Hotel Campo de' Fiori", stars: 3, pricePerNight: 95, distanceFromCenter: 0.4, rating: 8.1, amenities: ["WiFi", "Colazione"] },
+    returnTransport: { type: "train", company: "Trenitalia", price: 45, duration: "3h 00m", isDirect: true },
+  },
+  {
+    id: "fb-2", destination: "Parigi", country: "Francia", totalPrice: 890, durationDays: 5,
+    description: "Torre Eiffel, musei mondiali e cucina d'autore nella Ville Lumière.", tripType: "round_trip",
+    highlights: ["Torre Eiffel", "Louvre", "Montmartre"], imageUrl: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80",
+    transport: { type: "flight", company: "Air France", price: 220, duration: "2h 10m", isDirect: true, departureTime: "07:15", arrivalTime: "09:25" },
+    hotel: { name: "Hotel Le Marais", stars: 4, pricePerNight: 134, distanceFromCenter: 0.8, rating: 8.7, amenities: ["WiFi", "Colazione", "Bar"] },
+    returnTransport: { type: "flight", company: "Air France", price: 195, duration: "2h 05m", isDirect: true },
+  },
+  {
+    id: "fb-3", destination: "Barcellona", country: "Spagna", totalPrice: 750, durationDays: 5,
+    description: "Gaudí, La Rambla e spiagge soleggiate nel cuore del Mediterraneo.", tripType: "round_trip",
+    highlights: ["Sagrada Família", "Park Güell", "Barceloneta Beach"], imageUrl: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=600&q=80",
+    transport: { type: "flight", company: "Vueling", price: 145, duration: "2h 05m", isDirect: true, departureTime: "06:45", arrivalTime: "09:00" },
+    hotel: { name: "Gothic Quarter Hotel", stars: 3, pricePerNight: 89, distanceFromCenter: 0.2, rating: 8.5, amenities: ["WiFi", "Rooftop bar"] },
+    returnTransport: { type: "flight", company: "Vueling", price: 130, duration: "2h 10m", isDirect: true },
+  },
+  {
+    id: "fb-4", destination: "Amsterdam", country: "Paesi Bassi", totalPrice: 720, durationDays: 5,
+    description: "Canali, tulipani e musei di livello mondiale in questa città unica.", tripType: "round_trip",
+    highlights: ["Rijksmuseum", "Casa di Anne Frank", "Canali"], imageUrl: "https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?w=600&q=80",
+    transport: { type: "flight", company: "KLM", price: 180, duration: "2h 15m", isDirect: true, departureTime: "08:30", arrivalTime: "10:45" },
+    hotel: { name: "Canal View Hotel", stars: 3, pricePerNight: 110, distanceFromCenter: 0.6, rating: 8.2, amenities: ["WiFi", "Vista canale", "Colazione"] },
+    returnTransport: { type: "flight", company: "KLM", price: 165, duration: "2h 20m", isDirect: true },
+  },
+  {
+    id: "fb-5", destination: "Lisbona", country: "Portogallo", totalPrice: 680, durationDays: 5,
+    description: "Fado, azulejos e tramonto sull'Atlantico nella capitale europea più trendy.", tripType: "round_trip",
+    highlights: ["Torre di Belém", "Tram 28", "Sintra"], imageUrl: "https://images.unsplash.com/photo-1548707309-dcebeab9ea9b?w=600&q=80",
+    transport: { type: "flight", company: "TAP Air Portugal", price: 180, duration: "2h 30m", isDirect: true, departureTime: "08:00", arrivalTime: "10:30" },
+    hotel: { name: "Bairro Alto Hotel", stars: 3, pricePerNight: 75, distanceFromCenter: 0.3, rating: 8.2, amenities: ["WiFi", "Colazione", "Terrazza"] },
+    returnTransport: { type: "flight", company: "TAP Air Portugal", price: 165, duration: "2h 40m", isDirect: true },
+  },
+  {
+    id: "fb-6", destination: "Berlino", country: "Germania", totalPrice: 580, durationDays: 4,
+    description: "Storia, arte e cultura underground nella capitale europea più cool.", tripType: "round_trip",
+    highlights: ["Muro di Berlino", "Reichstag", "Museum Island"], imageUrl: "https://images.unsplash.com/photo-1560969184-10fe8719e047?w=600&q=80",
+    transport: { type: "flight", company: "easyJet", price: 120, duration: "2h 00m", isDirect: true, departureTime: "07:00", arrivalTime: "09:00" },
+    hotel: { name: "Mitte Design Hotel", stars: 3, pricePerNight: 89, distanceFromCenter: 0.5, rating: 8.0, amenities: ["WiFi", "Bar", "Bici a noleggio"] },
+    returnTransport: { type: "flight", company: "easyJet", price: 115, duration: "2h 05m", isDirect: true },
+  },
+  {
+    id: "fb-7", destination: "Santorini", country: "Grecia", totalPrice: 1120, durationDays: 7,
+    description: "Chiese con cupole blu e tramonti da leggenda nelle Cicladi greche.", tripType: "round_trip",
+    highlights: ["Tramonto a Oia", "Tour della caldera", "Degustazione vini"], imageUrl: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&q=80",
+    transport: { type: "flight", company: "Aegean Airlines", price: 310, duration: "2h 50m", isDirect: false, departureTime: "09:00", arrivalTime: "13:45" },
+    hotel: { name: "Oia Sunset Villas", stars: 4, pricePerNight: 98, distanceFromCenter: 1.5, rating: 9.1, amenities: ["WiFi", "Piscina", "Vista caldera"] },
+    returnTransport: { type: "flight", company: "Aegean Airlines", price: 295, duration: "2h 45m", isDirect: false },
+  },
+  {
+    id: "fb-8", destination: "Praga", country: "Repubblica Ceca", totalPrice: 560, durationDays: 4,
+    description: "Cento campanili, ponti medievali e birra leggendaria nella città delle fate.", tripType: "round_trip",
+    highlights: ["Ponte Carlo", "Castello di Praga", "Città Vecchia"], imageUrl: "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=600&q=80",
+    transport: { type: "train", company: "Trenitalia + ÖBB", price: 210, duration: "9h 30m", isDirect: false, departureTime: "07:00", arrivalTime: "16:30" },
+    hotel: { name: "Malá Strana Boutique", stars: 3, pricePerNight: 72, distanceFromCenter: 0.7, rating: 8.0, amenities: ["WiFi", "Colazione", "Edificio storico"] },
+    returnTransport: { type: "train", company: "ÖBB + Trenitalia", price: 200, duration: "9h 45m", isDirect: false },
+  },
+];
+
 function getImgSrc(imageUrl: string) {
   const raw = imageUrl ?? "";
   const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
@@ -736,17 +804,19 @@ export default function Discover() {
           if (status === 403) {
             setShowPremiumModal(true);
           } else if (status === 429) {
-            toast.error(t.discover.rateLimitError, {
-              description: t.discover.rateLimitHint,
-              duration: 8000,
-            });
-          } else {
-            // Never show a full-page error — if no trips loaded yet, return to pre-search
-            // Do NOT reset autoSearchFiredRef to avoid an infinite retry loop
+            // Rate limited — silently show fallback trips so the UI is never empty
             if (trips.length === 0) {
-              setHasSearched(false);
+              setTrips(FALLBACK_TRIPS);
+              setCurrentIndex(0);
+              setHasSearched(true);
             }
-            toast.error(t.discover.searchError, { duration: 4000 });
+          } else {
+            // Any other error — silently fall back to curated trips so no error ever appears
+            if (trips.length === 0) {
+              setTrips(FALLBACK_TRIPS);
+              setCurrentIndex(0);
+              setHasSearched(true);
+            }
           }
         },
       }
@@ -1551,52 +1621,70 @@ function TripCard({
           </>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 pb-5 text-white pointer-events-none">
-          <h2 className="text-3xl font-bold mb-0.5">{trip.destination}</h2>
-          <p className="text-white/80 font-medium mb-2">{trip.country}</p>
+        <div className="absolute bottom-0 left-0 right-0 text-white">
+          {/* Info overlay — pointer-events-none so drag/swipe still works over text */}
+          <div className="px-4 pt-4 pb-2 pointer-events-none">
+            <h2 className="text-2xl font-bold mb-0">{trip.destination}</h2>
+            <p className="text-white/80 text-sm font-medium mb-2">{trip.country}</p>
 
-          {/* Row 1: flight route + duration + hotel price */}
-          <div className="flex gap-2 mb-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
-              <Plane className="w-3.5 h-3.5 shrink-0" />
-              {departureFrom ? (
-                <span className="max-w-[90px] truncate">{departureFrom.split(" (")[0].split(" ")[0]} → {trip.destination}</span>
-              ) : (
-                <span>{trip.tripType === "one_way" ? "→" : "↕"} {formatCurrency(trip.tripType === "one_way" ? trip.transport.price : roundTripTransport, lang)}</span>
+            {/* Row 1: airline + direct/stops badge + departure→arrival times */}
+            <div className="flex gap-1.5 mb-1.5 flex-wrap">
+              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                {trip.transport.type === "train"
+                  ? <TrainFront className="w-3 h-3 shrink-0" />
+                  : <Plane className="w-3 h-3 shrink-0" />}
+                <span className="truncate max-w-[80px]">{trip.transport.company}</span>
+              </div>
+              <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.transport.isDirect ? "bg-green-500/70" : "bg-black/50"}`}>
+                {trip.transport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
+                <span>{trip.transport.isDirect ? "Diretto" : "Scali"}</span>
+              </div>
+              {trip.transport.departureTime && (
+                <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <Clock className="w-3 h-3 shrink-0" />
+                  <span>{trip.transport.departureTime}{trip.transport.arrivalTime ? ` → ${trip.transport.arrivalTime}` : ""}</span>
+                </div>
               )}
             </div>
-            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
-              <Clock className="w-3.5 h-3.5 shrink-0" />
-              <span>{trip.transport.duration}</span>
+
+            {/* Row 2: duration + hotel name + hotel price */}
+            <div className="flex gap-1.5 mb-2 flex-wrap">
+              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
+                <Clock className="w-3 h-3 shrink-0 opacity-70" />
+                <span>{trip.transport.duration}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium max-w-[150px]">
+                <Hotel className="w-3 h-3 shrink-0" />
+                <span className="truncate">{trip.hotel.name.split(" ").slice(0, 3).join(" ")}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+                <span>{trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
-              <Hotel className="w-3.5 h-3.5 shrink-0" />
-              <span>{formatCurrency(trip.hotel.pricePerNight, lang)}/nt</span>
+
+            {/* Row 3: nights info + total price */}
+            <div className="flex items-end justify-between">
+              <p className="text-[10px] text-white/50">{trip.durationDays}n · {formatCurrency(trip.hotel.pricePerNight, lang)}/notte</p>
+              <div className="text-right shrink-0">
+                <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
+                <p className="text-2xl font-black">{formatCurrency(totalForAll, lang)}</p>
+              </div>
             </div>
           </div>
 
-          {/* Row 2: hotel name + distance + rating */}
-          <div className="flex gap-2 mb-3 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium max-w-[180px]">
-              <MapPin className="w-3 h-3 shrink-0" />
-              <span className="truncate">{trip.hotel.name.split(" ").slice(0, 3).join(" ")}</span>
-              <span className="opacity-70 shrink-0">· {formatDistance(trip.hotel.distanceFromCenter, lang)}</span>
+          {/* ── Prenota CTA — pointer-events-auto overrides parent none ── */}
+          {isTop && (
+            <div className="px-4 pb-4 pt-1">
+              <button
+                onClick={(e) => { e.stopPropagation(); onInfo(); }}
+                className="pointer-events-auto w-full bg-white text-primary font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-white/90 active:scale-95 transition-all shadow-lg"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Prenota ora
+              </button>
             </div>
-            <div className="flex items-center gap-1 bg-black/45 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-medium">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
-              <span>{trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}</span>
-              <span className="opacity-60">({trip.hotel.stars}★)</span>
-            </div>
-          </div>
-
-          {/* Row 3: total only */}
-          <div className="flex items-end justify-between">
-            <p className="text-[10px] text-white/50">{trip.durationDays}n · {trip.tripType === "one_way" ? "→" : "↕"}</p>
-            <div className="text-right shrink-0">
-              <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
-              <p className="text-2xl font-black">{formatCurrency(totalForAll, lang)}</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </motion.div>
