@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
-import { createPortal } from "react-dom";
 import { Plane, TrainFront, X } from "lucide-react";
 
 type LocationKind = "airport" | "station";
@@ -84,6 +83,83 @@ const LOCATIONS: Location[] = [
   { name: "Alessandria (aeroporto Torino)", code: "TRN", city: "Alessandria", kind: "airport" },
   { name: "Vicenza (aeroporto Verona)", code: "VRN", city: "Vicenza", kind: "airport" },
   { name: "Bergamo città (aeroporto Orio)", code: "BGY", city: "Bergamo", kind: "airport" },
+  // ── Città italiane 20k+ ab. senza aeroporto proprio — aeroporto più vicino ─
+  { name: "Mantova (aeroporto Verona)", code: "VRN", city: "Mantova", kind: "airport" },
+  { name: "Cremona (aeroporto Brescia)", code: "VBS", city: "Cremona", kind: "airport" },
+  { name: "Varese (aeroporto Malpensa)", code: "MXP", city: "Varese", kind: "airport" },
+  { name: "Busto Arsizio (aeroporto Malpensa)", code: "MXP", city: "Busto Arsizio", kind: "airport" },
+  { name: "Gallarate (aeroporto Malpensa)", code: "MXP", city: "Gallarate", kind: "airport" },
+  { name: "Saronno (aeroporto Malpensa)", code: "MXP", city: "Saronno", kind: "airport" },
+  { name: "Legnano (aeroporto Malpensa)", code: "MXP", city: "Legnano", kind: "airport" },
+  { name: "Rho (aeroporto Malpensa)", code: "MXP", city: "Rho", kind: "airport" },
+  { name: "Sesto San Giovanni (aeroporto Linate)", code: "LIN", city: "Sesto San Giovanni", kind: "airport" },
+  { name: "Cinisello Balsamo (aeroporto Linate)", code: "LIN", city: "Cinisello Balsamo", kind: "airport" },
+  { name: "Cologno Monzese (aeroporto Linate)", code: "LIN", city: "Cologno Monzese", kind: "airport" },
+  { name: "Pavia (aeroporto Malpensa)", code: "MXP", city: "Pavia", kind: "airport" },
+  { name: "Lodi (aeroporto Linate)", code: "LIN", city: "Lodi", kind: "airport" },
+  { name: "Lecco (aeroporto Bergamo)", code: "BGY", city: "Lecco", kind: "airport" },
+  { name: "Vigevano (aeroporto Torino)", code: "TRN", city: "Vigevano", kind: "airport" },
+  { name: "Asti (aeroporto Torino)", code: "TRN", city: "Asti", kind: "airport" },
+  { name: "Cuneo (aeroporto Torino)", code: "TRN", city: "Cuneo", kind: "airport" },
+  { name: "Biella (aeroporto Torino)", code: "TRN", city: "Biella", kind: "airport" },
+  { name: "Vercelli (aeroporto Torino)", code: "TRN", city: "Vercelli", kind: "airport" },
+  { name: "Verbania (aeroporto Malpensa)", code: "MXP", city: "Verbania", kind: "airport" },
+  { name: "Aosta (aeroporto Torino)", code: "TRN", city: "Aosta", kind: "airport" },
+  { name: "Casale Monferrato (aeroporto Torino)", code: "TRN", city: "Casale Monferrato", kind: "airport" },
+  { name: "Savona (aeroporto Genova)", code: "GOA", city: "Savona", kind: "airport" },
+  { name: "Imperia (aeroporto Genova)", code: "GOA", city: "Imperia", kind: "airport" },
+  { name: "Sanremo (aeroporto Genova)", code: "GOA", city: "Sanremo", kind: "airport" },
+  { name: "Treviso Sant'Angelo", code: "TSF", city: "Treviso", kind: "airport" },
+  { name: "Mestre (aeroporto Venezia)", code: "VCE", city: "Mestre", kind: "airport" },
+  { name: "Chioggia (aeroporto Venezia)", code: "VCE", city: "Chioggia", kind: "airport" },
+  { name: "Bassano del Grappa (aeroporto Venezia)", code: "VCE", city: "Bassano del Grappa", kind: "airport" },
+  { name: "Rovigo (aeroporto Venezia)", code: "VCE", city: "Rovigo", kind: "airport" },
+  { name: "Belluno (aeroporto Venezia)", code: "VCE", city: "Belluno", kind: "airport" },
+  { name: "Pordenone (aeroporto Venezia)", code: "VCE", city: "Pordenone", kind: "airport" },
+  { name: "Gorizia (aeroporto Trieste)", code: "TRS", city: "Gorizia", kind: "airport" },
+  { name: "Rovereto (aeroporto Verona)", code: "VRN", city: "Rovereto", kind: "airport" },
+  { name: "Merano (aeroporto Bolzano)", code: "BZO", city: "Merano", kind: "airport" },
+  { name: "Latina (aeroporto Roma Fiumicino)", code: "FCO", city: "Latina", kind: "airport" },
+  { name: "Frosinone (aeroporto Roma Fiumicino)", code: "FCO", city: "Frosinone", kind: "airport" },
+  { name: "Viterbo (aeroporto Roma Fiumicino)", code: "FCO", city: "Viterbo", kind: "airport" },
+  { name: "Rieti (aeroporto Roma Fiumicino)", code: "FCO", city: "Rieti", kind: "airport" },
+  { name: "Civitavecchia (aeroporto Roma Fiumicino)", code: "FCO", city: "Civitavecchia", kind: "airport" },
+  { name: "Guidonia Montecelio (aeroporto Roma Fiumicino)", code: "FCO", city: "Guidonia", kind: "airport" },
+  { name: "Tivoli (aeroporto Roma Fiumicino)", code: "FCO", city: "Tivoli", kind: "airport" },
+  { name: "Pomezia (aeroporto Roma Ciampino)", code: "CIA", city: "Pomezia", kind: "airport" },
+  { name: "Aprilia (aeroporto Roma Ciampino)", code: "CIA", city: "Aprilia", kind: "airport" },
+  { name: "Velletri (aeroporto Roma Ciampino)", code: "CIA", city: "Velletri", kind: "airport" },
+  { name: "Grosseto", code: "GRS", city: "Grosseto", kind: "airport" },
+  { name: "Siena (aeroporto Firenze)", code: "FLR", city: "Siena", kind: "airport" },
+  { name: "Massa (aeroporto Pisa)", code: "PSA", city: "Massa", kind: "airport" },
+  { name: "Carrara (aeroporto Pisa)", code: "PSA", city: "Carrara", kind: "airport" },
+  { name: "Lucca (aeroporto Pisa)", code: "PSA", city: "Lucca", kind: "airport" },
+  { name: "Empoli (aeroporto Firenze)", code: "FLR", city: "Empoli", kind: "airport" },
+  { name: "Foligno (aeroporto Perugia)", code: "PEG", city: "Foligno", kind: "airport" },
+  { name: "Spoleto (aeroporto Perugia)", code: "PEG", city: "Spoleto", kind: "airport" },
+  { name: "Ascoli Piceno (aeroporto Pescara)", code: "PSR", city: "Ascoli Piceno", kind: "airport" },
+  { name: "Macerata (aeroporto Ancona)", code: "AOI", city: "Macerata", kind: "airport" },
+  { name: "Fermo (aeroporto Ancona)", code: "AOI", city: "Fermo", kind: "airport" },
+  { name: "Senigallia (aeroporto Ancona)", code: "AOI", city: "Senigallia", kind: "airport" },
+  { name: "Chieti (aeroporto Pescara)", code: "PSR", city: "Chieti", kind: "airport" },
+  { name: "Teramo (aeroporto Pescara)", code: "PSR", city: "Teramo", kind: "airport" },
+  { name: "Lanciano (aeroporto Pescara)", code: "PSR", city: "Lanciano", kind: "airport" },
+  { name: "Matera (aeroporto Bari)", code: "BRI", city: "Matera", kind: "airport" },
+  { name: "Potenza (aeroporto Napoli)", code: "NAP", city: "Potenza", kind: "airport" },
+  { name: "Battipaglia (aeroporto Napoli)", code: "NAP", city: "Battipaglia", kind: "airport" },
+  { name: "Torre del Greco (aeroporto Napoli)", code: "NAP", city: "Torre del Greco", kind: "airport" },
+  { name: "Pozzuoli (aeroporto Napoli)", code: "NAP", city: "Pozzuoli", kind: "airport" },
+  { name: "Agrigento (aeroporto Comiso)", code: "CIY", city: "Agrigento", kind: "airport" },
+  { name: "Caltanissetta (aeroporto Palermo)", code: "PMO", city: "Caltanissetta", kind: "airport" },
+  { name: "Enna (aeroporto Catania)", code: "CTA", city: "Enna", kind: "airport" },
+  { name: "Marsala (aeroporto Palermo)", code: "PMO", city: "Marsala", kind: "airport" },
+  { name: "Mazara del Vallo (aeroporto Palermo)", code: "PMO", city: "Mazara del Vallo", kind: "airport" },
+  { name: "Vittoria (aeroporto Comiso)", code: "CIY", city: "Vittoria", kind: "airport" },
+  { name: "Gela (aeroporto Comiso)", code: "CIY", city: "Gela", kind: "airport" },
+  { name: "Nuoro (aeroporto Olbia)", code: "OLB", city: "Nuoro", kind: "airport" },
+  { name: "Oristano (aeroporto Cagliari)", code: "CAG", city: "Oristano", kind: "airport" },
+  { name: "Iglesias (aeroporto Cagliari)", code: "CAG", city: "Iglesias", kind: "airport" },
+  { name: "Quartu Sant'Elena (aeroporto Cagliari)", code: "CAG", city: "Quartu Sant'Elena", kind: "airport" },
   // ── Aeroporti europei — Regno Unito e Irlanda ───────────────────────────
   { name: "Londra Heathrow", code: "LHR", city: "Londra", kind: "airport" },
   { name: "Londra Gatwick", code: "LGW", city: "Londra", kind: "airport" },
@@ -1053,30 +1129,32 @@ export function LocationAutocomplete({
   };
 
   const dropdown = open && matches.length > 0
-    ? createPortal(
-        <div style={dropdownStyle} className="bg-white border border-border rounded-2xl shadow-xl overflow-hidden">
+    ? (
+        <div
+          style={{ ...dropdownStyle, overflowY: "auto" }}
+          className="bg-white border border-gray-200 rounded-2xl shadow-2xl"
+        >
           {matches.map((loc, i) => (
             <button
               key={i}
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(loc)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-muted/60 text-left border-b border-border/40 last:border-0"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 active:bg-gray-100 text-left border-b border-gray-100 last:border-0 transition-colors"
             >
               {loc.kind === "airport" ? (
                 <Plane className="w-4 h-4 text-primary shrink-0" />
               ) : (
-                <TrainFront className="w-4 h-4 text-[hsl(25,90%,55%)] shrink-0" />
+                <TrainFront className="w-4 h-4 text-orange-500 shrink-0" />
               )}
               <div className="min-w-0">
-                <span className="font-medium">{loc.name}</span>
-                {loc.code && <span className="ml-1.5 text-xs text-muted-foreground font-mono">({loc.code})</span>}
-                <p className="text-xs text-muted-foreground">{loc.city}</p>
+                <span className="font-semibold text-gray-900">{loc.name}</span>
+                {loc.code && <span className="ml-1.5 text-xs text-gray-500 font-mono">({loc.code})</span>}
+                <p className="text-xs text-gray-500 mt-0.5">{loc.city}</p>
               </div>
             </button>
           ))}
-        </div>,
-        document.body,
+        </div>
       )
     : null;
 
