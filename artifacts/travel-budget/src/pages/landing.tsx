@@ -1,14 +1,16 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plane, Hotel, Train, Zap, Shield, Heart, Mail } from "lucide-react";
+import { Plane, Hotel, Train, Zap, Shield, Heart, Mail, ArrowRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { motion } from "framer-motion";
+import { useAuth } from "@clerk/react";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export default function LandingPage() {
   const { t } = useI18n();
+  const { isSignedIn } = useAuth();
 
   return (
     <div className="min-h-[100dvh] flex flex-col overflow-hidden relative bg-[hsl(215,85%,48%)]">
@@ -116,66 +118,93 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
         >
-          {/* Apple login */}
-          <Link href="/sign-in" className="w-full">
-          <button
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-black text-white font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.35)] hover:bg-zinc-900 active:scale-[0.98] transition-all"
-            data-testid="button-apple-login"
-          >
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.29.07 2.18.74 2.93.77.9-.17 1.79-.85 3.17-.91 1.7-.08 3.06.73 3.87 2.01-3.52 2.1-2.93 6.74.49 8.04-.42 1.08-.98 2.15-2.46 2.97zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-            </svg>
-            Accedi con Apple
-          </button>
-          </Link>
+          {isSignedIn ? (
+            /* ── Signed-in state ── */
+            <>
+              <Link href="/discover" className="w-full">
+                <button className="w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-[hsl(25,90%,55%)] text-white font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.3)] hover:bg-[hsl(25,90%,50%)] active:scale-[0.98] transition-all">
+                  <Plane className="w-5 h-5" />
+                  {t.landing.continueAsGuest !== "Continua come ospite" ? "Esplora i viaggi" : "Esplora i viaggi"}
+                  <ArrowRight className="w-4 h-4 ml-1" />
+                </button>
+              </Link>
+              <Link href="/saved" className="w-full">
+                <button className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/15 backdrop-blur-sm text-white font-semibold text-sm border border-white/30 hover:bg-white/25 active:scale-[0.98] transition-all">
+                  <Heart className="w-4 h-4" />
+                  I miei viaggi salvati
+                </button>
+              </Link>
+              <Link href="/profile" className="w-full">
+                <button className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/10 backdrop-blur-sm text-white/80 font-semibold text-sm border border-white/20 hover:bg-white/20 active:scale-[0.98] transition-all">
+                  Il mio profilo
+                </button>
+              </Link>
+            </>
+          ) : (
+            /* ── Signed-out state ── */
+            <>
+              {/* Apple login */}
+              <Link href="/sign-in" className="w-full">
+                <button
+                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-black text-white font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.35)] hover:bg-zinc-900 active:scale-[0.98] transition-all"
+                  data-testid="button-apple-login"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.29.07 2.18.74 2.93.77.9-.17 1.79-.85 3.17-.91 1.7-.08 3.06.73 3.87 2.01-3.52 2.1-2.93 6.74.49 8.04-.42 1.08-.98 2.15-2.46 2.97zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                  </svg>
+                  Accedi con Apple
+                </button>
+              </Link>
 
-          {/* Google login */}
-          <Link href="/sign-in" className="w-full">
-          <button
-            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-white text-zinc-800 font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.25)] hover:bg-zinc-50 active:scale-[0.98] transition-all border border-white/60"
-            data-testid="button-google-login"
-          >
-            <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-            </svg>
-            Accedi con Google
-          </button>
-          </Link>
+              {/* Google login */}
+              <Link href="/sign-in" className="w-full">
+                <button
+                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-white text-zinc-800 font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.25)] hover:bg-zinc-50 active:scale-[0.98] transition-all border border-white/60"
+                  data-testid="button-google-login"
+                >
+                  <svg viewBox="0 0 24 24" className="w-5 h-5" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  Accedi con Google
+                </button>
+              </Link>
 
-          {/* Email login */}
-          <Button
-            asChild
-            size="lg"
-            className="w-full bg-[hsl(25,90%,55%)] hover:bg-[hsl(25,90%,50%)] text-white font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.2)] border-0"
-            data-testid="button-get-started"
-          >
-            <Link href="/sign-in">
-              <Mail className="w-4 h-4 mr-2" />
-              Accedi con email
-            </Link>
-          </Button>
+              {/* Email login */}
+              <Button
+                asChild
+                size="lg"
+                className="w-full bg-[hsl(25,90%,55%)] hover:bg-[hsl(25,90%,50%)] text-white font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.2)] border-0"
+                data-testid="button-get-started"
+              >
+                <Link href="/sign-in">
+                  <Mail className="w-4 h-4 mr-2" />
+                  Accedi con email
+                </Link>
+              </Button>
 
-          <Button
-            asChild
-            size="lg"
-            variant="outline"
-            className="w-full border-white/40 text-white hover:bg-white/15 hover:text-white font-semibold bg-white/10 backdrop-blur-sm"
-            data-testid="button-login"
-          >
-            <Link href="/sign-in">{t.landing.logIn}</Link>
-          </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="w-full border-white/40 text-white hover:bg-white/15 hover:text-white font-semibold bg-white/10 backdrop-blur-sm"
+                data-testid="button-login"
+              >
+                <Link href="/sign-in">{t.landing.logIn}</Link>
+              </Button>
 
-          <Button
-            asChild
-            variant="link"
-            className="text-white/70 hover:text-white text-sm"
-            data-testid="button-guest-mode"
-          >
-            <Link href="/discover">{t.landing.continueAsGuest}</Link>
-          </Button>
+              <Button
+                asChild
+                variant="link"
+                className="text-white/70 hover:text-white text-sm"
+                data-testid="button-guest-mode"
+              >
+                <Link href="/discover">{t.landing.continueAsGuest}</Link>
+              </Button>
+            </>
+          )}
         </motion.div>
       </div>
 

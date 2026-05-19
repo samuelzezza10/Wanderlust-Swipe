@@ -141,16 +141,7 @@ function NetworkStatusManager() {
 }
 
 function HomeRedirect() {
-  return (
-    <>
-      <Show when="signed-in">
-        <Redirect to="/discover" />
-      </Show>
-      <Show when="signed-out">
-        <LandingPage />
-      </Show>
-    </>
-  );
+  return <LandingPage />;
 }
 
 function ClerkProviderWithRoutes() {
