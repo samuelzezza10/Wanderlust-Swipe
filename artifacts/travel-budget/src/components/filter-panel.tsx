@@ -270,11 +270,7 @@ export function FilterSheet({
     const dep = mode === "flight" ? f.departureAirport : f.departureStation;
     const arr = mode === "flight" ? f.arrivalAirport : f.arrivalStation;
 
-    if (!dep) errs["departure"] = t.filters.missingDeparture;
-    if (!arr) errs["arrival"] = t.filters.missingArrival;
-    if (!f.departureDate) errs["departureDate"] = t.filters.missingDepartureDate;
-    if (f.tripType !== "one_way" && !f.returnDate) errs["returnDate"] = t.filters.missingReturnDate;
-
+    // Only hard-block on date logic and same-location errors
     if (f.departureDate && f.returnDate && f.returnDate < f.departureDate) {
       errs["returnDate"] = t.filters.returnBeforeDeparture;
     }
