@@ -868,6 +868,61 @@ window.obNext = function() {
   }
 };
 
+/* ─── Trip Variation Generator ──────────────────────────────────────────── */
+// Expands 1-2 base trips into `targetCount` realistic deterministic variants.
+// Same destination, different airlines / times / prices / hotels.
+function generateTripVariations(baseTrips, targetCount) {
+  if (!baseTrips || baseTrips.length === 0) return [];
+  const result = [...baseTrips];
+
+  const flightCos  = ['Ryanair','easyJet','Vueling','Iberia','Air Europa','Volotea','Wizz Air','Jet2','Transavia','Norwegian'];
+  const trainCos   = ['Trenitalia','Italo','ÖBB','FlixTrain','Intercity Express','TGV','Renfe','Thalys'];
+  const depTimes   = ['06:00','07:15','08:30','09:45','11:00','12:30','14:00','15:30','17:00','18:45','20:00','21:30','06:45','08:00','10:15','13:00','16:15','19:30'];
+  const hotelSfx   = ['Grand','Boutique','Plaza','Palace','Suites','Central','Classic','Premium','Riviera','Prestige','Lux','Garden','View','Select','Elite'];
+  const mults      = [0.82,0.88,0.93,0.97,1.00,1.03,1.07,1.12,1.17,1.22,0.85,0.91,0.96,1.01,1.06,1.10,1.15,1.20,0.87,0.94];
+
+  while (result.length < targetCount) {
+    const vi   = result.length;
+    const base = baseTrips[vi % baseTrips.length];
+    const mult = mults[vi % mults.length];
+    const dep  = depTimes[vi % depTimes.length];
+
+    // Calculate arrival time
+    const durStr = base.transport.duration || '2h 00m';
+    const durH   = parseInt(durStr.split('h')[0]) || 2;
+    const durM   = parseInt((durStr.split('h')[1] || '00').replace(/\D/g,'')) || 0;
+    const [dH,dM] = dep.split(':').map(Number);
+    const arrMins = dH*60 + dM + durH*60 + durM;
+    const arr    = `${String(Math.floor(arrMins/60)%24).padStart(2,'0')}:${String(arrMins%60).padStart(2,'0')}`;
+
+    const isFlight = base.transport.type !== 'train';
+    const company  = isFlight ? flightCos[vi % flightCos.length] : trainCos[vi % trainCos.length];
+    const isDirect = (vi % 3) !== 1;                            // ~2/3 direct
+    const starsDelta = vi % 3 === 0 ? 1 : vi % 3 === 1 ? -1 : 0;
+    const stars    = Math.max(1, Math.min(5, base.hotel.stars + starsDelta));
+    const rating   = Math.min(9.8, Math.max(6.5, +( base.hotel.rating + (vi%5-2)*0.15 ).toFixed(1)));
+
+    result.push({
+      ...base,
+      id: `${base.id}-v${vi}`,
+      totalPrice:  Math.round(base.totalPrice          * mult / 10) * 10,
+      transport: {
+        ...base.transport,
+        company, departureTime: dep, arrivalTime: arr,
+        direct: isDirect,
+        price:  Math.round(base.transport.price * mult / 5) * 5,
+      },
+      hotel: {
+        ...base.hotel,
+        name: `${base.destination} ${hotelSfx[vi % hotelSfx.length]}`,
+        stars, rating,
+        pricePerNight: Math.round(base.hotel.pricePerNight * mult),
+      },
+    });
+  }
+  return result;
+}
+
 /* ─── Discover Page ─────────────────────────────────────────────────────── */
 function getFilteredTrips() {
   let trips = [...MOCK_TRIPS];
@@ -882,11 +937,19 @@ function getFilteredTrips() {
   if (f.accommodationType === 'budget') trips = trips.filter(tr => tr.hotel.pricePerNight < 80);
   else if (f.accommodationType === 'standard') trips = trips.filter(tr => tr.hotel.pricePerNight >= 80 && tr.hotel.pricePerNight < 140);
   else if (f.accommodationType === 'luxury') trips = trips.filter(tr => tr.hotel.stars >= 4 && tr.hotel.pricePerNight >= 140);
-  // Arrival filter
+  // Arrival/destination — STRICT: if destination set, show ONLY that destination
   const arr = f.arrivalAirport || f.arrivalStation;
   if (arr && arr.toLowerCase() !== 'any' && arr.length > 2) {
     const arrLow = arr.toLowerCase().replace(/\s*\([^)]*\)/g,'').trim();
-    trips = trips.filter(tr => tr.destination.toLowerCase().includes(arrLow) || tr.country.toLowerCase().includes(arrLow));
+    const matched = trips.filter(tr =>
+      tr.destination.toLowerCase().includes(arrLow) ||
+      tr.country.toLowerCase().includes(arrLow)
+    );
+    if (matched.length > 0) {
+      // Expand to 20 realistic variations of the matched destination
+      trips = generateTripVariations(matched, 20);
+    }
+    // If zero exact matches → keep all trips as "alternative destinations" (rule: never empty)
   }
   // Sort
   if (f.sortBy === 'cheapest') trips.sort((a,b) => a.totalPrice - b.totalPrice);
