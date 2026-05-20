@@ -1,13 +1,46 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Component, type ReactNode, type ErrorInfo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   SlidersHorizontal, X, Minus, Plus, ChevronRight, Star,
-  Check, Plane, TrainFront, Clock, RotateCcw,
+  Check, Plane, TrainFront, Clock, RotateCcw, RefreshCw,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
+
+/* ─── Local error boundary — prevents filter crashes from killing the whole app ── */
+class FilterBodyBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+  componentDidCatch(err: Error, info: ErrorInfo) {
+    console.error("[FilterBodyBoundary]", err.message, info.componentStack?.slice(0, 200));
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
+          <span className="text-4xl">⚠️</span>
+          <p className="text-sm font-semibold text-foreground">Errore nel pannello filtri</p>
+          <p className="text-xs text-muted-foreground">Tocca Riprova per ripristinare.</p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="flex items-center gap-2 bg-primary text-white font-semibold px-5 py-2.5 rounded-xl text-sm active:scale-95 transition-all"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Riprova
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export interface RecentSearchChip {
   label: string;
@@ -151,8 +184,8 @@ export function FilterBar({
 
   const chips: string[] = [];
   if (filters.tripType === "one_way") chips.push(t.filters.oneWay);
-  if (filters.numberOfChildren > 0) chips.push(`${filters.numberOfChildren} ${t.filters.children.toLowerCase()}`);
-  if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${t.filters.pets.toLowerCase()}`);
+  if (filters.numberOfChildren > 0) chips.push(`${filters.numberOfChildren} ${(t.filters.children ?? "").toLowerCase()}`);
+  if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${(t.filters.pets ?? "").toLowerCase()}`);
   if (filters.numberOfRooms > 1) chips.push(`🛏 ${filters.numberOfRooms} stanze`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
@@ -337,6 +370,7 @@ export function FilterSheet({
           </div>
         </SheetHeader>
 
+        <FilterBodyBoundary>
         <div ref={contentRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
 
           {/* ── Tipo viaggio ─────────────────────────────────── */}
@@ -615,7 +649,7 @@ export function FilterSheet({
               <input type="range" min={1} max={30} step={1} value={draft.numberOfNights}
                 onChange={(e) => set("numberOfNights", Number(e.target.value))}
                 className="flex-1 accent-primary" />
-              <span className="font-bold text-sm w-16 text-right">{draft.numberOfNights} {t.filters.nights.toLowerCase()}</span>
+              <span className="font-bold text-sm w-16 text-right">{draft.numberOfNights} {(t.filters.nights ?? "").toLowerCase()}</span>
             </div>
           </FilterSection>
 
@@ -797,6 +831,7 @@ export function FilterSheet({
 
           <div className="h-2" />
         </div>
+        </FilterBodyBoundary>
 
         <div className="px-5 pb-8 pt-3 border-t bg-background">
           <Button
