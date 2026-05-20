@@ -79,6 +79,57 @@ router.get("/external/hotels/search", async (req, res) => {
   return res.json({ hotels, affiliateLink });
 });
 
+/**
+ * Normalised flight search by IATA route.
+ * Returns {flights: FlightEnrichResult[]} — same shape pattern as hotels/by-destination.
+ */
+router.get("/external/flights/by-route", async (req, res) => {
+  const {
+    origin,
+    destination,
+    departureDate,
+    returnDate,
+    adults = "1",
+    limit = "10",
+  } = req.query as Record<string, string>;
+
+  if (!origin || !destination || !departureDate) {
+    return res.status(400).json({ error: "origin, destination and departureDate are required" });
+  }
+
+  const offers = await amadeusFlights({
+    originLocationCode: origin.toUpperCase().slice(0, 3),
+    destinationLocationCode: destination.toUpperCase().slice(0, 3),
+    departureDate: departureDate.slice(0, 10),
+    returnDate: returnDate ? returnDate.slice(0, 10) : undefined,
+    adults: Math.max(1, parseInt(adults, 10)),
+    max: Math.min(20, parseInt(limit, 10)),
+  });
+
+  const flights = offers.map((offer) => {
+    const segs  = offer.itineraries[0]?.segments ?? [];
+    const first = segs[0];
+    const last  = segs[segs.length - 1];
+    const depAt = first?.departure?.at ?? "";
+    const arrAt = last?.arrival?.at ?? "";
+    const durRaw = offer.itineraries[0]?.duration ?? "";
+    const durH = parseInt(durRaw.match(/(\d+)H/)?.[1] ?? "0", 10);
+    const durM = parseInt(durRaw.match(/(\d+)M/)?.[1] ?? "0", 10);
+    const duration = durH > 0 ? `${durH}h ${String(durM).padStart(2, "0")}m` : `${durM}m`;
+    return {
+      price:         parseFloat(offer.price.total),
+      currency:      offer.price.currency,
+      airline:       first?.carrierCode ?? "",
+      isDirect:      segs.length === 1,
+      departureTime: depAt.slice(11, 16),
+      arrivalTime:   arrAt.slice(11, 16),
+      duration,
+    };
+  });
+
+  return res.json({ flights });
+});
+
 router.get("/external/hotels/by-destination", async (req, res) => {
   const {
     destination,
