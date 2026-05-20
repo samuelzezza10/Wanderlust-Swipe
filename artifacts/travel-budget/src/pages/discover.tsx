@@ -802,6 +802,18 @@ export default function Discover() {
   }
 
   function _doLoadTrips(f: TripFilters) {
+    // ── Destinazione obbligatoria ──────────────────────────────────
+    const destValue = (f.arrivalAirport || f.arrivalStation || "").trim();
+    if (!destValue || destValue.toLowerCase() === "any") {
+      toast.error("Seleziona prima la destinazione ✈️", {
+        description: "Indica dove vuoi andare per trovare voli e hotel reali.",
+        action: { label: "Scegli", onClick: () => setFilterOpen(true) },
+        duration: 5000,
+      });
+      setFilterOpen(true);
+      return;
+    }
+
     // ── Offline gate ───────────────────────────────────────────────
     if (!isOnline) {
       toast.error(t.offline.searchDisabled);
@@ -1228,10 +1240,12 @@ export default function Discover() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, trips.length, hasSearched]);
 
-  // Auto-search on splash dismiss (or on first mount if splash already seen)
-  // so users immediately see trips without having to manually set filters
+  // Auto-search only when a destination is already set (e.g. coming back with saved filters)
+  // If no destination is set, skip auto-search and show the prompt state instead
   useEffect(() => {
-    if (!showSplash && !hasSearched && isOnline && !autoSearchFiredRef.current) {
+    const destValue = (filters.arrivalAirport || filters.arrivalStation || "").trim();
+    const hasDestination = destValue && destValue.toLowerCase() !== "any";
+    if (!showSplash && !hasSearched && isOnline && !autoSearchFiredRef.current && hasDestination) {
       autoSearchFiredRef.current = true;
       loadTrips(filters);
     }
@@ -1334,20 +1348,13 @@ export default function Discover() {
 
   /* ── Pre-search (no filters applied yet) ── */
   if (!hasSearched) {
+    const noDestination = !(filters.arrivalAirport || filters.arrivalStation || "").trim() ||
+      (filters.arrivalAirport || filters.arrivalStation || "").trim().toLowerCase() === "any";
+
     return (
       <div className="flex-1 flex flex-col bg-primary">
         {UsageBadge}
-        {isOnline ? (
-          <>
-            <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
-            <PreSearchState
-              onOpenFilters={() => setFilterOpen(true)}
-              t={t}
-              recentSearches={recentSearches ?? []}
-              onRepeat={handleRepeatSearch}
-            />
-          </>
-        ) : (
+        {!isOnline ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <motion.div
               animate={{ scale: [1, 1.08, 1] }}
@@ -1366,6 +1373,86 @@ export default function Discover() {
               {t.offline.reconnected.replace("! 🚀", "?")}
             </button>
           </div>
+        ) : noDestination ? (
+          /* ── No destination set: mandatory first step ── */
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-6">
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl"
+            >
+              <MapPin className="w-12 h-12 text-white" />
+            </motion.div>
+
+            <div>
+              <h2 className="text-2xl font-black text-white mb-2">Dove vuoi andare?</h2>
+              <p className="text-white/80 text-sm max-w-xs mx-auto leading-relaxed">
+                Scegli la destinazione per trovare <strong className="text-white">voli + hotel reali</strong> nel tuo budget.
+              </p>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setFilterOpen(true)}
+              className="flex items-center gap-3 bg-white text-primary font-bold text-base px-8 py-4 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:bg-white/95 transition-all"
+            >
+              <Plane className="w-5 h-5" />
+              Scegli destinazione
+              <ChevronRight className="w-5 h-5" />
+            </motion.button>
+
+            <div className="flex items-center gap-4 text-white/50 text-xs mt-2">
+              <div className="flex items-center gap-1.5">
+                <Plane className="w-3.5 h-3.5" />
+                <span>Voli reali</span>
+              </div>
+              <div className="w-1 h-1 rounded-full bg-white/30" />
+              <div className="flex items-center gap-1.5">
+                <Hotel className="w-3.5 h-3.5" />
+                <span>Hotel reali</span>
+              </div>
+              <div className="w-1 h-1 rounded-full bg-white/30" />
+              <div className="flex items-center gap-1.5">
+                <Euro className="w-3.5 h-3.5" />
+                <span>Nel tuo budget</span>
+              </div>
+            </div>
+
+            {(recentSearches ?? []).length > 0 && (
+              <div className="w-full max-w-sm">
+                <p className="text-white/60 text-xs font-medium mb-2 text-left">Ricerche recenti</p>
+                <div className="flex flex-col gap-2">
+                  {(recentSearches ?? []).slice(0, 3).map((entry, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleRepeatSearch(entry)}
+                      className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-xl px-4 py-2.5 text-left transition-colors"
+                    >
+                      <MapPin className="w-4 h-4 text-white/60 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{entry.arrivalLocation}</p>
+                        {entry.departureDate && (
+                          <p className="text-white/50 text-xs">{entry.departureDate.slice(0, 10)}</p>
+                        )}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-white/40 ml-auto shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── Destination set, not searched yet ── */
+          <>
+            <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
+            <PreSearchState
+              onOpenFilters={() => setFilterOpen(true)}
+              t={t}
+              recentSearches={recentSearches ?? []}
+              onRepeat={handleRepeatSearch}
+            />
+          </>
         )}
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>
