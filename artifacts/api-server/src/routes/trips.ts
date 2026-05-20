@@ -451,8 +451,7 @@ const DESTINATIONS: DestinationData[] = [
   },
 ];
 
-const AIRLINES = ["Air France", "Ryanair", "Vueling", "EasyJet", "British Airways", "Lufthansa", "Emirates", "Qatar Airways", "ITA Airways", "Wizz Air", "Swiss", "KLM"];
-const TRAINS = ["Eurostar", "TGV", "Thalys", "Renfe AVE", "Trenitalia", "Italo", "FlixTrain", "Railjet", "IC Bus"];
+const AIRLINES = ["Air France", "Ryanair", "Vueling", "EasyJet", "British Airways", "Lufthansa", "Emirates", "Qatar Airways", "ITA Airways", "Wizz Air", "Swiss", "KLM", "Transavia", "Norwegian", "Jet2"];
 
 const BASE_AMENITIES = ["WiFi", "24h Reception"];
 
@@ -586,7 +585,6 @@ function generateTrip(
   numberOfPeople: number,
   numberOfNights: number,
   flightPreference: string,
-  trainPreference: string,
   accommodationType: AccommodationType,
   propertyType: string,
   id: string,
@@ -633,28 +631,14 @@ function generateTrip(
   const transportBudgetPerPerson = budgetPerPerson - hotelTotalPerPerson;
   if (transportBudgetPerPerson < 40) return null;
 
-  // ─── Transport type — flight vs train ─────────────────────────
-  const trainPossible = !dest.flightRequired && trainPreference !== "direct";
-  const useTrainRandom = trainPossible && Math.random() > 0.55;
-  let transportType: "flight" | "train";
-  if (flightPreference !== "any" || dest.flightRequired) {
-    transportType = "flight";
-  } else if (trainPreference !== "any" && trainPossible) {
-    transportType = "train";
-  } else {
-    transportType = useTrainRandom ? "train" : "flight";
-  }
+  // ─── Transport type — always flight ───────────────────────────
+  const transportType = "flight" as const;
+  const getCompany = () => AIRLINES[randomBetween(0, AIRLINES.length - 1)];
+  const isDirect = flightPreference === "direct" ||
+    (flightPreference !== "with_stops" && Math.random() > 0.4);
 
-  const getCompany = () =>
-    transportType === "train"
-      ? TRAINS[randomBetween(0, TRAINS.length - 1)]
-      : AIRLINES[randomBetween(0, AIRLINES.length - 1)];
-
-  const isDirect = flightPreference === "direct" || trainPreference === "direct" ||
-    ((flightPreference !== "with_stops" && trainPreference !== "with_stops") && Math.random() > 0.4);
-
-  // ─── Outbound journey (used by both modes) ────────────────────
-  const outDurH = randomBetween(1, transportType === "train" ? 8 : 14);
+  // ─── Outbound journey ─────────────────────────────────────────
+  const outDurH = randomBetween(1, 14);
   const outDurM = randomBetween(0, 59);
   const outDepH = randomBetween(5, 22);
   const outArrH = (outDepH + outDurH) % 24;
@@ -730,9 +714,9 @@ function generateTrip(
   const totalPrice = Math.round(totalPerPerson * numberOfPeople);
   if (totalPrice > budget) return null;
 
-  const isReturnDirect = flightPreference === "direct" || trainPreference === "direct" ||
-    ((flightPreference !== "with_stops" && trainPreference !== "with_stops") && Math.random() > 0.4);
-  const retDurH = randomBetween(1, transportType === "train" ? 8 : 14);
+  const isReturnDirect = flightPreference === "direct" ||
+    (flightPreference !== "with_stops" && Math.random() > 0.4);
+  const retDurH = randomBetween(1, 14);
   const retDurM = randomBetween(0, 59);
   const retDepH = randomBetween(5, 22);
   const retArrH = (retDepH + retDurH) % 24;
@@ -780,7 +764,6 @@ router.post("/trips/surprise", surpriseLimiter, (req, res) => {
     numberOfPeople = 2,
     numberOfNights = 7,
     flightPreference = "any",
-    trainPreference = "any",
     departureLocation = "Any",
     accommodationType = null,
     propertyType = "any",
@@ -822,7 +805,6 @@ router.post("/trips/surprise", surpriseLimiter, (req, res) => {
         numberOfPeople,
         numberOfNights,
         flightPreference,
-        trainPreference,
         accommodationType as AccommodationType,
         propertyType,
         `surprise-${Date.now()}-${attempt}`,
@@ -853,7 +835,6 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     numberOfPeople = 2,
     numberOfNights = 7,
     flightPreference = "any",
-    trainPreference = "any",
     arrivalLocation = "Any",
     departureLocation = "Any",
     hotelDistanceKm = null,
@@ -927,7 +908,6 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
       numberOfPeople,
       numberOfNights,
       flightPreference,
-      trainPreference,
       accommodationType as AccommodationType,
       propertyType,
       `trip-${Date.now()}-${attempts}`,
@@ -940,10 +920,8 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
     if (seenKeys.has(dedupKey)) continue;
 
     // ─── Apply strict transport filters ─────────────────────────
-    if (flightPreference === "direct" && trip.transport.type === "flight" && !trip.transport.isDirect) continue;
-    if (flightPreference === "with_stops" && trip.transport.type === "flight" && trip.transport.isDirect) continue;
-    if (trainPreference === "direct" && trip.transport.type === "train" && !trip.transport.isDirect) continue;
-    if (trainPreference === "with_stops" && trip.transport.type === "train" && trip.transport.isDirect) continue;
+    if (flightPreference === "direct" && !trip.transport.isDirect) continue;
+    if (flightPreference === "with_stops" && trip.transport.isDirect) continue;
 
     // ─── Apply strict hotel filters ──────────────────────────────
     if (hotelDistanceKm != null && trip.hotel.distanceFromCenter > hotelDistanceKm) continue;
@@ -999,15 +977,13 @@ router.post("/trips/generate", tripGenerateSlowDown, tripGenerateLimiter, async 
         numberOfPeople,
         numberOfNights,
         flightPreference,
-        trainPreference,
         "standard" as AccommodationType,
         "any",
         `fallback-${Date.now()}-${fallbackAttempts}`,
         tripType as "one_way" | "round_trip",
       );
       if (!trip) continue;
-      if (flightPreference === "direct" && trip.transport.type === "flight" && !trip.transport.isDirect) continue;
-      if (trainPreference === "direct" && trip.transport.type === "train" && !trip.transport.isDirect) continue;
+      if (flightPreference === "direct" && !trip.transport.isDirect) continue;
 
       const dedupKey = `${trip.hotel.name}|${Math.round(trip.totalPrice / (budget * 0.05))}`;
       if (fallbackSeen.has(dedupKey)) continue;
