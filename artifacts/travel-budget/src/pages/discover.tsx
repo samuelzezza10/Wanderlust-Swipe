@@ -679,6 +679,9 @@ export default function Discover() {
   // ── Stores trips from BEFORE a new search starts so errors can restore them ──
   const prevTripsRef = useRef<TripSuggestion[]>([]);
 
+  // ── Debounce timer: prevents API spam from rapid filter applies ──────────
+  const loadTripsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ── Non-repeating random message picker ──
   const lastLoadingMsgRef = useRef<string | null>(null);
   const lastNoResultsMsgRef = useRef<string | null>(null);
@@ -782,6 +785,18 @@ export default function Discover() {
   const saveTrip = useSaveTrip();
 
   function loadTrips(f: TripFilters) {
+    // ── Debounce: cancel any previous pending load, fire after 600ms ────────
+    // This prevents API spam when the user clicks Apply many times rapidly.
+    if (loadTripsTimerRef.current) {
+      clearTimeout(loadTripsTimerRef.current);
+    }
+    loadTripsTimerRef.current = setTimeout(() => {
+      loadTripsTimerRef.current = null;
+      _doLoadTrips(f);
+    }, 600);
+  }
+
+  function _doLoadTrips(f: TripFilters) {
     // ── Offline gate ───────────────────────────────────────────────
     if (!isOnline) {
       toast.error(t.offline.searchDisabled);
@@ -1125,7 +1140,18 @@ export default function Discover() {
   if (generateTrips.isPending) {
     const isLowBudget = (filters.budget || prefs?.defaultBudget || 2000) < 600;
     return (
-      <div className="flex-1 flex flex-col bg-primary">
+      <div className="flex-1 flex flex-col bg-primary relative">
+        {/* Filter button — always accessible even during loading */}
+        <div className="absolute top-4 right-4 z-10 flex gap-2">
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 active:scale-95 backdrop-blur-sm text-white text-xs font-semibold px-3 py-2 rounded-full transition-all border border-white/30"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            {t.filters.title}
+          </button>
+        </div>
+
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 px-8 text-center">
             <motion.div
