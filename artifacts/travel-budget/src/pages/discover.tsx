@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDistance } from "@/lib/currency";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import {
@@ -1591,6 +1592,9 @@ export default function Discover() {
         isSignedIn={!!isSignedIn}
         budget={filters.budget}
         numberOfPeople={filters.numberOfPeople}
+        departureDate={filters.departureDate ?? null}
+        returnDate={filters.returnDate ?? null}
+        numberOfNights={filters.numberOfNights ?? 3}
         onSave={() => {
           if (detailTrip) {
             if (isSignedIn) {
@@ -1904,8 +1908,130 @@ function TransportBlock({ label, transport, t, lang }: { label?: string; transpo
 }
 
 /* ─── Trip Detail Sheet ──────────────────────────────────────────────────── */
+interface BookingHotelResult {
+  hotelId: number;
+  name: string;
+  rating: number;
+  pricePerNight: number;
+  currency: string;
+  bookingUrl: string;
+  address: string;
+  photoUrl?: string;
+}
+
+function BookingHotelsSection({
+  destination, checkin, checkout, adults, basePath,
+}: {
+  destination: string;
+  checkin: string;
+  checkout: string;
+  adults: number;
+  basePath: string;
+}) {
+  const params = useMemo(() => {
+    const q = new URLSearchParams({
+      destination,
+      checkin,
+      checkout,
+      adults: String(adults),
+      limit: "4",
+    });
+    return q.toString();
+  }, [destination, checkin, checkout, adults]);
+
+  const { data, isLoading, isError } = useQuery<{
+    hotels: BookingHotelResult[];
+    affiliateLink: string;
+  }>({
+    queryKey: ["booking-hotels", destination, checkin, checkout, adults],
+    queryFn: async () => {
+      const resp = await fetch(`${basePath}/api/external/hotels/by-destination?${params}`);
+      if (!resp.ok) throw new Error("booking_fetch_failed");
+      return resp.json() as Promise<{ hotels: BookingHotelResult[]; affiliateLink: string }>;
+    },
+    staleTime: 1000 * 60 * 10,
+    retry: 1,
+  });
+
+  const hotels = data?.hotels ?? [];
+  const affiliateLink = data?.affiliateLink ?? `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(destination)}&aid=304142`;
+
+  if (isLoading) {
+    return (
+      <section className="bg-muted/40 rounded-2xl p-4 space-y-3">
+        <p className="font-bold text-base flex items-center gap-2">
+          <Hotel className="w-4 h-4 text-[#003580]" />
+          Hotel disponibili su Booking.com
+        </p>
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (isError || hotels.length === 0) return null;
+
+  return (
+    <section className="bg-muted/40 rounded-2xl p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="font-bold text-base flex items-center gap-2">
+          <Hotel className="w-4 h-4 text-[#003580]" />
+          Hotel disponibili su Booking.com
+        </p>
+        <span className="text-[10px] bg-[#003580]/10 text-[#003580] font-semibold px-2 py-0.5 rounded-full">
+          LIVE
+        </span>
+      </div>
+      <div className="space-y-2">
+        {hotels.map((h) => (
+          <a
+            key={h.hotelId}
+            href={h.bookingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-background border rounded-xl px-3 py-2.5 hover:border-[#003580]/40 transition-colors"
+          >
+            {h.photoUrl && (
+              <img
+                src={h.photoUrl}
+                alt={h.name}
+                className="w-12 h-12 rounded-lg object-cover shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">{h.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{h.address}</p>
+              <div className="flex items-center gap-1 mt-0.5">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                <span className="text-xs font-medium">{h.rating}</span>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-bold text-[#003580]">€{h.pricePerNight}</p>
+              <p className="text-[10px] text-muted-foreground">a notte</p>
+            </div>
+          </a>
+        ))}
+      </div>
+      <a
+        href={affiliateLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-2 w-full bg-[#003580] text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-[#00245a] transition-colors"
+      >
+        Vedi tutti gli hotel
+        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+      </a>
+    </section>
+  );
+}
+
 function TripDetailSheet({
   trip, onClose, isSignedIn, onSave, onShare, budget, numberOfPeople,
+  departureDate, returnDate, numberOfNights,
 }: {
   trip: TripSuggestion | null;
   onClose: () => void;
@@ -1914,8 +2040,22 @@ function TripDetailSheet({
   onShare: () => void;
   budget?: number;
   numberOfPeople?: number;
+  departureDate?: string | null;
+  returnDate?: string | null;
+  numberOfNights?: number;
 }) {
   const { t, lang } = useI18n();
+
+  const checkin = departureDate
+    ? departureDate.slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
+  const checkout = returnDate
+    ? returnDate.slice(0, 10)
+    : (() => {
+        const d = new Date(checkin);
+        d.setDate(d.getDate() + (numberOfNights ?? trip?.durationDays ?? 3));
+        return d.toISOString().slice(0, 10);
+      })();
 
   return (
     <Sheet open={!!trip} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -2068,6 +2208,15 @@ function TripDetailSheet({
               <p className="text-[11px] text-muted-foreground/70 leading-relaxed px-1">
                 ⚠️ {t.legal.priceDisclaimer}
               </p>
+
+              {/* Real hotels from Booking.com */}
+              <BookingHotelsSection
+                destination={trip.destination}
+                checkin={checkin}
+                checkout={checkout}
+                adults={numberOfPeople ?? 1}
+                basePath={basePath}
+              />
 
               {/* Booking links */}
               <section className="bg-muted/40 rounded-2xl p-4">
