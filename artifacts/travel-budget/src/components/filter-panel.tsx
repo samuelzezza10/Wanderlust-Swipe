@@ -370,7 +370,7 @@ export function FilterSheet({
           </div>
         </SheetHeader>
 
-        <FilterBodyBoundary>
+        <FilterBodyBoundary key={open ? "open" : "closed"}>
         <div ref={contentRef} className="flex-1 overflow-y-auto px-5 py-4 space-y-6">
 
           {/* ── Tipo viaggio ─────────────────────────────────── */}
