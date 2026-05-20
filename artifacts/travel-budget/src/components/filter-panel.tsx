@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   SlidersHorizontal, X, Minus, Plus, ChevronRight, Star,
-  Check, Plane, TrainFront, Clock, RotateCcw, RefreshCw,
+  Check, Plane, Clock, RotateCcw, RefreshCw,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LocationAutocomplete } from "@/components/location-autocomplete";
@@ -58,7 +58,6 @@ export interface TripFilters {
   returnDate: string;
   numberOfNights: number;
   flightPreference: "direct" | "with_stops" | "any";
-  trainPreference: "direct" | "with_stops" | "any";
   maxDistanceFromAirportKm: number | null;
   maxHotelDistanceFromCenterKm: number | null;
   accommodationType: "budget" | "standard" | "luxury" | null;
@@ -96,7 +95,6 @@ export const DEFAULT_FILTERS: TripFilters = {
   returnDate: "",
   numberOfNights: 7,
   flightPreference: "any",
-  trainPreference: "any",
   maxDistanceFromAirportKm: null,
   maxHotelDistanceFromCenterKm: null,
   accommodationType: null,
@@ -134,7 +132,6 @@ export function countActiveFilters(f: TripFilters): number {
   if (f.returnDate) n++;
   if (f.numberOfNights !== DEFAULT_FILTERS.numberOfNights) n++;
   if (f.flightPreference !== "any") n++;
-  if (f.trainPreference !== "any") n++;
   if (f.maxDistanceFromAirportKm !== null) n++;
   if (f.maxHotelDistanceFromCenterKm !== null) n++;
   if (f.accommodationType !== null) n++;
@@ -189,8 +186,6 @@ export function FilterBar({
   if (filters.numberOfRooms > 1) chips.push(`🛏 ${filters.numberOfRooms} stanze`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
-  if (filters.trainPreference === "direct") chips.push(`🚂 ${t.filters.trainDirect}`);
-  if (filters.trainPreference === "with_stops") chips.push(`🚂 ${t.filters.trainWithChanges}`);
   if (filters.breakfastIncluded) chips.push(`🍳 ${t.filters.breakfastIncluded}`);
   if (filters.freeCancellation) chips.push(`✅ ${t.filters.freeCancellation}`);
   if (filters.parkingAvailable) chips.push(`🅿 ${t.filters.parkingAvailable}`);
@@ -288,9 +283,6 @@ export function FilterSheet({
   const [draft, setDraft] = useState<TripFilters>(filters);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [tried, setTried] = useState(false);
-  const [transportMode, setTransportMode] = useState<"flight" | "train">(() =>
-    (filters.departureStation || filters.arrivalStation) ? "train" : "flight"
-  );
 
   const contentRef = useRef<HTMLDivElement>(null);
   const departureRef = useRef<HTMLDivElement>(null);
@@ -298,12 +290,11 @@ export function FilterSheet({
   const datesRef = useRef<HTMLDivElement>(null);
   const budgetRef = useRef<HTMLDivElement>(null);
 
-  const validate = (f: TripFilters, mode: "flight" | "train"): Record<string, string> => {
+  const validate = (f: TripFilters): Record<string, string> => {
     const errs: Record<string, string> = {};
-    const dep = mode === "flight" ? f.departureAirport : f.departureStation;
-    const arr = mode === "flight" ? f.arrivalAirport : f.arrivalStation;
+    const dep = f.departureAirport;
+    const arr = f.arrivalAirport;
 
-    // Only hard-block on date logic and same-location errors
     if (f.departureDate && f.returnDate && f.returnDate < f.departureDate) {
       errs["returnDate"] = t.filters.returnBeforeDeparture;
     }
@@ -317,16 +308,15 @@ export function FilterSheet({
   };
 
   useEffect(() => {
-    if (tried) setErrors(validate(draft, transportMode));
+    if (tried) setErrors(validate(draft));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft, tried, transportMode]);
+  }, [draft, tried]);
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
       setDraft(filters);
       setErrors({});
       setTried(false);
-      setTransportMode((filters.departureStation || filters.arrivalStation) ? "train" : "flight");
     } else {
       onClose();
     }
@@ -340,13 +330,9 @@ export function FilterSheet({
 
   const handleApply = () => {
     setTried(true);
-    const errs = validate(draft, transportMode);
+    const errs = validate(draft);
     setErrors(errs);
-    // Soft validation — errors are shown as hints but never block the apply.
-    // The user can always proceed regardless of warnings.
-    const finalDraft: TripFilters = transportMode === "flight"
-      ? { ...draft, departureStation: "", arrivalStation: "", returnStation: "" }
-      : { ...draft, departureAirport: "", arrivalAirport: "", returnAirport: "" };
+    const finalDraft: TripFilters = { ...draft, departureStation: "", arrivalStation: "", returnStation: "" };
     onApply(finalDraft);
     onClose();
   };
@@ -437,32 +423,9 @@ export function FilterSheet({
             </div>
           </FilterSection>
 
-          {/* ── Trasporto + Rotte (stile Booking.com) ─────── */}
+          {/* ── Rotte ─────────────────────────────────────── */}
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-foreground">Come vuoi viaggiare?</p>
-
-            {/* Transport mode toggle */}
-            <div className="flex rounded-xl border border-border overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setTransportMode("flight")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
-                  transportMode === "flight" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Plane className="w-4 h-4" /> ✈️ Aereo
-              </button>
-              <div className="w-px bg-border" />
-              <button
-                type="button"
-                onClick={() => setTransportMode("train")}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-bold transition-colors ${
-                  transportMode === "train" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <TrainFront className="w-4 h-4" /> 🚆 Treno
-              </button>
-            </div>
+            <p className="text-sm font-semibold text-foreground flex items-center gap-2"><Plane className="w-4 h-4 text-primary" /> Dove vuoi volare?</p>
 
             {/* Booking.com-style location card — NO overflow-hidden so dropdowns are visible */}
             <div className={`border-2 rounded-2xl transition-colors ${
@@ -471,15 +434,13 @@ export function FilterSheet({
               {/* Departure */}
               <div ref={departureRef} className={`p-3 rounded-t-2xl ${errors["departure"] ? "bg-red-50" : "bg-background"}`}>
                 <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  {transportMode === "flight"
-                    ? <><Plane className="w-3 h-3" /> Aeroporto di partenza</>
-                    : <><TrainFront className="w-3 h-3" /> Stazione di partenza</>}
+                  <Plane className="w-3 h-3" /> Aeroporto di partenza
                 </p>
                 <LocationAutocomplete
-                  value={transportMode === "flight" ? draft.departureAirport : draft.departureStation}
-                  onChange={(v) => set(transportMode === "flight" ? "departureAirport" : "departureStation", v)}
-                  placeholder={transportMode === "flight" ? t.filters.departureAirport : t.filters.departureStation}
-                  filter={transportMode === "flight" ? "airport" : "station"}
+                  value={draft.departureAirport}
+                  onChange={(v) => set("departureAirport", v)}
+                  placeholder={t.filters.departureAirport}
+                  filter="airport"
                 />
                 {errors["departure"] && (
                   <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1">
@@ -498,14 +459,13 @@ export function FilterSheet({
               {/* Arrival */}
               <div ref={arrivalRef} className={`p-3 ${draft.tripType !== "one_way" ? "" : "rounded-b-2xl"} ${errors["arrival"] ? "bg-red-50" : "bg-background"}`}>
                 <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  <span>🏁</span>
-                  {transportMode === "flight" ? "Aeroporto di arrivo" : "Stazione di arrivo"}
+                  <span>🏁</span> Aeroporto di arrivo
                 </p>
                 <LocationAutocomplete
-                  value={transportMode === "flight" ? draft.arrivalAirport : draft.arrivalStation}
-                  onChange={(v) => set(transportMode === "flight" ? "arrivalAirport" : "arrivalStation", v)}
-                  placeholder={transportMode === "flight" ? t.filters.arrivalAirport : t.filters.arrivalStation}
-                  filter={transportMode === "flight" ? "airport" : "station"}
+                  value={draft.arrivalAirport}
+                  onChange={(v) => set("arrivalAirport", v)}
+                  placeholder={t.filters.arrivalAirport}
+                  filter="airport"
                 />
                 {errors["arrival"] && (
                   <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1">
@@ -520,14 +480,13 @@ export function FilterSheet({
                   <div className="relative h-px bg-border" />
                   <div className="p-3 rounded-b-2xl bg-background">
                     <p className="text-[10px] font-bold text-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                      <span>🔄</span>
-                      {transportMode === "flight" ? "Aeroporto di ritorno" : "Stazione di ritorno"}
+                      <span>🔄</span> Aeroporto di ritorno
                     </p>
                     <LocationAutocomplete
-                      value={transportMode === "flight" ? draft.returnAirport : draft.returnStation}
-                      onChange={(v) => set(transportMode === "flight" ? "returnAirport" : "returnStation", v)}
-                      placeholder={transportMode === "flight" ? t.filters.arrivalAirport : t.filters.arrivalStation}
-                      filter={transportMode === "flight" ? "airport" : "station"}
+                      value={draft.returnAirport}
+                      onChange={(v) => set("returnAirport", v)}
+                      placeholder={t.filters.arrivalAirport}
+                      filter="airport"
                     />
                   </div>
                 </>
@@ -666,18 +625,6 @@ export function FilterSheet({
             />
           </FilterSection>
 
-          {/* ── Tipo treno ─────────────────────────────────── */}
-          <FilterSection label={t.filters.trainType}>
-            <RadioGroup
-              options={[
-                { value: "any", label: t.filters.anyFlight },
-                { value: "direct", label: t.filters.trainDirect },
-                { value: "with_stops", label: t.filters.trainWithChanges },
-              ]}
-              value={draft.trainPreference}
-              onChange={(v) => set("trainPreference", v as TripFilters["trainPreference"])}
-            />
-          </FilterSection>
 
           {/* ── Orario partenza ────────────────────────────── */}
           <FilterSection label={t.filters.departureTime}>
