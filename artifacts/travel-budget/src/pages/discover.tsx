@@ -915,6 +915,57 @@ export default function Discover() {
           setHasSearched(true);
           // Populate seen hotel names for cross-batch dedup
           cleaned.forEach(t => seenHotelNamesRef.current.add(t.hotel.name));
+
+          // ── Enrich cards with real Booking.com hotel data ──────────────
+          // Fire-and-forget: cards show mock data immediately, then silently
+          // update hotel name / price / rating / image when Booking responds.
+          if (arrLocation !== "Any" && arrLocation.length > 2 && f.departureDate) {
+            const checkinDate = f.departureDate.slice(0, 10);
+            const checkoutDate = f.returnDate
+              ? f.returnDate.slice(0, 10)
+              : (() => {
+                  const d = new Date(checkinDate);
+                  d.setDate(d.getDate() + (f.numberOfNights ?? 3));
+                  return d.toISOString().slice(0, 10);
+                })();
+            const destName = arrLocation.replace(/\s*\([^)]*\)/g, "").trim();
+            const q = new URLSearchParams({
+              destination: destName,
+              checkin: checkinDate,
+              checkout: checkoutDate,
+              adults: String(f.numberOfPeople ?? 1),
+              limit: "20",
+            });
+            fetch(`${basePath}/api/external/hotels/by-destination?${q.toString()}`)
+              .then(r => r.ok ? (r.json() as Promise<{ hotels: BookingHotelResult[] }>) : null)
+              .then((result) => {
+                if (!result?.hotels?.length) return;
+                // Discard if a newer search already started
+                if (thisGen !== searchGenRef.current) return;
+                const realHotels = result.hotels;
+                setTrips(prev => {
+                  if (!prev.length) return prev;
+                  return prev.map((trip, i) => {
+                    const rh = realHotels[i % realHotels.length];
+                    if (!rh) return trip;
+                    const nights = trip.durationDays ?? f.numberOfNights ?? 3;
+                    return {
+                      ...trip,
+                      imageUrl: rh.photoUrl || trip.imageUrl,
+                      totalPrice: Math.round(rh.pricePerNight * nights + (trip.transport?.price ?? 0)),
+                      hotel: {
+                        ...trip.hotel,
+                        name: rh.name,
+                        pricePerNight: rh.pricePerNight,
+                        rating: rh.rating,
+                        stars: Math.min(5, Math.max(1, Math.round(rh.rating / 2))),
+                      },
+                    };
+                  });
+                });
+              })
+              .catch(() => { /* silently ignore — mock data stays */ });
+          }
           // Save results to client-side cache
           setCachedSearch(f as unknown as Record<string, unknown>, cleaned);
           // ── Success toast with rotating message ──
