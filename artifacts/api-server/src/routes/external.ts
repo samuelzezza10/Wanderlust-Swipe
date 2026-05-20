@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { searchFlights as amadeusFlights, searchAirportsCities } from "../services/amadeus";
 import { searchFlightPrices } from "../services/skyscanner";
-import { searchHotels, buildBookingAffiliateLink } from "../services/booking";
+import { searchHotels, searchHotelsByDestination, buildBookingAffiliateLink } from "../services/booking";
 
 const router = Router();
 
@@ -66,6 +66,40 @@ router.get("/external/hotels/search", async (req, res) => {
     checkout_date: checkout,
     adults_number: parseInt(adults, 10),
     room_number: parseInt(rooms, 10),
+  });
+
+  const affiliateLink = buildBookingAffiliateLink({
+    destination,
+    checkin,
+    checkout,
+    adults: parseInt(adults, 10),
+    rooms: parseInt(rooms, 10),
+  });
+
+  return res.json({ hotels, affiliateLink });
+});
+
+router.get("/external/hotels/by-destination", async (req, res) => {
+  const {
+    destination,
+    checkin,
+    checkout,
+    adults = "2",
+    rooms = "1",
+    limit = "5",
+  } = req.query as Record<string, string>;
+
+  if (!destination || !checkin || !checkout) {
+    return res.status(400).json({ error: "destination, checkin e checkout sono obbligatori" });
+  }
+
+  const hotels = await searchHotelsByDestination({
+    destination,
+    checkin,
+    checkout,
+    adults: parseInt(adults, 10),
+    rooms: parseInt(rooms, 10),
+    limit: parseInt(limit, 10),
   });
 
   const affiliateLink = buildBookingAffiliateLink({
