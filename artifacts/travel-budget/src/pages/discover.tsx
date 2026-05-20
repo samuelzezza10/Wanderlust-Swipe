@@ -915,13 +915,14 @@ export default function Discover() {
           // Populate seen hotel names for cross-batch dedup
           cleaned.forEach(t => seenHotelNamesRef.current.add(t.hotel.name));
 
-          // ── Unified enrichment: Hotels + Flights ───────────────────────
-          // Both follow the exact same flow:
-          //   1. localStorage cache → apply immediately (warm UX, zero latency)
-          //   2. Fresh API fetch → save to cache → apply via useTransition (smooth DOM patch)
-          // Both run in parallel via Promise.all so neither blocks the other.
+          // ── Unified Flight+Hotel package enrichment ────────────────────
+          // Both data sources follow IDENTICAL flow:
+          //   1. localStorage cache hit → update shared state → aggiornaCard() immediately
+          //   2. Fresh API fetch → save cache → update shared state → aggiornaCard()
+          // aggiornaCard() is the single function that builds each card as a
+          // Flight+Hotel package, crossing both sources and filtering by budget.
           if (arrLocation !== "Any" && arrLocation.length > 2 && f.departureDate) {
-            const checkinDate = f.departureDate.slice(0, 10);
+            const checkinDate  = f.departureDate.slice(0, 10);
             const checkoutDate = f.returnDate
               ? f.returnDate.slice(0, 10)
               : (() => {
@@ -931,111 +932,126 @@ export default function Discover() {
                 })();
             const destName = arrLocation.replace(/\s*\([^)]*\)/g, "").trim();
             const adults   = String(f.numberOfPeople ?? 1);
+            const nights   = f.numberOfNights ?? 3;
+            const budget   = f.budget ?? 9999;
+
+            // Shared mutable state — updated by whichever source arrives first
+            const enrichState: {
+              hotels:  BookingHotelResult[]  | null;
+              flights: FlightEnrichResult[]  | null;
+            } = { hotels: null, flights: null };
 
             /**
-             * Generic enrichment helper.
-             * Serves cache immediately, always fetches fresh, updates cache, re-applies.
+             * aggiornaCard — single source of truth for card population.
+             * Combines real hotel + real flight data into one package per card.
+             * Falls back to mock values for any source not yet loaded.
+             * Drops packages that exceed budget (only when BOTH sources are real).
+             */
+            const aggiornaCard = (baseTrips: TripSuggestion[]): TripSuggestion[] => {
+              const rl = enrichState.flights;
+              const rh = enrichState.hotels;
+              const bothReal = !!(rl && rh);
+              const packages: TripSuggestion[] = [];
+
+              baseTrips.forEach((trip, i) => {
+                const rf = rl ? rl[i % rl.length] : null;
+                const ho = rh ? rh[i % rh.length] : null;
+
+                const flightPrice = rf ? Math.round(rf.price)    : trip.transport.price;
+                const hotelPpN    = ho ? ho.pricePerNight         : trip.hotel.pricePerNight;
+                const totalPrice  = Math.round(flightPrice + hotelPpN * nights);
+
+                // Budget filter: only active when both real sources available
+                if (bothReal && totalPrice > budget * 1.05) return;
+
+                packages.push({
+                  ...trip,
+                  imageUrl:   ho?.photoUrl || trip.imageUrl,
+                  totalPrice,
+                  transport: rf ? {
+                    ...trip.transport,
+                    company:       rf.airline,
+                    price:         flightPrice,
+                    isDirect:      rf.isDirect,
+                    departureTime: rf.departureTime,
+                    arrivalTime:   rf.arrivalTime,
+                    duration:      rf.duration,
+                  } : trip.transport,
+                  hotel: ho ? {
+                    ...trip.hotel,
+                    name:          ho.name,
+                    pricePerNight: ho.pricePerNight,
+                    rating:        ho.rating,
+                    stars:         Math.min(5, Math.max(1, Math.round(ho.rating / 2))),
+                  } : trip.hotel,
+                });
+              });
+
+              // Safety: if budget filter removed everything, show best available subset
+              return packages.length > 0 ? packages : baseTrips;
+            };
+
+            /** Applies aggiornaCard to current trips state via useTransition for smooth DOM patch */
+            const applyPackages = () => {
+              if (thisGen !== searchGenRef.current) return;
+              startEnrichTransition(() => {
+                setTrips(prev => prev.length ? aggiornaCard(prev) : prev);
+              });
+            };
+
+            /**
+             * enrichWith — fully generic, identical for hotels and flights.
+             * Takes a cache key, URL, and a setter that updates enrichState.
+             * After each data arrival (cache or fresh), calls applyPackages().
              */
             const enrichWith = async <T,>(
               cacheKey: string,
               url: string,
-              applyFn: (data: T) => void,
+              onData: (data: T) => void,
             ): Promise<void> => {
               try {
                 const cached = localStorage.getItem(cacheKey);
-                if (cached) applyFn(JSON.parse(cached) as T);
+                if (cached) { onData(JSON.parse(cached) as T); applyPackages(); }
               } catch { /* ignore */ }
               try {
                 const r = await fetch(url);
                 if (!r.ok) return;
                 const data = await r.json() as T;
                 try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* ignore */ }
-                applyFn(data);
+                onData(data);
+                applyPackages();
               } catch { /* silently ignore — mock data stays */ }
             };
 
-            // ── Hotel apply function ──
-            const applyHotels = (result: { hotels: BookingHotelResult[] }) => {
-              const realHotels = result?.hotels;
-              if (!realHotels?.length || thisGen !== searchGenRef.current) return;
-              startEnrichTransition(() => {
-                setTrips(prev => {
-                  if (!prev.length) return prev;
-                  return prev.map((trip, i) => {
-                    const rh = realHotels[i % realHotels.length];
-                    if (!rh) return trip;
-                    const nights = trip.durationDays ?? f.numberOfNights ?? 3;
-                    return {
-                      ...trip,
-                      imageUrl: rh.photoUrl || trip.imageUrl,
-                      // totalPrice recalculated from current transport.price so flight enrichment composes correctly
-                      totalPrice: Math.round(rh.pricePerNight * nights + (trip.transport?.price ?? 0)),
-                      hotel: {
-                        ...trip.hotel,
-                        name: rh.name,
-                        pricePerNight: rh.pricePerNight,
-                        rating: rh.rating,
-                        stars: Math.min(5, Math.max(1, Math.round(rh.rating / 2))),
-                      },
-                    };
-                  });
-                });
-              });
-            };
-
-            // ── Flight apply function ──
-            const applyFlights = (result: { flights: FlightEnrichResult[] }) => {
-              const flights = result?.flights;
-              if (!flights?.length || thisGen !== searchGenRef.current) return;
-              startEnrichTransition(() => {
-                setTrips(prev => {
-                  if (!prev.length) return prev;
-                  return prev.map((trip, i) => {
-                    const rf = flights[i % flights.length];
-                    if (!rf) return trip;
-                    const nights = trip.durationDays ?? f.numberOfNights ?? 3;
-                    return {
-                      ...trip,
-                      // totalPrice recalculated from current hotel.pricePerNight so hotel enrichment composes correctly
-                      totalPrice: Math.round(rf.price + trip.hotel.pricePerNight * nights),
-                      transport: {
-                        ...trip.transport,
-                        company:       rf.airline,
-                        price:         Math.round(rf.price),
-                        isDirect:      rf.isDirect,
-                        departureTime: rf.departureTime,
-                        arrivalTime:   rf.arrivalTime,
-                        duration:      rf.duration,
-                      },
-                    };
-                  });
-                });
-              });
-            };
-
-            // ── Build URLs ──
-            const hotelUrl = `${basePath}/api/external/hotels/by-destination?${new URLSearchParams({
+            // ── URLs ──
+            const hotelCacheKey = `bkg_h_${destName}_${checkinDate}_${checkoutDate}_${adults}`;
+            const hotelUrl      = `${basePath}/api/external/hotels/by-destination?${new URLSearchParams({
               destination: destName, checkin: checkinDate, checkout: checkoutDate, adults, limit: "20",
             })}`;
-            const hotelCacheKey = `bkg_h_${destName}_${checkinDate}_${checkoutDate}_${adults}`;
 
             const depIata = extractIata(f.departureAirport ?? "");
             const arrIata = extractIata(f.arrivalAirport ?? "");
-            const canEnrichFlights = !!(depIata && arrIata);
-            const flightUrl = canEnrichFlights
+            const canEnrichFlights  = !!(depIata && arrIata);
+            const flightCacheKey    = `bkg_f_${depIata}_${arrIata}_${checkinDate}_${checkoutDate}_${adults}`;
+            const flightUrl         = canEnrichFlights
               ? `${basePath}/api/external/flights/by-route?${new URLSearchParams({
                   origin: depIata!, destination: arrIata!, departureDate: checkinDate,
                   ...(f.returnDate ? { returnDate: checkoutDate } : {}),
                   adults, limit: "10",
                 })}`
               : "";
-            const flightCacheKey = `bkg_f_${depIata}_${arrIata}_${checkinDate}_${checkoutDate}_${adults}`;
 
-            // ── Fire both in parallel, fire-and-forget ──
+            // ── Fire hotel + flight fetches in parallel ──
             Promise.all([
-              enrichWith<{ hotels: BookingHotelResult[] }>(hotelCacheKey, hotelUrl, applyHotels),
+              enrichWith<{ hotels: BookingHotelResult[] }>(
+                hotelCacheKey, hotelUrl,
+                (d) => { enrichState.hotels = d?.hotels?.length ? d.hotels : null; },
+              ),
               ...(canEnrichFlights
-                ? [enrichWith<{ flights: FlightEnrichResult[] }>(flightCacheKey, flightUrl, applyFlights)]
+                ? [enrichWith<{ flights: FlightEnrichResult[] }>(
+                    flightCacheKey, flightUrl,
+                    (d) => { enrichState.flights = d?.flights?.length ? d.flights : null; },
+                  )]
                 : []),
             ]).catch(() => { /* silently ignore */ });
           }
