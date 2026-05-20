@@ -927,17 +927,8 @@ function generateTripVariations(baseTrips, targetCount) {
 function getFilteredTrips() {
   let trips = [...MOCK_TRIPS];
   const f = State.filters;
-  // Budget: demo mode — show all trips regardless of price
-  // Flight/train preference
-  if (f.flightPreference === 'direct') trips = trips.filter(tr => tr.transport.type !== 'train' ? tr.transport.direct : true);
-  if (f.trainPreference === 'direct') trips = trips.filter(tr => tr.transport.type === 'train' ? tr.transport.direct : true);
-  // Hotel stars
-  trips = trips.filter(tr => tr.hotel.stars >= (f.hotelStarsMin || 1) && tr.hotel.stars <= (f.hotelStarsMax || 5));
-  // Accommodation type
-  if (f.accommodationType === 'budget') trips = trips.filter(tr => tr.hotel.pricePerNight < 80);
-  else if (f.accommodationType === 'standard') trips = trips.filter(tr => tr.hotel.pricePerNight >= 80 && tr.hotel.pricePerNight < 140);
-  else if (f.accommodationType === 'luxury') trips = trips.filter(tr => tr.hotel.stars >= 4 && tr.hotel.pricePerNight >= 140);
-  // Arrival/destination — STRICT: if destination set, show ONLY that destination
+
+  // ── STEP 1: Destination is DOMINANT — apply first on the original list ──
   const arr = f.arrivalAirport || f.arrivalStation;
   if (arr && arr.toLowerCase() !== 'any' && arr.length > 2) {
     const arrLow = arr.toLowerCase().replace(/\s*\([^)]*\)/g,'').trim();
@@ -946,19 +937,55 @@ function getFilteredTrips() {
       tr.country.toLowerCase().includes(arrLow)
     );
     if (matched.length > 0) {
-      // Expand to 20 realistic variations of the matched destination
+      // Expand to 20 realistic variations of this destination
       trips = generateTripVariations(matched, 20);
     }
-    // If zero exact matches → keep all trips as "alternative destinations" (rule: never empty)
+    // If zero matches → keep ALL trips as "alternative destinations" (never empty)
   }
-  // Sort
+
+  // ── STEP 2: All secondary filters are SOFT (never reduce to 0) ──────────
+  // Budget: demo mode — always show all trips regardless of price
+
+  // Flight preference (soft)
+  if (f.flightPreference === 'direct') {
+    const t2 = trips.filter(tr => tr.transport.type !== 'train' ? tr.transport.direct : true);
+    if (t2.length > 0) trips = t2;
+  }
+  // Train preference (soft)
+  if (f.trainPreference === 'direct') {
+    const t2 = trips.filter(tr => tr.transport.type === 'train' ? tr.transport.direct : true);
+    if (t2.length > 0) trips = t2;
+  }
+  // Hotel stars (soft)
+  const starsMin = f.hotelStarsMin || 1;
+  const starsMax = f.hotelStarsMax || 5;
+  if (starsMin > 1 || starsMax < 5) {
+    const t2 = trips.filter(tr => tr.hotel.stars >= starsMin && tr.hotel.stars <= starsMax);
+    if (t2.length > 0) trips = t2;
+  }
+  // Accommodation type (soft)
+  if (f.accommodationType === 'budget') {
+    const t2 = trips.filter(tr => tr.hotel.pricePerNight < 80);
+    if (t2.length > 0) trips = t2;
+  } else if (f.accommodationType === 'standard') {
+    const t2 = trips.filter(tr => tr.hotel.pricePerNight >= 80 && tr.hotel.pricePerNight < 140);
+    if (t2.length > 0) trips = t2;
+  } else if (f.accommodationType === 'luxury') {
+    const t2 = trips.filter(tr => tr.hotel.stars >= 4 && tr.hotel.pricePerNight >= 140);
+    if (t2.length > 0) trips = t2;
+  }
+
+  // ── STEP 3: Sort ─────────────────────────────────────────────────────────
   if (f.sortBy === 'cheapest') trips.sort((a,b) => a.totalPrice - b.totalPrice);
   else if (f.sortBy === 'best_rating') trips.sort((a,b) => b.hotel.rating - a.hotel.rating);
   else if (f.sortBy === 'fastest') trips.sort((a,b) => {
     const getDur = tr => { const d = tr.transport.duration || ''; const [h,m] = d.split(/[hm]/).filter(Boolean).map(Number); return (h||0)*60+(m||0); };
     return getDur(a) - getDur(b);
   });
-  // Max 20 cards
+
+  // ── STEP 4: Safety net — never return empty ───────────────────────────────
+  if (trips.length === 0) trips = [...MOCK_TRIPS];
+
   return trips.slice(0, 20);
 }
 
