@@ -16,6 +16,17 @@ export interface BookingHotel {
   photo_url?: string;
 }
 
+export interface BookingHotelResult {
+  hotelId: number;
+  name: string;
+  rating: number;
+  pricePerNight: number;
+  currency: string;
+  bookingUrl: string;
+  address: string;
+  photoUrl?: string;
+}
+
 export async function searchHotels(params: {
   city_ids?: string;
   checkout_date: string;
@@ -56,6 +67,83 @@ export async function searchHotels(params: {
     return data.result ?? [];
   } catch (err) {
     logger.error({ err }, "Booking.com searchHotels error");
+    return [];
+  }
+}
+
+export async function searchHotelsByDestination(params: {
+  destination: string;
+  checkin: string;
+  checkout: string;
+  adults?: number;
+  rooms?: number;
+  limit?: number;
+}): Promise<BookingHotelResult[]> {
+  if (!API_KEY) {
+    logger.warn("BOOKING_API_KEY not set — skipping real hotel fetch");
+    return [];
+  }
+
+  try {
+    const nights = Math.max(
+      1,
+      Math.round(
+        (new Date(params.checkout).getTime() - new Date(params.checkin).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    );
+
+    const query = new URLSearchParams({
+      checkin_date: params.checkin,
+      checkout_date: params.checkout,
+      room_number: String(params.rooms ?? 1),
+      adults_number: String(params.adults ?? 2),
+      order_by: "popularity",
+      filter_by_currency: "EUR",
+      rows: String(params.limit ?? 5),
+      text: params.destination,
+      language: "it",
+    });
+
+    const resp = await fetch(`${BASE_URL}/hotels?${query}`, {
+      headers: {
+        "X-Affiliate-Id": AFFILIATE_ID,
+        Authorization: `Bearer ${API_KEY}`,
+        Accept: "application/json",
+      },
+    });
+
+    if (!resp.ok) {
+      logger.warn(
+        { status: resp.status, destination: params.destination },
+        "Booking.com hotels-by-destination failed"
+      );
+      return [];
+    }
+
+    const data = (await resp.json()) as { result?: BookingHotel[] };
+    const raw = data.result ?? [];
+
+    return raw.map((h) => ({
+      hotelId: h.hotel_id,
+      name: h.name,
+      rating: Number((h.review_score ?? 0).toFixed(1)),
+      pricePerNight: nights > 0 ? Math.round((h.min_total_price ?? 0) / nights) : h.min_total_price ?? 0,
+      currency: h.currency_code ?? "EUR",
+      bookingUrl:
+        h.url ||
+        buildBookingAffiliateLink({
+          destination: params.destination,
+          checkin: params.checkin,
+          checkout: params.checkout,
+          adults: params.adults,
+          rooms: params.rooms,
+        }),
+      address: h.address ?? "",
+      photoUrl: h.photo_url,
+    }));
+  } catch (err) {
+    logger.error({ err }, "Booking.com searchHotelsByDestination error");
     return [];
   }
 }
