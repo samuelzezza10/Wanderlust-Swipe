@@ -9,9 +9,9 @@ interface CacheEntry {
 type CacheStore = Record<string, CacheEntry>;
 
 const HASH_FIELDS = [
-  "budget", "numberOfPeople", "departureAirport", "departureStation",
-  "arrivalAirport", "arrivalStation", "departureDate", "returnDate",
-  "tripType", "numberOfNights", "flightPreference", "trainPreference",
+  "budget", "numberOfPeople", "departureAirport",
+  "arrivalAirport", "departureDate", "returnDate",
+  "tripType", "numberOfNights", "flightPreference",
   "accommodationType", "propertyType", "hotelStarsMin", "hotelStarsMax",
   "minHotelRating", "maxHotelDistanceFromCenterKm", "freeCancellation",
   "breakfastIncluded", "parkingAvailable", "petFriendly", "numberOfChildren",
