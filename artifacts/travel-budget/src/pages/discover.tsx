@@ -107,10 +107,14 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
     const matched = out.filter(t => {
       const dest = t.destination.toLowerCase();
       const country = (t.country ?? "").toLowerCase();
-      // Bidirectional check: "barcellona el prat".includes("barcellona") = true
-      // even if "barcellona".includes("barcellona el prat") = false
-      return dest.includes(arrLocation) || arrLocation.includes(dest) ||
-             country.includes(arrLocation) || arrLocation.includes(country);
+      // Bidirectional containment
+      if (dest.includes(arrLocation) || arrLocation.includes(dest) ||
+          country.includes(arrLocation) || arrLocation.includes(country)) return true;
+      // Fuzzy prefix match — handles language variants: "barcellona" vs "barcelona"
+      // (common prefix of at least 6 chars covers almost all real city name pairs)
+      const prefixLen = Math.min(arrLocation.length, dest.length, 7);
+      if (prefixLen >= 5 && arrLocation.slice(0, prefixLen) === dest.slice(0, prefixLen)) return true;
+      return false;
     });
     if (matched.length > 0) {
       // Expand matched destination to 20 realistic variations
@@ -1108,17 +1112,19 @@ export default function Discover() {
         onError: (err: unknown) => {
           const status = (err as { status?: number })?.status ?? (err as { response?: { status?: number } })?.response?.status;
 
-          // Helper: restore previous trips or fall back to curated list — never empty
+          // Helper: restore previous trips if available; otherwise stay in pre-search
+          // state so the user sees the "choose destination" prompt and can retry.
+          // Never fall back to multi-city FALLBACK_TRIPS — they don't match the
+          // user's destination and cause the "wrong cities" bug.
           const restoreTrips = () => {
             const prev = prevTripsRef.current;
             if (prev.length > 0) {
               setTrips(prev);
-            } else {
-              const fallback = applyClientSideFilters(FALLBACK_TRIPS, f);
-              setTrips(fallback.length > 0 ? fallback : FALLBACK_TRIPS);
+              setCurrentIndex(0);
+              setHasSearched(true);
             }
-            setCurrentIndex(0);
-            setHasSearched(true);
+            // No prev trips → leave hasSearched=false so the pre-search state is shown
+            // (user can see the error toast and tap the CTA to retry)
           };
 
           if (status === 403) {
@@ -2005,11 +2011,11 @@ function TripCard({
             <h2 className="text-2xl font-bold mb-0">{trip.destination}</h2>
             <p className="text-white/80 text-sm font-medium mb-2">{trip.country}</p>
 
-            {/* Row 1: airline + direct/stops badge + departure→arrival times */}
-            <div className="flex gap-1.5 mb-1.5 flex-wrap">
+            {/* Outbound flight row */}
+            <div className="flex gap-1.5 mb-1 flex-wrap">
               <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
                 <Plane className="w-3 h-3 shrink-0" />
-                <span className="truncate max-w-[80px]">{trip.transport.company}</span>
+                <span className="truncate max-w-[72px]">{trip.transport.company}</span>
               </div>
               <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.transport.isDirect ? "bg-green-500/70" : "bg-black/50"}`}>
                 {trip.transport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
@@ -2021,15 +2027,37 @@ function TripCard({
                   <span>{trip.transport.departureTime}{trip.transport.arrivalTime ? ` → ${trip.transport.arrivalTime}` : ""}</span>
                 </div>
               )}
+              <div className="flex items-center gap-1 bg-primary/70 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold">
+                <span>{formatCurrency(trip.transport.price, lang)}</span>
+              </div>
             </div>
 
-            {/* Row 2: duration + hotel name + hotel price */}
-            <div className="flex gap-1.5 mb-2 flex-wrap">
-              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
-                <Clock className="w-3 h-3 shrink-0 opacity-70" />
-                <span>{trip.transport.duration}</span>
+            {/* Return flight row — only shown for round trips */}
+            {trip.returnTransport && (
+              <div className="flex gap-1.5 mb-1 flex-wrap">
+                <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <RotateCcw className="w-3 h-3 shrink-0" />
+                  <span className="truncate max-w-[72px]">{trip.returnTransport.company}</span>
+                </div>
+                <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.returnTransport.isDirect ? "bg-green-500/60" : "bg-black/40"}`}>
+                  {trip.returnTransport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
+                  <span>{trip.returnTransport.isDirect ? "Diretto" : "Scali"}</span>
+                </div>
+                {trip.returnTransport.departureTime && (
+                  <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <Clock className="w-3 h-3 shrink-0" />
+                    <span>{trip.returnTransport.departureTime}{trip.returnTransport.arrivalTime ? ` → ${trip.returnTransport.arrivalTime}` : ""}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1 bg-primary/60 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold">
+                  <span>{formatCurrency(trip.returnTransport.price, lang)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium max-w-[150px]">
+            )}
+
+            {/* Hotel row */}
+            <div className="flex gap-1.5 mb-2 flex-wrap">
+              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium max-w-[160px]">
                 <Hotel className="w-3 h-3 shrink-0" />
                 <span className="truncate">{trip.hotel.name.split(" ").slice(0, 3).join(" ")}</span>
               </div>
@@ -2037,11 +2065,19 @@ function TripCard({
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
                 <span>{trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}</span>
               </div>
+              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
+                <span>{formatCurrency(trip.hotel.pricePerNight, lang)}/n</span>
+              </div>
             </div>
 
-            {/* Row 3: nights info + total price */}
+            {/* Totale row */}
             <div className="flex items-end justify-between">
-              <p className="text-[10px] text-white/50">{trip.durationDays}n · {formatCurrency(trip.hotel.pricePerNight, lang)}/notte</p>
+              <p className="text-[10px] text-white/50">
+                {trip.durationDays}n
+                {trip.returnTransport
+                  ? ` · ✈ ${formatCurrency(trip.transport.price + trip.returnTransport.price, lang)} A/R`
+                  : ` · ✈ ${formatCurrency(trip.transport.price, lang)}`}
+              </p>
               <div className="text-right shrink-0">
                 <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
                 <p className="text-2xl font-black">{formatCurrency(totalForAll, lang)}</p>
