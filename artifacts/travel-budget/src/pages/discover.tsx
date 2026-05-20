@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo, useTransition } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDistance } from "@/lib/currency";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   MapPin, Plane, Hotel, Check, X, RotateCcw, Info,
   Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
-  Share2, MessageCircle, Facebook, Copy, TrainFront, ExternalLink, Dice6,
+  Share2, MessageCircle, Facebook, Copy, ExternalLink, Dice6,
   Crown, Zap, Sparkles, RefreshCw, Lightbulb, ChevronLeft, ChevronRight,
   LayoutList, Layers, Users, Euro,
 } from "lucide-react";
@@ -43,7 +43,6 @@ function generateTripVariations(baseTrips: TripSuggestion[], targetCount: number
   const result: TripSuggestion[] = [...baseTrips];
 
   const flightCos = ['Ryanair','easyJet','Vueling','Iberia','Air Europa','Volotea','Wizz Air','Jet2','Transavia','Norwegian'];
-  const trainCos  = ['Trenitalia','Italo','ÖBB','FlixTrain','Intercity Express','TGV','Renfe','Thalys'];
   const depTimes  = ['06:00','07:15','08:30','09:45','11:00','12:30','14:00','15:30','17:00','18:45','20:00','21:30','06:45','08:00','10:15','13:00','16:15','19:30'];
   const hotelSfx  = ['Grand','Boutique','Plaza','Palace','Suites','Central','Classic','Premium','Riviera','Prestige','Lux','Garden','View','Select','Elite'];
   const mults     = [0.82,0.88,0.93,0.97,1.00,1.03,1.07,1.12,1.17,1.22,0.85,0.91,0.96,1.01,1.06,1.10,1.15,1.20,0.87,0.94];
@@ -61,8 +60,8 @@ function generateTripVariations(baseTrips: TripSuggestion[], targetCount: number
     const arrMins  = dH*60 + dM + durH*60 + durM;
     const arrTime  = `${String(Math.floor(arrMins/60)%24).padStart(2,'0')}:${String(arrMins%60).padStart(2,'0')}`;
 
-    const isFlight = base.transport.type !== 'train';
-    const company  = isFlight ? flightCos[vi % flightCos.length] : trainCos[vi % trainCos.length];
+    const isFlight = true;
+    const company  = flightCos[vi % flightCos.length];
     const isDirect = (vi % 3) !== 1;
     const starsDelta = vi % 3 === 0 ? 1 : vi % 3 === 1 ? -1 : 0;
     const stars      = Math.max(1, Math.min(5, base.hotel.stars + starsDelta));
@@ -119,13 +118,7 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
 
   // Flight preference (soft)
   if (f.flightPreference === "direct") {
-    const t2 = out.filter(t => t.transport.type !== "train" ? t.transport.isDirect : true);
-    if (t2.length > 0) out = t2;
-  }
-
-  // Train preference (soft)
-  if (f.trainPreference === "direct") {
-    const t2 = out.filter(t => t.transport.type === "train" ? t.transport.isDirect : true);
+    const t2 = out.filter(t => t.transport.isDirect);
     if (t2.length > 0) out = t2;
   }
 
@@ -171,9 +164,9 @@ const FALLBACK_TRIPS: TripSuggestion[] = [
     id: "fb-1", destination: "Roma", country: "Italia", totalPrice: 480, durationDays: 4,
     description: "La città eterna con Colosseo, Vaticano e cucina straordinaria.", tripType: "round_trip",
     highlights: ["Colosseo", "Vaticano", "Fontana di Trevi"], imageUrl: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=80",
-    transport: { type: "train", company: "Trenitalia", price: 45, duration: "3h 00m", isDirect: true, departureTime: "09:00", arrivalTime: "12:00" },
+    transport: { type: "flight", company: "ITA Airways", price: 60, duration: "1h 25m", isDirect: true, departureTime: "09:00", arrivalTime: "10:25" },
     hotel: { name: "Hotel Campo de' Fiori", stars: 3, pricePerNight: 95, distanceFromCenter: 0.4, rating: 8.1, amenities: ["WiFi", "Colazione"] },
-    returnTransport: { type: "train", company: "Trenitalia", price: 45, duration: "3h 00m", isDirect: true },
+    returnTransport: { type: "flight", company: "ITA Airways", price: 55, duration: "1h 30m", isDirect: true },
   },
   {
     id: "fb-2", destination: "Parigi", country: "Francia", totalPrice: 890, durationDays: 5,
@@ -227,9 +220,9 @@ const FALLBACK_TRIPS: TripSuggestion[] = [
     id: "fb-8", destination: "Praga", country: "Repubblica Ceca", totalPrice: 560, durationDays: 4,
     description: "Cento campanili, ponti medievali e birra leggendaria nella città delle fate.", tripType: "round_trip",
     highlights: ["Ponte Carlo", "Castello di Praga", "Città Vecchia"], imageUrl: "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=600&q=80",
-    transport: { type: "train", company: "Trenitalia + ÖBB", price: 210, duration: "9h 30m", isDirect: false, departureTime: "07:00", arrivalTime: "16:30" },
+    transport: { type: "flight", company: "Ryanair", price: 95, duration: "1h 50m", isDirect: true, departureTime: "07:00", arrivalTime: "08:50" },
     hotel: { name: "Malá Strana Boutique", stars: 3, pricePerNight: 72, distanceFromCenter: 0.7, rating: 8.0, amenities: ["WiFi", "Colazione", "Edificio storico"] },
-    returnTransport: { type: "train", company: "ÖBB + Trenitalia", price: 200, duration: "9h 45m", isDirect: false },
+    returnTransport: { type: "flight", company: "Ryanair", price: 85, duration: "1h 55m", isDirect: true },
   },
 ];
 
@@ -310,7 +303,7 @@ function WelcomeSplash({ onDismiss }: { onDismiss: () => void }) {
             transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
             className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg"
           >
-            <TrainFront className="w-8 h-8 text-white" />
+            <Plane className="w-8 h-8 text-white" />
           </motion.div>
         </motion.div>
       </div>
@@ -576,7 +569,7 @@ function PreSearchState({
           transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
           className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center"
         >
-          <TrainFront className="w-7 h-7 text-white" />
+          <Plane className="w-7 h-7 text-white" />
         </motion.div>
       </div>
 
@@ -641,6 +634,7 @@ export default function Discover() {
   const [, setLocation] = useLocation();
   const { t, lang } = useI18n();
 
+  const [, startEnrichTransition] = useTransition();
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -868,7 +862,6 @@ export default function Discover() {
           arrivalLocation: arrLocation,
           numberOfNights: f.numberOfNights,
           flightPreference: f.flightPreference,
-          trainPreference: f.trainPreference,
           hotelDistanceKm: f.maxHotelDistanceFromCenterKm,
           maxDistanceFromAirportKm: f.maxDistanceFromAirportKm,
           accommodationType: f.accommodationType,
@@ -917,8 +910,8 @@ export default function Discover() {
           cleaned.forEach(t => seenHotelNamesRef.current.add(t.hotel.name));
 
           // ── Enrich cards with real Booking.com hotel data ──────────────
-          // Fire-and-forget: cards show mock data immediately, then silently
-          // update hotel name / price / rating / image when Booking responds.
+          // Fire-and-forget: mock data shows instantly, then we silently patch
+          // hotel name / price / rating / image. Cache → instant warm hits.
           if (arrLocation !== "Any" && arrLocation.length > 2 && f.departureDate) {
             const checkinDate = f.departureDate.slice(0, 10);
             const checkoutDate = f.returnDate
@@ -929,20 +922,11 @@ export default function Discover() {
                   return d.toISOString().slice(0, 10);
                 })();
             const destName = arrLocation.replace(/\s*\([^)]*\)/g, "").trim();
-            const q = new URLSearchParams({
-              destination: destName,
-              checkin: checkinDate,
-              checkout: checkoutDate,
-              adults: String(f.numberOfPeople ?? 1),
-              limit: "20",
-            });
-            fetch(`${basePath}/api/external/hotels/by-destination?${q.toString()}`)
-              .then(r => r.ok ? (r.json() as Promise<{ hotels: BookingHotelResult[] }>) : null)
-              .then((result) => {
-                if (!result?.hotels?.length) return;
-                // Discard if a newer search already started
-                if (thisGen !== searchGenRef.current) return;
-                const realHotels = result.hotels;
+            const bkgCacheKey = `bkg_h_${destName}_${checkinDate}_${checkoutDate}_${f.numberOfPeople ?? 1}`;
+
+            const applyEnrichment = (realHotels: BookingHotelResult[]) => {
+              if (!realHotels.length || thisGen !== searchGenRef.current) return;
+              startEnrichTransition(() => {
                 setTrips(prev => {
                   if (!prev.length) return prev;
                   return prev.map((trip, i) => {
@@ -963,6 +947,29 @@ export default function Discover() {
                     };
                   });
                 });
+              });
+            };
+
+            // Serve from localStorage cache immediately for warm UX
+            try {
+              const cached = localStorage.getItem(bkgCacheKey);
+              if (cached) applyEnrichment(JSON.parse(cached) as BookingHotelResult[]);
+            } catch { /* ignore */ }
+
+            // Always fetch fresh data and update cache
+            const q = new URLSearchParams({
+              destination: destName,
+              checkin: checkinDate,
+              checkout: checkoutDate,
+              adults: String(f.numberOfPeople ?? 1),
+              limit: "20",
+            });
+            fetch(`${basePath}/api/external/hotels/by-destination?${q.toString()}`)
+              .then(r => r.ok ? (r.json() as Promise<{ hotels: BookingHotelResult[] }>) : null)
+              .then((result) => {
+                if (!result?.hotels?.length) return;
+                try { localStorage.setItem(bkgCacheKey, JSON.stringify(result.hotels)); } catch { /* ignore */ }
+                applyEnrichment(result.hotels);
               })
               .catch(() => { /* silently ignore — mock data stays */ });
           }
@@ -1079,7 +1086,6 @@ export default function Discover() {
           arrivalLocation: arrLocation,
           numberOfNights: f.numberOfNights,
           flightPreference: f.flightPreference,
-          trainPreference: f.trainPreference,
           hotelDistanceKm: f.maxHotelDistanceFromCenterKm,
           maxDistanceFromAirportKm: f.maxDistanceFromAirportKm,
           accommodationType: f.accommodationType,
@@ -1289,12 +1295,10 @@ export default function Discover() {
 
   /* ── No results ── */
   if (trips.length === 0) {
-    const isNoDirectTrain = filters.trainPreference === "direct" && !!filters.departureStation;
-
     // Build smart suggestions based on current filters
     interface Suggestion { label: string; apply: () => void }
     const suggestions: Suggestion[] = [];
-    if (!isNoDirectTrain) {
+    {
       if (filters.budget && filters.budget < 3000) {
         const higher = Math.round(filters.budget * 1.25 / 100) * 100;
         suggestions.push({
@@ -1306,12 +1310,6 @@ export default function Discover() {
         suggestions.push({
           label: t.smartSuggestions.allowFlightStops,
           apply: () => { const u = { ...filters, flightPreference: "any" as const }; setFilters(u); loadTrips(u); },
-        });
-      }
-      if (filters.trainPreference === "direct") {
-        suggestions.push({
-          label: t.smartSuggestions.allowTrainStops,
-          apply: () => { const u = { ...filters, trainPreference: "any" as const }; setFilters(u); loadTrips(u); },
         });
       }
       if (filters.numberOfNights > 5) {
@@ -1363,30 +1361,7 @@ export default function Discover() {
       <div className="flex-1 flex flex-col bg-primary">
         {UsageBadge}
         <div className="flex-1 flex items-center justify-center flex-col p-6 text-center">
-          {isNoDirectTrain ? (
-            <>
-              <div className="text-6xl mb-4">🚂</div>
-              <h2 className="text-xl font-bold text-white mb-3">{t.discover.noDirectTrainTitle}</h2>
-              <p className="text-sm text-white/75 mb-8 max-w-xs leading-relaxed">
-                {t.discover.noDirectTrain}
-              </p>
-              <Button
-                onClick={() => {
-                  const updated = { ...filters, trainPreference: "with_stops" as const };
-                  setFilters(updated);
-                  loadTrips(updated);
-                }}
-                className="gap-2 mb-3 bg-white text-primary hover:bg-white/90"
-              >
-                <TrainFront className="w-4 h-4" />
-                {t.filters.trainWithChanges}
-              </Button>
-              <Button onClick={() => setFilterOpen(true)} variant="outline" size="sm" className="border-white/40 text-white hover:bg-white/10">
-                {t.filters.edit}
-              </Button>
-            </>
-          ) : (
-            <>
+          <>
               <div className="text-6xl mb-4">😭</div>
               <h2 className="text-xl font-bold text-white mb-2">{t.filters.noResults}</h2>
               <p className="text-base text-white/75 mb-2 max-w-xs">{noResultsMsgRef.current}</p>
@@ -1416,7 +1391,6 @@ export default function Discover() {
                 <SlidersHorizontal className="w-4 h-4" />{t.filters.edit}
               </Button>
             </>
-          )}
         </div>
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>
@@ -1865,9 +1839,7 @@ function TripCard({
             {/* Row 1: airline + direct/stops badge + departure→arrival times */}
             <div className="flex gap-1.5 mb-1.5 flex-wrap">
               <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                {trip.transport.type === "train"
-                  ? <TrainFront className="w-3 h-3 shrink-0" />
-                  : <Plane className="w-3 h-3 shrink-0" />}
+                <Plane className="w-3 h-3 shrink-0" />
                 <span className="truncate max-w-[80px]">{trip.transport.company}</span>
               </div>
               <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.transport.isDirect ? "bg-green-500/70" : "bg-black/50"}`}>
@@ -2162,7 +2134,7 @@ function TripDetailSheet({
               <section className="bg-muted/40 rounded-2xl p-4 space-y-4">
                 <h3 className="font-bold text-base flex items-center gap-2">
                   <Plane className="w-4 h-4 text-primary" />
-                  {trip.transport.type === "train" ? t.tripDetail.train : t.tripDetail.flight}
+                  {t.tripDetail.flight}
                   <span className="ml-auto text-xs font-normal text-muted-foreground">
                     {trip.tripType === "one_way" ? `→ ${t.filters.oneWay}` : `↕ ${t.filters.roundTrip}`}
                   </span>
@@ -2172,12 +2144,6 @@ function TripDetailSheet({
                   t={t}
                   lang={lang}
                 />
-                {trip.transport.type === "train" && !trip.transport.isDirect && (
-                  <div className="flex items-start gap-2 bg-orange-500/10 border border-orange-400/20 rounded-xl px-3 py-2 text-xs text-orange-700">
-                    <span className="text-base shrink-0">🚂</span>
-                    <p>{t.fun.trainNotDirectMessages[trip.destination.length % t.fun.trainNotDirectMessages.length]}</p>
-                  </div>
-                )}
               </section>
 
               {/* Hotel with full stars */}
@@ -2286,33 +2252,18 @@ function TripDetailSheet({
                     </span>
                     <ExternalLink className="w-3.5 h-3.5 opacity-70" />
                   </a>
-                  {trip.transport.type === "train" ? (
-                    <a
-                      href={`https://www.omio.com/?utm_source=travelbudget&utm_campaign=aff_fake001&destination=${encodeURIComponent(trip.destination)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-3 bg-[#00a861] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#008a4f] transition-colors"
-                    >
-                      <span className="flex items-center gap-2">
-                        <TrainFront className="w-4 h-4" />
-                        {t.tripDetail.bookTransport}
-                      </span>
-                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                    </a>
-                  ) : (
-                    <a
-                      href={`https://www.skyscanner.it/transport/flights/results/?utm_source=travelbudget&affiliateId=fake001&destination=${encodeURIComponent(trip.destination)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-3 bg-[#0770e3] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#0558b0] transition-colors"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Plane className="w-4 h-4" />
-                        {t.tripDetail.bookFlight}
-                      </span>
-                      <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                    </a>
-                  )}
+                  <a
+                    href={`https://www.skyscanner.it/transport/flights/results/?utm_source=travelbudget&affiliateId=fake001&destination=${encodeURIComponent(trip.destination)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 bg-[#0770e3] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#0558b0] transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Plane className="w-4 h-4" />
+                      {t.tripDetail.bookFlight}
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                  </a>
                 </div>
               </section>
 
