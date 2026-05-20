@@ -95,47 +95,7 @@ function generateTripVariations(baseTrips: TripSuggestion[], targetCount: number
 function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSuggestion[] {
   let out = [...trips];
 
-  // Budget: shown regardless — demo mode, never hide trips based on price
-
-  // 2. Flight preference
-  if (f.flightPreference === "direct") {
-    const direct = out.filter(t => t.transport.type !== "train" ? t.transport.isDirect : true);
-    if (direct.length > 0) out = direct;
-  }
-
-  // 3. Train preference
-  if (f.trainPreference === "direct") {
-    const direct = out.filter(t => t.transport.type === "train" ? t.transport.isDirect : true);
-    if (direct.length > 0) out = direct;
-  }
-
-  // 4. Hotel stars
-  const starsMin = f.hotelStarsMin ?? 1;
-  const starsMax = f.hotelStarsMax ?? 5;
-  if (starsMin > 1 || starsMax < 5) {
-    const byStars = out.filter(t => t.hotel.stars >= starsMin && t.hotel.stars <= starsMax);
-    if (byStars.length > 0) out = byStars;
-  }
-
-  // 5. Accommodation type
-  if (f.accommodationType === "budget") {
-    const b = out.filter(t => t.hotel.pricePerNight < 80);
-    if (b.length > 0) out = b;
-  } else if (f.accommodationType === "standard") {
-    const s = out.filter(t => t.hotel.pricePerNight >= 80 && t.hotel.pricePerNight < 140);
-    if (s.length > 0) out = s;
-  } else if (f.accommodationType === "luxury") {
-    const l = out.filter(t => t.hotel.stars >= 4 && t.hotel.pricePerNight >= 140);
-    if (l.length > 0) out = l;
-  }
-
-  // 6. Min hotel rating
-  if (f.minHotelRating != null) {
-    const byRating = out.filter(t => (t.hotel.rating ?? 0) >= (f.minHotelRating as number));
-    if (byRating.length > 0) out = byRating;
-  }
-
-  // 7. Arrival destination — STRICT: if set, show ONLY that destination
+  // ── STEP 1: Destination is DOMINANT — apply first on the original list ──
   const arrLocation = (f.arrivalAirport || f.arrivalStation || "").toLowerCase().replace(/\s*\([^)]*\)/g, "").trim();
   if (arrLocation && arrLocation !== "any" && arrLocation.length > 2) {
     const matched = out.filter(t =>
@@ -143,17 +103,60 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
       (t.country ?? "").toLowerCase().includes(arrLocation)
     );
     if (matched.length > 0) {
-      // Expand matched destination trips to 20 realistic variations
+      // Expand matched destination to 20 realistic variations
       out = generateTripVariations(matched, 20);
     }
-    // If zero matches → keep all trips as alternatives (never empty)
+    // If zero exact matches → keep ALL trips as alternatives (never empty)
   }
 
-  // 8. Sort
+  // ── STEP 2: All secondary filters are SOFT (never reduce to 0) ──────────
+  // Budget: demo mode — always show all trips regardless of price
+
+  // Flight preference (soft)
+  if (f.flightPreference === "direct") {
+    const t2 = out.filter(t => t.transport.type !== "train" ? t.transport.isDirect : true);
+    if (t2.length > 0) out = t2;
+  }
+
+  // Train preference (soft)
+  if (f.trainPreference === "direct") {
+    const t2 = out.filter(t => t.transport.type === "train" ? t.transport.isDirect : true);
+    if (t2.length > 0) out = t2;
+  }
+
+  // Hotel stars (soft)
+  const starsMin = f.hotelStarsMin ?? 1;
+  const starsMax = f.hotelStarsMax ?? 5;
+  if (starsMin > 1 || starsMax < 5) {
+    const t2 = out.filter(t => t.hotel.stars >= starsMin && t.hotel.stars <= starsMax);
+    if (t2.length > 0) out = t2;
+  }
+
+  // Accommodation type (soft)
+  if (f.accommodationType === "budget") {
+    const t2 = out.filter(t => t.hotel.pricePerNight < 80);
+    if (t2.length > 0) out = t2;
+  } else if (f.accommodationType === "standard") {
+    const t2 = out.filter(t => t.hotel.pricePerNight >= 80 && t.hotel.pricePerNight < 140);
+    if (t2.length > 0) out = t2;
+  } else if (f.accommodationType === "luxury") {
+    const t2 = out.filter(t => t.hotel.stars >= 4 && t.hotel.pricePerNight >= 140);
+    if (t2.length > 0) out = t2;
+  }
+
+  // Min hotel rating (soft)
+  if (f.minHotelRating != null) {
+    const t2 = out.filter(t => (t.hotel.rating ?? 0) >= (f.minHotelRating as number));
+    if (t2.length > 0) out = t2;
+  }
+
+  // ── STEP 3: Sort ─────────────────────────────────────────────────────────
   if (f.sortBy === "cheapest") out.sort((a, b) => a.totalPrice - b.totalPrice);
   else if (f.sortBy === "best_rating") out.sort((a, b) => (b.hotel.rating ?? 0) - (a.hotel.rating ?? 0));
 
-  // 9. Max 20 cards
+  // ── STEP 4: Safety net — never return empty ───────────────────────────────
+  if (out.length === 0) out = [...trips];
+
   return out.slice(0, 20);
 }
 
