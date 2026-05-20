@@ -86,7 +86,7 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
         >
-          Scorri le offerte, salva i viaggi che ti piacciono e confronta voli, treni e hotel in un colpo solo. Tutto gratis, nessuna registrazione obbligatoria.
+          Scorri le offerte, salva i viaggi che ti piacciono e confronta voli e hotel in un colpo solo. Tutto gratis, nessuna registrazione obbligatoria.
         </motion.p>
 
         {/* Feature pills */}
