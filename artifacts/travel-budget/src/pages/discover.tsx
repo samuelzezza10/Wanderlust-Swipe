@@ -36,6 +36,12 @@ const FILTERS_STORAGE_KEY = "tb_discover_filters";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/** Extract a 3-letter IATA code from a filter string like "Roma (FCO)" or "Barcelona BCN" */
+function extractIata(s: string): string | null {
+  const m = s.match(/\b([A-Z]{3})\b/);
+  return m?.[1] ?? null;
+}
+
 /* ─── Trip Variation Generator (fallback demo mode) ────────────────────── */
 // Expands 1-N base trips into `targetCount` realistic deterministic variants.
 function generateTripVariations(baseTrips: TripSuggestion[], targetCount: number): TripSuggestion[] {
@@ -909,9 +915,11 @@ export default function Discover() {
           // Populate seen hotel names for cross-batch dedup
           cleaned.forEach(t => seenHotelNamesRef.current.add(t.hotel.name));
 
-          // ── Enrich cards with real Booking.com hotel data ──────────────
-          // Fire-and-forget: mock data shows instantly, then we silently patch
-          // hotel name / price / rating / image. Cache → instant warm hits.
+          // ── Unified enrichment: Hotels + Flights ───────────────────────
+          // Both follow the exact same flow:
+          //   1. localStorage cache → apply immediately (warm UX, zero latency)
+          //   2. Fresh API fetch → save to cache → apply via useTransition (smooth DOM patch)
+          // Both run in parallel via Promise.all so neither blocks the other.
           if (arrLocation !== "Any" && arrLocation.length > 2 && f.departureDate) {
             const checkinDate = f.departureDate.slice(0, 10);
             const checkoutDate = f.returnDate
@@ -922,10 +930,34 @@ export default function Discover() {
                   return d.toISOString().slice(0, 10);
                 })();
             const destName = arrLocation.replace(/\s*\([^)]*\)/g, "").trim();
-            const bkgCacheKey = `bkg_h_${destName}_${checkinDate}_${checkoutDate}_${f.numberOfPeople ?? 1}`;
+            const adults   = String(f.numberOfPeople ?? 1);
 
-            const applyEnrichment = (realHotels: BookingHotelResult[]) => {
-              if (!realHotels.length || thisGen !== searchGenRef.current) return;
+            /**
+             * Generic enrichment helper.
+             * Serves cache immediately, always fetches fresh, updates cache, re-applies.
+             */
+            const enrichWith = async <T,>(
+              cacheKey: string,
+              url: string,
+              applyFn: (data: T) => void,
+            ): Promise<void> => {
+              try {
+                const cached = localStorage.getItem(cacheKey);
+                if (cached) applyFn(JSON.parse(cached) as T);
+              } catch { /* ignore */ }
+              try {
+                const r = await fetch(url);
+                if (!r.ok) return;
+                const data = await r.json() as T;
+                try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch { /* ignore */ }
+                applyFn(data);
+              } catch { /* silently ignore — mock data stays */ }
+            };
+
+            // ── Hotel apply function ──
+            const applyHotels = (result: { hotels: BookingHotelResult[] }) => {
+              const realHotels = result?.hotels;
+              if (!realHotels?.length || thisGen !== searchGenRef.current) return;
               startEnrichTransition(() => {
                 setTrips(prev => {
                   if (!prev.length) return prev;
@@ -936,6 +968,7 @@ export default function Discover() {
                     return {
                       ...trip,
                       imageUrl: rh.photoUrl || trip.imageUrl,
+                      // totalPrice recalculated from current transport.price so flight enrichment composes correctly
                       totalPrice: Math.round(rh.pricePerNight * nights + (trip.transport?.price ?? 0)),
                       hotel: {
                         ...trip.hotel,
@@ -950,28 +983,61 @@ export default function Discover() {
               });
             };
 
-            // Serve from localStorage cache immediately for warm UX
-            try {
-              const cached = localStorage.getItem(bkgCacheKey);
-              if (cached) applyEnrichment(JSON.parse(cached) as BookingHotelResult[]);
-            } catch { /* ignore */ }
+            // ── Flight apply function ──
+            const applyFlights = (result: { flights: FlightEnrichResult[] }) => {
+              const flights = result?.flights;
+              if (!flights?.length || thisGen !== searchGenRef.current) return;
+              startEnrichTransition(() => {
+                setTrips(prev => {
+                  if (!prev.length) return prev;
+                  return prev.map((trip, i) => {
+                    const rf = flights[i % flights.length];
+                    if (!rf) return trip;
+                    const nights = trip.durationDays ?? f.numberOfNights ?? 3;
+                    return {
+                      ...trip,
+                      // totalPrice recalculated from current hotel.pricePerNight so hotel enrichment composes correctly
+                      totalPrice: Math.round(rf.price + trip.hotel.pricePerNight * nights),
+                      transport: {
+                        ...trip.transport,
+                        company:       rf.airline,
+                        price:         Math.round(rf.price),
+                        isDirect:      rf.isDirect,
+                        departureTime: rf.departureTime,
+                        arrivalTime:   rf.arrivalTime,
+                        duration:      rf.duration,
+                      },
+                    };
+                  });
+                });
+              });
+            };
 
-            // Always fetch fresh data and update cache
-            const q = new URLSearchParams({
-              destination: destName,
-              checkin: checkinDate,
-              checkout: checkoutDate,
-              adults: String(f.numberOfPeople ?? 1),
-              limit: "20",
-            });
-            fetch(`${basePath}/api/external/hotels/by-destination?${q.toString()}`)
-              .then(r => r.ok ? (r.json() as Promise<{ hotels: BookingHotelResult[] }>) : null)
-              .then((result) => {
-                if (!result?.hotels?.length) return;
-                try { localStorage.setItem(bkgCacheKey, JSON.stringify(result.hotels)); } catch { /* ignore */ }
-                applyEnrichment(result.hotels);
-              })
-              .catch(() => { /* silently ignore — mock data stays */ });
+            // ── Build URLs ──
+            const hotelUrl = `${basePath}/api/external/hotels/by-destination?${new URLSearchParams({
+              destination: destName, checkin: checkinDate, checkout: checkoutDate, adults, limit: "20",
+            })}`;
+            const hotelCacheKey = `bkg_h_${destName}_${checkinDate}_${checkoutDate}_${adults}`;
+
+            const depIata = extractIata(f.departureAirport ?? "");
+            const arrIata = extractIata(f.arrivalAirport ?? "");
+            const canEnrichFlights = !!(depIata && arrIata);
+            const flightUrl = canEnrichFlights
+              ? `${basePath}/api/external/flights/by-route?${new URLSearchParams({
+                  origin: depIata!, destination: arrIata!, departureDate: checkinDate,
+                  ...(f.returnDate ? { returnDate: checkoutDate } : {}),
+                  adults, limit: "10",
+                })}`
+              : "";
+            const flightCacheKey = `bkg_f_${depIata}_${arrIata}_${checkinDate}_${checkoutDate}_${adults}`;
+
+            // ── Fire both in parallel, fire-and-forget ──
+            Promise.all([
+              enrichWith<{ hotels: BookingHotelResult[] }>(hotelCacheKey, hotelUrl, applyHotels),
+              ...(canEnrichFlights
+                ? [enrichWith<{ flights: FlightEnrichResult[] }>(flightCacheKey, flightUrl, applyFlights)]
+                : []),
+            ]).catch(() => { /* silently ignore */ });
           }
           // Save results to client-side cache
           setCachedSearch(f as unknown as Record<string, unknown>, cleaned);
@@ -1930,7 +1996,7 @@ function TransportBlock({ label, transport, t, lang }: { label?: string; transpo
   );
 }
 
-/* ─── Trip Detail Sheet ──────────────────────────────────────────────────── */
+/* ─── Enrichment types (real API responses that patch mock cards) ─────────── */
 interface BookingHotelResult {
   hotelId: number;
   name: string;
@@ -1941,6 +2007,18 @@ interface BookingHotelResult {
   address: string;
   photoUrl?: string;
 }
+
+interface FlightEnrichResult {
+  price: number;
+  currency: string;
+  airline: string;
+  isDirect: boolean;
+  departureTime: string;
+  arrivalTime: string;
+  duration: string;
+}
+
+/* ─── Trip Detail Sheet ──────────────────────────────────────────────────── */
 
 function BookingHotelsSection({
   destination, checkin, checkout, adults, basePath,
