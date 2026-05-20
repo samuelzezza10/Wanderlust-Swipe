@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plane, Hotel, Train, Zap, Shield, Heart, Mail, ArrowRight } from "lucide-react";
+import { Plane, Hotel, Zap, Shield, Heart, Mail, ArrowRight } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { motion } from "framer-motion";
@@ -55,7 +55,7 @@ export default function LandingPage() {
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 0.4 }}
             className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center"
           >
-            <Train className="w-7 h-7 text-white" />
+            <Zap className="w-7 h-7 text-white" />
           </motion.div>
         </motion.div>
 
@@ -143,19 +143,6 @@ export default function LandingPage() {
           ) : (
             /* ── Signed-out state ── */
             <>
-              {/* Apple login */}
-              <Link href="/sign-in" className="w-full">
-                <button
-                  className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-black text-white font-bold text-base shadow-[0_6px_20px_rgba(0,0,0,0.35)] hover:bg-zinc-900 active:scale-[0.98] transition-all"
-                  data-testid="button-apple-login"
-                >
-                  <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.29.07 2.18.74 2.93.77.9-.17 1.79-.85 3.17-.91 1.7-.08 3.06.73 3.87 2.01-3.52 2.1-2.93 6.74.49 8.04-.42 1.08-.98 2.15-2.46 2.97zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
-                  </svg>
-                  Accedi con Apple
-                </button>
-              </Link>
-
               {/* Google login */}
               <Link href="/sign-in" className="w-full">
                 <button
