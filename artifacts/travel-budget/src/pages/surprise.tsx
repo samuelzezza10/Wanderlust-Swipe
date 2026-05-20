@@ -4,7 +4,7 @@ import type { TripSuggestion } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dice6, Lock, Unlock, Plane, TrainFront, Hotel, Star,
+  Dice6, Lock, Unlock, Plane, Hotel, Star,
   Users, Moon, Wallet, MapPin, ArrowLeft, Sparkles, Check,
   ChevronRight, Loader2, RefreshCw, PawPrint, Coffee,
   XCircle, Car, Bath, Building, Wifi, Baby,
@@ -52,7 +52,6 @@ interface SurpriseFilters {
   returnDate: string;
   tripType: "one_way" | "round_trip";
   flightPreference: TripFilters["flightPreference"];
-  trainPreference: TripFilters["trainPreference"];
   accommodationType: TripFilters["accommodationType"];
   hotelStarsMin: number | null;
   hotelStarsMax: number | null;
@@ -78,7 +77,6 @@ const DEFAULT_SURPRISE_FILTERS: SurpriseFilters = {
   returnDate: "",
   tripType: "round_trip",
   flightPreference: "any",
-  trainPreference: "any",
   accommodationType: null,
   hotelStarsMin: null,
   hotelStarsMax: null,
@@ -150,7 +148,6 @@ export default function SurprisePage() {
   const { data: prefs } = useGetPreferences({ query: { enabled: !!isSignedIn, queryKey: ["preferences"] } });
 
   const [filters, setFilters] = useState<SurpriseFilters>(DEFAULT_SURPRISE_FILTERS);
-  const [transportMode, setTransportMode] = useState<"flight" | "train">("flight");
   const [trips, setTrips] = useState<TripSuggestion[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
@@ -193,7 +190,6 @@ export default function SurprisePage() {
           returnDate: retDate ?? null,
           tripType: filters.tripType,
           flightPreference: filters.flightPreference,
-          trainPreference: filters.trainPreference,
           accommodationType: filters.accommodationType,
           hotelStarsMin: filters.hotelStarsMin,
           hotelStarsMax: filters.hotelStarsMax,
@@ -349,47 +345,14 @@ export default function SurprisePage() {
             </div>
           </div>
 
-          {/* Departure - transport toggle + single field */}
+          {/* Departure airport */}
           <div className="space-y-2">
-            <p className="text-sm font-medium">{t.surprise.departureLabel}</p>
-            <div className="flex rounded-xl border border-border overflow-hidden">
-              <button
-                type="button"
-                onClick={() => {
-                  setTransportMode("flight");
-                  setFilters(f => ({ ...f, departureStation: "" }));
-                }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold transition-colors ${
-                  transportMode === "flight" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Plane className="w-3.5 h-3.5" /> ✈️ {t.surprise.byFlight}
-              </button>
-              <div className="w-px bg-border" />
-              <button
-                type="button"
-                onClick={() => {
-                  setTransportMode("train");
-                  setFilters(f => ({ ...f, departureAirport: "" }));
-                }}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold transition-colors ${
-                  transportMode === "train" ? "bg-primary text-white" : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <TrainFront className="w-3.5 h-3.5" /> 🚆 {t.surprise.byTrain}
-              </button>
-            </div>
+            <p className="text-sm font-medium flex items-center gap-2"><Plane className="w-4 h-4 text-primary" />{t.surprise.departureLabel}</p>
             <LocationAutocomplete
-              value={transportMode === "flight" ? filters.departureAirport : filters.departureStation}
-              onChange={(v) => setFilters(f => ({
-                ...f,
-                departureAirport: transportMode === "flight" ? v : "",
-                departureStation: transportMode === "train" ? v : "",
-              }))}
-              placeholder={transportMode === "flight"
-                ? (prefs?.defaultDepartureLocation || "Roma FCO, Milano MXP…")
-                : "Roma Termini, Milano Centrale…"}
-              filter={transportMode === "flight" ? "airport" : "station"}
+              value={filters.departureAirport}
+              onChange={(v) => setFilters(f => ({ ...f, departureAirport: v, departureStation: "" }))}
+              placeholder={prefs?.defaultDepartureLocation || "Roma FCO, Milano MXP…"}
+              filter="airport"
             />
           </div>
 
@@ -561,12 +524,8 @@ export default function SurprisePage() {
 
                     {/* Transport info (always visible) */}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-lg p-2.5">
-                      {trip.transport.type === "flight" ? (
-                        <Plane className="w-4 h-4 text-primary shrink-0" />
-                      ) : (
-                        <TrainFront className="w-4 h-4 text-primary shrink-0" />
-                      )}
-                      <span className="capitalize">{trip.transport.type === "flight" ? "✈️" : "🚂"}</span>
+                      <Plane className="w-4 h-4 text-primary shrink-0" />
+                      <span>✈️</span>
                       {effectiveDep && effectiveDep !== "Any" && (
                         <>
                           <span>·</span>
