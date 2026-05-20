@@ -309,20 +309,8 @@ export function FilterSheet({
     setTried(true);
     const errs = validate(draft, transportMode);
     setErrors(errs);
-
-    if (Object.keys(errs).length > 0) {
-      const firstRef =
-        errs["departure"] ? departureRef :
-        errs["arrival"] ? arrivalRef :
-        errs["departureDate"] || errs["returnDate"] ? datesRef :
-        errs["budget"] ? budgetRef : null;
-
-      setTimeout(() => {
-        firstRef?.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 80);
-      return;
-    }
-
+    // Soft validation — errors are shown as hints but never block the apply.
+    // The user can always proceed regardless of warnings.
     const finalDraft: TripFilters = transportMode === "flight"
       ? { ...draft, departureStation: "", arrivalStation: "", returnStation: "" }
       : { ...draft, departureAirport: "", arrivalAirport: "", returnAirport: "" };
