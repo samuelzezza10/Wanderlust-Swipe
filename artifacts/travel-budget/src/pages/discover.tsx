@@ -98,10 +98,14 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
   // ── STEP 1: Destination is DOMINANT — apply first on the original list ──
   const arrLocation = (f.arrivalAirport || f.arrivalStation || "").toLowerCase().replace(/\s*\([^)]*\)/g, "").trim();
   if (arrLocation && arrLocation !== "any" && arrLocation.length > 2) {
-    const matched = out.filter(t =>
-      t.destination.toLowerCase().includes(arrLocation) ||
-      (t.country ?? "").toLowerCase().includes(arrLocation)
-    );
+    const matched = out.filter(t => {
+      const dest = t.destination.toLowerCase();
+      const country = (t.country ?? "").toLowerCase();
+      // Bidirectional check: "barcellona el prat".includes("barcellona") = true
+      // even if "barcellona".includes("barcellona el prat") = false
+      return dest.includes(arrLocation) || arrLocation.includes(dest) ||
+             country.includes(arrLocation) || arrLocation.includes(country);
+    });
     if (matched.length > 0) {
       // Expand matched destination to 20 realistic variations
       out = generateTripVariations(matched, 20);
