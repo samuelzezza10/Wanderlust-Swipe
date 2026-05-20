@@ -676,6 +676,9 @@ export default function Discover() {
   // ── Race-condition guard: only accept results from the latest search ──
   const searchGenRef = useRef(0);
 
+  // ── Stores trips from BEFORE a new search starts so errors can restore them ──
+  const prevTripsRef = useRef<TripSuggestion[]>([]);
+
   // ── Non-repeating random message picker ──
   const lastLoadingMsgRef = useRef<string | null>(null);
   const lastNoResultsMsgRef = useRef<string | null>(null);
@@ -809,6 +812,8 @@ export default function Discover() {
 
     // ── Stamp this search so stale responses are discarded ────────
     const thisGen = ++searchGenRef.current;
+    // Save current trips before clearing so errors can restore them
+    prevTripsRef.current = trips;
     // Clear stale results immediately — prevents old data surviving a trip-type switch
     setTrips([]);
     seenHotelNamesRef.current.clear();
@@ -930,24 +935,38 @@ export default function Discover() {
         },
         onError: (err: unknown) => {
           const status = (err as { status?: number })?.status ?? (err as { response?: { status?: number } })?.response?.status;
+
+          // Helper: restore previous trips or fall back to curated list — never empty
+          const restoreTrips = () => {
+            const prev = prevTripsRef.current;
+            if (prev.length > 0) {
+              setTrips(prev);
+            } else {
+              const fallback = applyClientSideFilters(FALLBACK_TRIPS, f);
+              setTrips(fallback.length > 0 ? fallback : FALLBACK_TRIPS);
+            }
+            setCurrentIndex(0);
+            setHasSearched(true);
+          };
+
           if (status === 403) {
+            // Premium paywall — show modal, restore trips so deck isn't empty
             setShowPremiumModal(true);
+            restoreTrips();
           } else if (status === 429) {
-            // Rate limited — silently show fallback trips filtered by current user filters
-            if (trips.length === 0) {
-              const fallback = applyClientSideFilters(FALLBACK_TRIPS, f);
-              setTrips(fallback.length > 0 ? fallback : FALLBACK_TRIPS);
-              setCurrentIndex(0);
-              setHasSearched(true);
-            }
+            // Rate limited — show non-destructive toast, restore trips
+            toast.error(t.discover.rateLimitError, {
+              description: t.discover.rateLimitHint,
+              duration: 6000,
+            });
+            restoreTrips();
           } else {
-            // Any other error — silently fall back to curated trips filtered by current user filters
-            if (trips.length === 0) {
-              const fallback = applyClientSideFilters(FALLBACK_TRIPS, f);
-              setTrips(fallback.length > 0 ? fallback : FALLBACK_TRIPS);
-              setCurrentIndex(0);
-              setHasSearched(true);
-            }
+            // Any other error — show toast, restore trips, never crash
+            toast.error(t.discover.searchError, {
+              description: t.discover.searchErrorHint,
+              duration: 5000,
+            });
+            restoreTrips();
           }
         },
       }
