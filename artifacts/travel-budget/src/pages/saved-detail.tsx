@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useGetSavedTrip, useDeleteSavedTrip, getGetSavedTripsQueryKey } from "@workspace/api-client-react";
 import { useParams, useLocation, Redirect } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plane, Hotel, Calendar, MapPin, Share2, Trash2, ArrowLeft, TrainFront, CheckCircle } from "lucide-react";
+import { Plane, Hotel, Calendar, MapPin, Share2, Trash2, ArrowLeft, CheckCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/react";
 import { toast } from "sonner";
@@ -156,7 +156,7 @@ export default function SavedDetail() {
             <div className="space-y-4">
               <div className="flex items-start gap-4">
                 <div className="p-2 bg-secondary/10 text-secondary rounded-lg shrink-0">
-                  {isFlightTrip ? <Plane className="w-5 h-5" /> : <TrainFront className="w-5 h-5" />}
+                  <Plane className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="font-bold">{trip.transport.company}</div>
