@@ -27,6 +27,34 @@ export interface BookingHotelResult {
   photoUrl?: string;
 }
 
+function makeHeaders() {
+  return {
+    ...(AFFILIATE_ID ? { "X-Affiliate-Id": AFFILIATE_ID } : {}),
+    Authorization: `Bearer ${API_KEY}`,
+    Accept: "application/json",
+  };
+}
+
+/** Resolve a free-text destination name to a Booking.com city_id */
+export async function lookupCityId(destination: string): Promise<string | null> {
+  if (!API_KEY) return null;
+  try {
+    const query = new URLSearchParams({ text: destination, language: "it", rows: "3" });
+    const resp = await fetch(`${BASE_URL}/cities?${query}`, { headers: makeHeaders() });
+    if (!resp.ok) {
+      logger.warn({ status: resp.status }, "Booking.com city lookup failed");
+      return null;
+    }
+    const data = (await resp.json()) as { result?: Array<{ city_id: number; name: string }> };
+    const cities = data.result ?? [];
+    if (!cities.length) return null;
+    return String(cities[0].city_id);
+  } catch (err) {
+    logger.warn({ err }, "Booking.com lookupCityId error");
+    return null;
+  }
+}
+
 export async function searchHotels(params: {
   city_ids?: string;
   checkout_date: string;
@@ -52,13 +80,7 @@ export async function searchHotels(params: {
       rows: String(params.rows ?? 10),
       ...(params.city_ids ? { city_ids: params.city_ids } : {}),
     });
-    const resp = await fetch(`${BASE_URL}/hotels?${query}`, {
-      headers: {
-        "X-Affiliate-Id": AFFILIATE_ID,
-        Authorization: `Bearer ${API_KEY}`,
-        Accept: "application/json",
-      },
-    });
+    const resp = await fetch(`${BASE_URL}/hotels?${query}`, { headers: makeHeaders() });
     if (!resp.ok) {
       logger.warn({ status: resp.status }, "Booking.com hotel search failed");
       return [];
@@ -93,6 +115,9 @@ export async function searchHotelsByDestination(params: {
       )
     );
 
+    // Step 1: resolve destination name → city_id for precise search
+    const cityId = await lookupCityId(params.destination);
+
     const query = new URLSearchParams({
       checkin_date: params.checkin,
       checkout_date: params.checkout,
@@ -100,22 +125,22 @@ export async function searchHotelsByDestination(params: {
       adults_number: String(params.adults ?? 2),
       order_by: "popularity",
       filter_by_currency: "EUR",
-      rows: String(params.limit ?? 5),
-      text: params.destination,
+      rows: String(params.limit ?? 20),
       language: "it",
     });
 
-    const resp = await fetch(`${BASE_URL}/hotels?${query}`, {
-      headers: {
-        "X-Affiliate-Id": AFFILIATE_ID,
-        Authorization: `Bearer ${API_KEY}`,
-        Accept: "application/json",
-      },
-    });
+    // Step 2: prefer city_ids (precise), fall back to text search
+    if (cityId) {
+      query.set("city_ids", cityId);
+    } else {
+      query.set("text", params.destination);
+    }
+
+    const resp = await fetch(`${BASE_URL}/hotels?${query}`, { headers: makeHeaders() });
 
     if (!resp.ok) {
       logger.warn(
-        { status: resp.status, destination: params.destination },
+        { status: resp.status, destination: params.destination, cityId },
         "Booking.com hotels-by-destination failed"
       );
       return [];
@@ -128,7 +153,10 @@ export async function searchHotelsByDestination(params: {
       hotelId: h.hotel_id,
       name: h.name,
       rating: Number((h.review_score ?? 0).toFixed(1)),
-      pricePerNight: nights > 0 ? Math.round((h.min_total_price ?? 0) / nights) : h.min_total_price ?? 0,
+      pricePerNight:
+        nights > 0
+          ? Math.round((h.min_total_price ?? 0) / nights)
+          : (h.min_total_price ?? 0),
       currency: h.currency_code ?? "EUR",
       bookingUrl:
         h.url ||
