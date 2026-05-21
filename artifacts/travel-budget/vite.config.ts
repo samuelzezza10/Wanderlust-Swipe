@@ -7,7 +7,7 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const rawPort = process.env.PORT;
 const port = rawPort ? Number(rawPort) : 3001;
 
-const basePath = process.env.BASE_PATH ?? '/Wanderlust-Swipe/';
+const basePath = process.env.BASE_PATH ?? '/';
 
 export default defineConfig({
   base: basePath,
