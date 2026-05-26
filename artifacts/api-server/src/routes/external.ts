@@ -2,6 +2,11 @@ import { Router } from "express";
 import { searchFlights as amadeusFlights, searchAirportsCities } from "../services/amadeus";
 import { searchFlightPrices } from "../services/skyscanner";
 import { searchHotels, searchHotelsByDestination, buildBookingAffiliateLink } from "../services/booking";
+import {
+  isRapidApiConfigured,
+  searchFlightsRapid,
+  searchHotelsRapid,
+} from "../services/rapidapi";
 
 const router = Router();
 
@@ -162,6 +167,82 @@ router.get("/external/hotels/by-destination", async (req, res) => {
   });
 
   return res.json({ hotels, affiliateLink });
+});
+
+/**
+ * RapidAPI Booking — real flights with hard server-side budget filter.
+ * Client passes max party total; we drop any offer that busts it BEFORE
+ * sending results to the browser so the swipe deck can't show busts.
+ */
+router.get("/external/rapid/flights", async (req, res) => {
+  if (!isRapidApiConfigured()) {
+    return res.json({ flights: [], configured: false });
+  }
+  const {
+    origin,
+    destination,
+    departureDate,
+    returnDate,
+    adults = "1",
+    maxBudgetTotal,
+  } = req.query as Record<string, string>;
+
+  if (!origin || !destination || !departureDate) {
+    return res.status(400).json({ error: "origin, destination and departureDate are required" });
+  }
+
+  const flights = await searchFlightsRapid({
+    origin,
+    destination,
+    departDate: departureDate.slice(0, 10),
+    returnDate: returnDate ? returnDate.slice(0, 10) : undefined,
+    adults: Math.max(1, parseInt(adults, 10)),
+    maxBudgetTotal: maxBudgetTotal ? parseFloat(maxBudgetTotal) : undefined,
+  });
+
+  return res.json({ flights, configured: true });
+});
+
+/**
+ * RapidAPI Booking — real hotels with hard per-night budget filter.
+ * Falls back automatically when the official BOOKING_API_KEY pipeline is
+ * unavailable; otherwise serves as a second source.
+ */
+router.get("/external/rapid/hotels", async (req, res) => {
+  if (!isRapidApiConfigured()) {
+    return res.json({ hotels: [], affiliateLink: "", configured: false });
+  }
+  const {
+    destination,
+    checkin,
+    checkout,
+    adults = "2",
+    rooms = "1",
+    maxPricePerNight,
+  } = req.query as Record<string, string>;
+
+  if (!destination || !checkin || !checkout) {
+    return res.status(400).json({ error: "destination, checkin and checkout are required" });
+  }
+
+  const hotels = await searchHotelsRapid({
+    destination,
+    checkin,
+    checkout,
+    adults: parseInt(adults, 10),
+    rooms: parseInt(rooms, 10),
+    maxPricePerNight: maxPricePerNight ? parseFloat(maxPricePerNight) : undefined,
+  });
+
+  const affiliateLink = buildBookingAffiliateLink({
+    destination,
+    checkin,
+    checkout,
+    adults: parseInt(adults, 10),
+    rooms: parseInt(rooms, 10),
+  });
+
+  return res.json({ hotels, affiliateLink, configured: true });
 });
 
 export default router;
