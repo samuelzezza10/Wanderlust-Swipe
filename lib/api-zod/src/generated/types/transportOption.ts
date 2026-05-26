@@ -15,4 +15,8 @@ export interface TransportOption {
   isDirect: boolean;
   departureTime?: string;
   arrivalTime?: string;
+  /** Number of stopovers (0 = direct) */
+  stops?: number;
+  /** IATA codes or city names of stopover airports */
+  stopCities?: string[];
 }
