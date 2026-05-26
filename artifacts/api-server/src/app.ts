@@ -16,8 +16,9 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
-// Trust Replit's reverse proxy so express-rate-limit reads the real client IP
-// from X-Forwarded-For instead of the proxy IP
+// Trust the reverse proxy (Replit, Vercel, etc.) so express-rate-limit and
+// the Clerk proxy middleware read the real client IP from X-Forwarded-For
+// instead of the proxy's IP.
 app.set("trust proxy", 1);
 
 app.use(
