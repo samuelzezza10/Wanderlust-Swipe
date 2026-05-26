@@ -27,13 +27,16 @@ function deterministicSeed(s: string): number {
 interface MockFlight {
   price: number; currency: string; airline: string; isDirect: boolean;
   departureTime: string; arrivalTime: string; duration: string;
+  stops?: number; stopCities?: string[];
 }
 interface MockHotel {
   hotelId: number; name: string; rating: number; pricePerNight: number;
+  originalPrice?: number; distanceFromCenter: number;
   currency: string; bookingUrl: string; address: string; photoUrl?: string;
 }
 
 const AIRLINES = ["Ryanair", "EasyJet", "Vueling", "Lufthansa", "ITA Airways", "Wizz Air", "Transavia"];
+const LAYOVER_CITIES = ["MXP", "CDG", "MAD", "FCO", "AMS", "LHR", "FRA", "BCN", "VIE", "ATH"];
 const HOTEL_PHOTOS = [
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
   "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400",
@@ -54,6 +57,7 @@ function getMockFlights(origin: string, dest: string, date: string, adults: numb
   const fmt = (totalMin: number) =>
     `${String(Math.floor(totalMin / 60) % 24).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
   const dur = (m: number) => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
+  const layoverCity = LAYOVER_CITIES[(seed + 1) % LAYOVER_CITIES.length];
   return [
     {
       price: basePrice * adults,
@@ -61,6 +65,7 @@ function getMockFlights(origin: string, dest: string, date: string, adults: numb
       departureTime: fmt(depH * 60 + (seed % 30)),
       arrivalTime: fmt(arrMin),
       duration: dur(durMin),
+      stops: 0,
     },
     {
       price: Math.round(basePrice * 1.35) * adults,
@@ -68,6 +73,8 @@ function getMockFlights(origin: string, dest: string, date: string, adults: numb
       departureTime: fmt((depH + 3) * 60 + (seed % 45)),
       arrivalTime: fmt((depH + 3) * 60 + (seed % 45) + durMin + 55),
       duration: dur(durMin + 55),
+      stops: 1,
+      stopCities: [layoverCity],
     },
     {
       price: Math.round(basePrice * 1.7) * adults,
@@ -75,38 +82,42 @@ function getMockFlights(origin: string, dest: string, date: string, adults: numb
       departureTime: fmt((depH + 7) * 60 + 10),
       arrivalTime: fmt((depH + 7) * 60 + 10 + durMin),
       duration: dur(durMin),
+      stops: 0,
     },
   ];
 }
 
-const CITY_HOTELS: Record<string, { name: string; stars: number; area: string }[]> = {
-  berlin:  [{ name: "Hotel Adlon Kempinski", stars: 5, area: "Mitte" }, { name: "Motel One Berlin-Alexanderplatz", stars: 3, area: "Alexanderplatz" }, { name: "25hours Hotel Bikini", stars: 4, area: "Zoo" }],
-  paris:   [{ name: "Hôtel du Louvre", stars: 4, area: "1st Arr." }, { name: "ibis Paris Gare du Nord", stars: 3, area: "10th Arr." }, { name: "Hôtel de la Paix", stars: 3, area: "Montmartre" }],
-  rome:    [{ name: "Hotel de Russie", stars: 5, area: "Piazza del Popolo" }, { name: "Generator Roma", stars: 3, area: "Trastevere" }, { name: "Palazzo Manfredi", stars: 5, area: "Colosseum" }],
-  london:  [{ name: "The Savoy", stars: 5, area: "Strand" }, { name: "Z Hotel Shoreditch", stars: 3, area: "Shoreditch" }, { name: "citizenM London Bankside", stars: 4, area: "South Bank" }],
-  barcelona: [{ name: "W Barcelona", stars: 5, area: "Barceloneta" }, { name: "Hotel Arts", stars: 5, area: "Port Olímpic" }, { name: "Catalonia Eixample", stars: 4, area: "Eixample" }],
-  amsterdam: [{ name: "Pulitzer Amsterdam", stars: 5, area: "Jordaan" }, { name: "The Student Hotel Amsterdam", stars: 3, area: "Westerpark" }, { name: "Park Hotel", stars: 4, area: "Leidseplein" }],
-  madrid:  [{ name: "Gran Meliá Palacio de los Duques", stars: 5, area: "Opera" }, { name: "Hotel Único Madrid", stars: 5, area: "Serrano" }, { name: "Room Mate Óscar", stars: 4, area: "Gran Vía" }],
-  vienna:  [{ name: "Hotel Sacher Wien", stars: 5, area: "Staatsoper" }, { name: "Ibis Wien Mariahilf", stars: 3, area: "6th District" }, { name: "Hotel Josefshof", stars: 4, area: "Josefstadt" }],
-  lisbon:  [{ name: "Bairro Alto Hotel", stars: 5, area: "Bairro Alto" }, { name: "Generator Hostel Lisboa", stars: 3, area: "Mouraria" }, { name: "Hotel Aviz", stars: 4, area: "Marquês de Pombal" }],
-  prague:  [{ name: "The Grand Mark Prague", stars: 5, area: "Old Town" }, { name: "Mosaic House Design Hotel", stars: 3, area: "Smíchov" }, { name: "Hotel Josef Prague", stars: 4, area: "Old Town" }],
+const CITY_HOTELS: Record<string, { name: string; stars: number; area: string; distance: number; discountMult?: number }[]> = {
+  berlin:  [{ name: "Hotel Adlon Kempinski", stars: 5, area: "Mitte", distance: 0.2 }, { name: "Motel One Berlin-Alexanderplatz", stars: 3, area: "Alexanderplatz", distance: 0.8, discountMult: 1.30 }, { name: "25hours Hotel Bikini", stars: 4, area: "Zoo", distance: 1.5 }],
+  paris:   [{ name: "Hôtel du Louvre", stars: 4, area: "1st Arr.", distance: 0.4 }, { name: "ibis Paris Gare du Nord", stars: 3, area: "10th Arr.", distance: 1.2, discountMult: 1.22 }, { name: "Hôtel de la Paix", stars: 3, area: "Montmartre", distance: 2.8 }],
+  rome:    [{ name: "Hotel de Russie", stars: 5, area: "Piazza del Popolo", distance: 0.6 }, { name: "Generator Roma", stars: 3, area: "Trastevere", distance: 1.4, discountMult: 1.25 }, { name: "Palazzo Manfredi", stars: 5, area: "Colosseum", distance: 0.3 }],
+  london:  [{ name: "The Savoy", stars: 5, area: "Strand", distance: 0.7 }, { name: "Z Hotel Shoreditch", stars: 3, area: "Shoreditch", distance: 2.1, discountMult: 1.20 }, { name: "citizenM London Bankside", stars: 4, area: "South Bank", distance: 1.0 }],
+  barcelona: [{ name: "W Barcelona", stars: 5, area: "Barceloneta", distance: 1.8 }, { name: "Hotel Arts", stars: 5, area: "Port Olímpic", distance: 2.2 }, { name: "Catalonia Eixample", stars: 4, area: "Eixample", distance: 0.9, discountMult: 1.28 }],
+  amsterdam: [{ name: "Pulitzer Amsterdam", stars: 5, area: "Jordaan", distance: 0.5 }, { name: "The Student Hotel Amsterdam", stars: 3, area: "Westerpark", distance: 1.7, discountMult: 1.24 }, { name: "Park Hotel", stars: 4, area: "Leidseplein", distance: 0.8 }],
+  madrid:  [{ name: "Gran Meliá Palacio de los Duques", stars: 5, area: "Opera", distance: 0.4 }, { name: "Hotel Único Madrid", stars: 5, area: "Serrano", distance: 1.1 }, { name: "Room Mate Óscar", stars: 4, area: "Gran Vía", distance: 0.6, discountMult: 1.18 }],
+  vienna:  [{ name: "Hotel Sacher Wien", stars: 5, area: "Staatsoper", distance: 0.3 }, { name: "Ibis Wien Mariahilf", stars: 3, area: "6th District", distance: 1.3, discountMult: 1.22 }, { name: "Hotel Josefshof", stars: 4, area: "Josefstadt", distance: 1.0 }],
+  lisbon:  [{ name: "Bairro Alto Hotel", stars: 5, area: "Bairro Alto", distance: 0.4 }, { name: "Generator Hostel Lisboa", stars: 3, area: "Mouraria", distance: 0.9, discountMult: 1.26 }, { name: "Hotel Aviz", stars: 4, area: "Marquês de Pombal", distance: 1.6 }],
+  prague:  [{ name: "The Grand Mark Prague", stars: 5, area: "Old Town", distance: 0.2 }, { name: "Mosaic House Design Hotel", stars: 3, area: "Smíchov", distance: 1.8, discountMult: 1.20 }, { name: "Hotel Josef Prague", stars: 4, area: "Old Town", distance: 0.5 }],
 };
 
 function getMockHotels(destination: string, limit: number): MockHotel[] {
   const key = destination.toLowerCase().split(/[\s,]+/)[0];
   const seed = deterministicSeed(destination.toLowerCase());
   const templates = CITY_HOTELS[key] ?? [
-    { name: `${destination} Grand Hotel`, stars: 4, area: "City Centre" },
-    { name: `${destination} Budget Inn`, stars: 2, area: "Near Station" },
-    { name: `${destination} Boutique Stay`, stars: 3, area: "Old Town" },
+    { name: `${destination} Grand Hotel`, stars: 4, area: "City Centre", distance: 0.5 },
+    { name: `${destination} Budget Inn`, stars: 2, area: "Near Station", distance: 1.2, discountMult: 1.25 },
+    { name: `${destination} Boutique Stay`, stars: 3, area: "Old Town", distance: 0.8 },
   ];
   return templates.slice(0, limit).map((t, i) => {
     const basePrice = 55 + (seed % 120) + i * 30; // staggered pricing
+    const originalPrice = t.discountMult ? Math.round(basePrice * t.discountMult) : undefined;
     return {
       hotelId: (seed + i * 7) % 9_000_000 + 1_000_000,
       name: t.name,
       rating: Number((6.5 + (((seed + i) % 35) / 10)).toFixed(1)),
       pricePerNight: basePrice,
+      originalPrice,
+      distanceFromCenter: t.distance,
       currency: "EUR",
       bookingUrl: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(destination)}`,
       address: `${t.area}, ${destination}`,
