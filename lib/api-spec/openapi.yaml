@@ -479,6 +479,14 @@ components:
           type: string
         arrivalTime:
           type: string
+        stops:
+          type: integer
+          description: Number of stopovers (0 = direct)
+        stopCities:
+          type: array
+          items:
+            type: string
+          description: IATA codes or city names of stopover airports
 
     HotelOption:
       type: object
@@ -505,6 +513,9 @@ components:
           type: number
         imageUrl:
           type: ["string", "null"]
+        originalPrice:
+          type: number
+          description: Original price before discount — if provided and greater than pricePerNight a savings badge is shown
 
     SavedTripInput:
       type: object
