@@ -6,62 +6,39 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  contents: write
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: pnpm
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
-      - name: Build shared libraries
-        run: pnpm run typecheck:libs
-
-      - name: Build frontend for GitHub Pages
+      - name: Build
+        working-directory: artifacts/travel-budget
         env:
-          PORT: "3001"
-          BASE_PATH: "/Wanderlust-Swipe/"
+          BASE_PATH: /Wanderlust-Swipe/
           NODE_ENV: production
-          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-        run: pnpm --filter @workspace/travel-budget run build
+        run: pnpm run build
 
-      - name: Copy index.html → 404.html (SPA client-side routing)
-        run: cp artifacts/travel-budget/dist/public/index.html artifacts/travel-budget/dist/public/404.html
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: artifacts/travel-budget/dist/public
-
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: artifacts/travel-budget/dist/public
+          force_orphan: true
