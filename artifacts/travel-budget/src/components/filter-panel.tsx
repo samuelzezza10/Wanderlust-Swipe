@@ -485,9 +485,12 @@ export function FilterSheet({
                     set("budget", v);
                   }}
                   className="flex-1 text-2xl font-bold bg-transparent focus:outline-none text-zinc-900 min-w-0"
-                  placeholder="0 – 20000"
+                  placeholder="es. 1500"
                 />
               </div>
+              <p className="text-xs text-zinc-400 mt-1 px-1">
+                {t.filters.budgetHint ?? "Scrivi il tuo budget massimo totale (volo + hotel)"}
+              </p>
               <div className="flex gap-2 flex-wrap">
                 {[500, 1000, 2000, 5000, 10000].map((v) => (
                   <button
