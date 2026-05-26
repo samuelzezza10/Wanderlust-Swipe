@@ -15,4 +15,6 @@ export interface HotelOption {
   rating?: number;
   /** @nullable */
   imageUrl?: string | null;
+  /** Original price before discount — if provided and greater than pricePerNight a savings badge is shown */
+  originalPrice?: number;
 }
