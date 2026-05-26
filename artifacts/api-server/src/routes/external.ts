@@ -11,6 +11,110 @@ import {
 
 const router = Router();
 
+/* ── Mock data — last-resort fallback when all upstream APIs are unavailable ─
+ *
+ * These fire ONLY when RapidAPI is configured (key present) but returns empty
+ * due to quota exhaustion (429/403). Google APIs are excluded intentionally:
+ * those work live and must never be mocked.
+ * Prices are deterministic per (origin+destination+date) so the same search
+ * always returns the same fake results during testing.
+ */
+
+function deterministicSeed(s: string): number {
+  return s.split("").reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 0);
+}
+
+interface MockFlight {
+  price: number; currency: string; airline: string; isDirect: boolean;
+  departureTime: string; arrivalTime: string; duration: string;
+}
+interface MockHotel {
+  hotelId: number; name: string; rating: number; pricePerNight: number;
+  currency: string; bookingUrl: string; address: string; photoUrl?: string;
+}
+
+const AIRLINES = ["Ryanair", "EasyJet", "Vueling", "Lufthansa", "ITA Airways", "Wizz Air", "Transavia"];
+const HOTEL_PHOTOS = [
+  "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400",
+  "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400",
+  "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400",
+  "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400",
+  "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400",
+];
+
+function getMockFlights(origin: string, dest: string, date: string, adults: number): MockFlight[] {
+  const seed = deterministicSeed(`${origin}-${dest}-${date}`);
+  const basePrice = 59 + (seed % 180); // 59–239 € per person
+  const airline1 = AIRLINES[seed % AIRLINES.length];
+  const airline2 = AIRLINES[(seed + 2) % AIRLINES.length];
+  const airline3 = AIRLINES[(seed + 4) % AIRLINES.length];
+  const depH = 5 + (seed % 14); // 05:xx–18:xx
+  const durMin = 90 + (seed % 150); // 1h30–4h00
+  const arrMin = depH * 60 + (seed % 30) + durMin;
+  const fmt = (totalMin: number) =>
+    `${String(Math.floor(totalMin / 60) % 24).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
+  const dur = (m: number) => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
+  return [
+    {
+      price: basePrice * adults,
+      currency: "EUR", airline: airline1, isDirect: true,
+      departureTime: fmt(depH * 60 + (seed % 30)),
+      arrivalTime: fmt(arrMin),
+      duration: dur(durMin),
+    },
+    {
+      price: Math.round(basePrice * 1.35) * adults,
+      currency: "EUR", airline: airline2, isDirect: false,
+      departureTime: fmt((depH + 3) * 60 + (seed % 45)),
+      arrivalTime: fmt((depH + 3) * 60 + (seed % 45) + durMin + 55),
+      duration: dur(durMin + 55),
+    },
+    {
+      price: Math.round(basePrice * 1.7) * adults,
+      currency: "EUR", airline: airline3, isDirect: true,
+      departureTime: fmt((depH + 7) * 60 + 10),
+      arrivalTime: fmt((depH + 7) * 60 + 10 + durMin),
+      duration: dur(durMin),
+    },
+  ];
+}
+
+const CITY_HOTELS: Record<string, { name: string; stars: number; area: string }[]> = {
+  berlin:  [{ name: "Hotel Adlon Kempinski", stars: 5, area: "Mitte" }, { name: "Motel One Berlin-Alexanderplatz", stars: 3, area: "Alexanderplatz" }, { name: "25hours Hotel Bikini", stars: 4, area: "Zoo" }],
+  paris:   [{ name: "Hôtel du Louvre", stars: 4, area: "1st Arr." }, { name: "ibis Paris Gare du Nord", stars: 3, area: "10th Arr." }, { name: "Hôtel de la Paix", stars: 3, area: "Montmartre" }],
+  rome:    [{ name: "Hotel de Russie", stars: 5, area: "Piazza del Popolo" }, { name: "Generator Roma", stars: 3, area: "Trastevere" }, { name: "Palazzo Manfredi", stars: 5, area: "Colosseum" }],
+  london:  [{ name: "The Savoy", stars: 5, area: "Strand" }, { name: "Z Hotel Shoreditch", stars: 3, area: "Shoreditch" }, { name: "citizenM London Bankside", stars: 4, area: "South Bank" }],
+  barcelona: [{ name: "W Barcelona", stars: 5, area: "Barceloneta" }, { name: "Hotel Arts", stars: 5, area: "Port Olímpic" }, { name: "Catalonia Eixample", stars: 4, area: "Eixample" }],
+  amsterdam: [{ name: "Pulitzer Amsterdam", stars: 5, area: "Jordaan" }, { name: "The Student Hotel Amsterdam", stars: 3, area: "Westerpark" }, { name: "Park Hotel", stars: 4, area: "Leidseplein" }],
+  madrid:  [{ name: "Gran Meliá Palacio de los Duques", stars: 5, area: "Opera" }, { name: "Hotel Único Madrid", stars: 5, area: "Serrano" }, { name: "Room Mate Óscar", stars: 4, area: "Gran Vía" }],
+  vienna:  [{ name: "Hotel Sacher Wien", stars: 5, area: "Staatsoper" }, { name: "Ibis Wien Mariahilf", stars: 3, area: "6th District" }, { name: "Hotel Josefshof", stars: 4, area: "Josefstadt" }],
+  lisbon:  [{ name: "Bairro Alto Hotel", stars: 5, area: "Bairro Alto" }, { name: "Generator Hostel Lisboa", stars: 3, area: "Mouraria" }, { name: "Hotel Aviz", stars: 4, area: "Marquês de Pombal" }],
+  prague:  [{ name: "The Grand Mark Prague", stars: 5, area: "Old Town" }, { name: "Mosaic House Design Hotel", stars: 3, area: "Smíchov" }, { name: "Hotel Josef Prague", stars: 4, area: "Old Town" }],
+};
+
+function getMockHotels(destination: string, limit: number): MockHotel[] {
+  const key = destination.toLowerCase().split(/[\s,]+/)[0];
+  const seed = deterministicSeed(destination.toLowerCase());
+  const templates = CITY_HOTELS[key] ?? [
+    { name: `${destination} Grand Hotel`, stars: 4, area: "City Centre" },
+    { name: `${destination} Budget Inn`, stars: 2, area: "Near Station" },
+    { name: `${destination} Boutique Stay`, stars: 3, area: "Old Town" },
+  ];
+  return templates.slice(0, limit).map((t, i) => {
+    const basePrice = 55 + (seed % 120) + i * 30; // staggered pricing
+    return {
+      hotelId: (seed + i * 7) % 9_000_000 + 1_000_000,
+      name: t.name,
+      rating: Number((6.5 + (((seed + i) % 35) / 10)).toFixed(1)),
+      pricePerNight: basePrice,
+      currency: "EUR",
+      bookingUrl: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(destination)}`,
+      address: `${t.area}, ${destination}`,
+      photoUrl: HOTEL_PHOTOS[(seed + i) % HOTEL_PHOTOS.length],
+    };
+  });
+}
+
 router.get("/external/flights/search", async (req, res) => {
   const {
     origin,
@@ -160,6 +264,22 @@ router.get("/external/flights/by-route", async (req, res) => {
     }
   }
 
+  // Last-resort mock fallback: if both Amadeus and RapidAPI returned nothing
+  // (e.g. quota exhausted) and RapidAPI is configured, return deterministic
+  // demo data so the swipe deck stays testable. Never fires for hotels or
+  // Google endpoints — those have their own live sources.
+  if (flights.length === 0 && isRapidApiConfigured()) {
+    return res.json({
+      flights: getMockFlights(
+        origin.toUpperCase().slice(0, 3),
+        destination.toUpperCase().slice(0, 3),
+        departureDate.slice(0, 10),
+        Math.max(1, parseInt(adults, 10)),
+      ),
+      source: "mock",
+    });
+  }
+
   return res.json({ flights, source: "amadeus" });
 });
 
@@ -223,6 +343,15 @@ router.get("/external/hotels/by-destination", async (req, res) => {
         source: "rapidapi",
       });
     }
+  }
+
+  // Last-resort mock fallback for hotels (same rationale as flights above).
+  if (hotels.length === 0 && isRapidApiConfigured()) {
+    return res.json({
+      hotels: getMockHotels(destination, parseInt(limit, 10) || 5),
+      affiliateLink,
+      source: "mock",
+    });
   }
 
   return res.json({ hotels, affiliateLink, source: "booking" });
