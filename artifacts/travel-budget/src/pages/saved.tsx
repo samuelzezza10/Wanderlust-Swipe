@@ -45,9 +45,14 @@ export default function Saved() {
               <div className="flex flex-col sm:flex-row h-full">
                 <div className="w-full sm:w-48 h-48 sm:h-auto relative shrink-0">
                   <img
-                    src={`${basePath}${saved.imageUrl.startsWith("/") ? "" : "/"}${saved.imageUrl}`}
+                    src={
+                      saved.imageUrl?.startsWith("http")
+                        ? saved.imageUrl
+                        : `${basePath}${saved.imageUrl?.startsWith("/") ? "" : "/"}${saved.imageUrl ?? ""}`
+                    }
                     alt={saved.destination}
                     className="w-full h-full object-cover"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&q=80"; }}
                   />
                 </div>
                 <div className="p-6 flex-1 flex flex-col">

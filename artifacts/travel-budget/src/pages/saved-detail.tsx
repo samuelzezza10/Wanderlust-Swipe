@@ -72,9 +72,14 @@ export default function SavedDetail() {
     <div className="flex flex-col bg-background min-h-[100dvh]">
       <div className="relative h-64 md:h-96 shrink-0">
         <img
-          src={`${basePath}${savedTrip.imageUrl.startsWith("/") ? "" : "/"}${savedTrip.imageUrl}`}
+          src={
+            savedTrip.imageUrl?.startsWith("http")
+              ? savedTrip.imageUrl
+              : `${basePath}${savedTrip.imageUrl?.startsWith("/") ? "" : "/"}${savedTrip.imageUrl ?? ""}`
+          }
           alt={savedTrip.destination}
           className="w-full h-full object-cover"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&q=80"; }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/80" />
 

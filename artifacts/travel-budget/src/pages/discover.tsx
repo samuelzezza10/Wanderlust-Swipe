@@ -111,8 +111,9 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
       if (dest.includes(arrLocation) || arrLocation.includes(dest) ||
           country.includes(arrLocation) || arrLocation.includes(country)) return true;
       // Fuzzy prefix match — handles language variants: "barcellona" vs "barcelona"
-      // (common prefix of at least 6 chars covers almost all real city name pairs)
-      const prefixLen = Math.min(arrLocation.length, dest.length, 7);
+      // (common prefix of at least 6 chars covers almost all real city name pairs:
+      //  "barcel" == "barcel" ✓, "lisbon" == "lisbon" ✓)
+      const prefixLen = Math.min(arrLocation.length, dest.length, 6);
       if (prefixLen >= 5 && arrLocation.slice(0, prefixLen) === dest.slice(0, prefixLen)) return true;
       return false;
     });
@@ -236,8 +237,12 @@ const FALLBACK_TRIPS: TripSuggestion[] = [
   },
 ];
 
+const PLACEHOLDER_IMG = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=600&q=80";
+
 function getImgSrc(imageUrl: string) {
   const raw = imageUrl ?? "";
+  // External URL (Unsplash, CDN, etc.) — return as-is without prepending basePath
+  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
   const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
   const fixed = withSlash.replace(/\.(jpg|jpeg)$/i, ".png");
   return `${basePath}${fixed}`;
@@ -384,7 +389,7 @@ function ShareModal({
 
           {/* Trip preview */}
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-2xl mb-5">
-            <img src={getImgSrc(trip.imageUrl)} alt={trip.destination} className="w-14 h-14 rounded-xl object-cover shrink-0" />
+            <img src={getImgSrc(trip.imageUrl)} alt={trip.destination} className="w-14 h-14 rounded-xl object-cover shrink-0" onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
             <div className="min-w-0">
               <p className="font-bold text-sm">{trip.destination}</p>
               <p className="text-xs text-muted-foreground">{trip.country}</p>
@@ -636,7 +641,7 @@ function PreSearchState({
   );
 }
 
-const GUEST_SEARCH_LIMIT = 5;
+const GUEST_SEARCH_LIMIT = 100;
 
 /* ─── Main page ─────────────────────────────────────────────────────────── */
 export default function Discover() {
@@ -663,9 +668,20 @@ export default function Discover() {
     }
   });
   const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [guestCount, setGuestCount] = useState(() =>
-    parseInt(localStorage.getItem("guestSearchCount") ?? "0")
-  );
+  const [guestCount, setGuestCount] = useState(() => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const stored = localStorage.getItem("guestSearchDate");
+      if (stored !== today) {
+        localStorage.setItem("guestSearchDate", today);
+        localStorage.setItem("guestSearchCount", "0");
+        return 0;
+      }
+      return parseInt(localStorage.getItem("guestSearchCount") ?? "0");
+    } catch {
+      return 0;
+    }
+  });
   const [viewMode, setViewMode] = useState<"swipe" | "list">("swipe");
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreExhausted, setLoadMoreExhausted] = useState(false);
@@ -687,6 +703,8 @@ export default function Discover() {
 
   // ── Stores trips from BEFORE a new search starts so errors can restore them ──
   const prevTripsRef = useRef<TripSuggestion[]>([]);
+  // ── Stores the destination of the previous search (to avoid restoring wrong-city trips) ──
+  const prevSearchDestRef = useRef<string>("");
 
   // ── Debounce timer: prevents API spam from rapid filter applies ──────────
   const loadTripsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -826,7 +844,16 @@ export default function Discover() {
 
     // ── Freemium gate ──────────────────────────────────────────────
     if (!isSignedIn) {
-      const currentGuestCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0");
+      const today = new Date().toISOString().slice(0, 10);
+      let currentGuestCount = 0;
+      try {
+        if (localStorage.getItem("guestSearchDate") !== today) {
+          localStorage.setItem("guestSearchDate", today);
+          localStorage.setItem("guestSearchCount", "0");
+          setGuestCount(0);
+        }
+        currentGuestCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0");
+      } catch { /* storage unavailable — allow search */ }
       if (currentGuestCount >= GUEST_SEARCH_LIMIT) {
         setShowPremiumModal(true);
         return;
@@ -849,7 +876,9 @@ export default function Discover() {
     // ── Stamp this search so stale responses are discarded ────────
     const thisGen = ++searchGenRef.current;
     // Save current trips before clearing so errors can restore them
+    // (but only if they match the destination we're about to search, to avoid restoring wrong-city trips)
     prevTripsRef.current = trips;
+    prevSearchDestRef.current = (f.arrivalAirport || f.arrivalStation || "").toLowerCase().replace(/\s*\([^)]*\)/g, "").trim();
     // Clear stale results immediately — prevents old data surviving a trip-type switch
     setTrips([]);
     seenHotelNamesRef.current.clear();
@@ -1086,9 +1115,11 @@ export default function Discover() {
           }
           // Track guest searches / save to history
           if (!isSignedIn) {
-            const newCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0") + 1;
-            localStorage.setItem("guestSearchCount", String(newCount));
-            setGuestCount(newCount);
+            try {
+              const newCount = parseInt(localStorage.getItem("guestSearchCount") ?? "0") + 1;
+              localStorage.setItem("guestSearchCount", String(newCount));
+              setGuestCount(newCount);
+            } catch { /* storage unavailable */ }
           } else {
             refetchUsage();
             // Save search to history (fire-and-forget)
@@ -1112,20 +1143,29 @@ export default function Discover() {
         onError: (err: unknown) => {
           const status = (err as { status?: number })?.status ?? (err as { response?: { status?: number } })?.response?.status;
 
-          // Helper: restore previous trips if available; otherwise stay in pre-search
-          // state so the user sees the "choose destination" prompt and can retry.
-          // Never fall back to multi-city FALLBACK_TRIPS — they don't match the
-          // user's destination and cause the "wrong cities" bug.
+          // Helper: restore previous trips only if they are for the SAME destination
+          // we just searched. If the user searched a new city and it failed, show
+          // the pre-search prompt instead of the old (wrong) city's trips.
           const restoreTrips = () => {
             const prev = prevTripsRef.current;
-            if (prev.length > 0) {
-              setTrips(prev);
-              setCurrentIndex(0);
-              setHasSearched(true);
+            if (prev.length === 0) return;
+            const currentSearchDest = prevSearchDestRef.current;
+            const prevTripDest = (prev[0]?.destination ?? "").toLowerCase();
+            if (currentSearchDest && prevTripDest) {
+              const pLen = Math.min(currentSearchDest.length, prevTripDest.length, 6);
+              const sameDest =
+                (pLen >= 5 && currentSearchDest.slice(0, pLen) === prevTripDest.slice(0, pLen)) ||
+                currentSearchDest.includes(prevTripDest) ||
+                prevTripDest.includes(currentSearchDest);
+              if (!sameDest) return; // different city → show pre-search state
             }
-            // No prev trips → leave hasSearched=false so the pre-search state is shown
-            // (user can see the error toast and tap the CTA to retry)
+            setTrips(prev);
+            setCurrentIndex(0);
+            setHasSearched(true);
           };
+
+          // Detect network errors (server down, CORS, AbortError) — they have no HTTP status
+          const isNetworkError = !status && (err instanceof TypeError || (err as { name?: string })?.name === "AbortError" || (err as { name?: string })?.name === "TypeError");
 
           if (status === 403) {
             // Premium paywall — show modal, restore trips so deck isn't empty
@@ -1138,8 +1178,15 @@ export default function Discover() {
               duration: 6000,
             });
             restoreTrips();
+          } else if (isNetworkError) {
+            // Server unreachable — likely still starting up or offline
+            toast.error(t.discover.networkError ?? t.discover.searchError, {
+              description: t.discover.networkErrorHint ?? t.discover.searchErrorHint,
+              duration: 6000,
+            });
+            restoreTrips();
           } else {
-            // Any other error — show toast, restore trips, never crash
+            // Any other error (4xx/5xx) — show toast, restore same-city trips only
             toast.error(t.discover.searchError, {
               description: t.discover.searchErrorHint,
               duration: 5000,
@@ -1847,6 +1894,7 @@ function TripListCard({
             src={getImgSrc(trip.imageUrl)}
             alt={trip.destination}
             className="w-24 h-24 rounded-xl object-cover"
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG; }}
           />
           <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-sm rounded-lg px-1.5 py-0.5">
             <span className="text-white text-[10px] font-bold">{formatCurrency(totalForAll, lang)}</span>
@@ -1967,6 +2015,7 @@ function TripCard({
           src={getImgSrc(trip.imageUrl)}
           alt={trip.destination}
           className="w-full h-full object-cover pointer-events-none"
+          onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG; }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/85 pointer-events-none" />
 
@@ -2303,7 +2352,7 @@ function TripDetailSheet({
         {trip && (
           <>
             <div className="relative h-52 shrink-0">
-              <img src={getImgSrc(trip.imageUrl)} alt={trip.destination} className="w-full h-full object-cover" />
+              <img src={getImgSrc(trip.imageUrl)} alt={trip.destination} className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG; }} />
               <div className="absolute inset-0 bg-gradient-to-b from-black/20 to-black/75" />
               <div className="absolute bottom-4 left-5 right-5 text-white">
                 <div className="flex items-end justify-between">

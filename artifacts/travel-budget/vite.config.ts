@@ -14,7 +14,9 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss({ optimize: false }),
-    runtimeErrorOverlay(),
+    // Only inject the Replit error overlay in development — keep the
+    // production bundle clean for GitHub Pages / Cloudflare Pages exports.
+    ...(process.env.NODE_ENV !== "production" ? [runtimeErrorOverlay()] : []),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
