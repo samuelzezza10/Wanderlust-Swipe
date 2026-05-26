@@ -10,7 +10,13 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// max:1 keeps connection count low for serverless/edge environments (Vercel
+// functions, Supabase pgBouncer).  For long-running servers raise this value
+// via the DATABASE_POOL_MAX env var if needed.
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: Number(process.env.DATABASE_POOL_MAX ?? "1"),
+});
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
