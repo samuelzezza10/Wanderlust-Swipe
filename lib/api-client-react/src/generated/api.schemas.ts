@@ -228,6 +228,10 @@ export interface TransportOption {
   isDirect: boolean;
   departureTime?: string;
   arrivalTime?: string;
+  /** Number of stopovers (0 = direct) */
+  stops?: number;
+  /** IATA codes or city names of stopover airports */
+  stopCities?: string[];
 }
 
 export interface HotelOption {
@@ -239,6 +243,8 @@ export interface HotelOption {
   rating?: number;
   /** @nullable */
   imageUrl?: string | null;
+  /** Original price before discount — if provided and greater than pricePerNight a savings badge is shown */
+  originalPrice?: number;
 }
 
 export interface TripSuggestion {
