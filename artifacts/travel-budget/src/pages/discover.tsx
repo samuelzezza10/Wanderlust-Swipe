@@ -69,6 +69,7 @@ function generateTripVariations(baseTrips: TripSuggestion[], targetCount: number
     const isFlight = true;
     const company  = flightCos[vi % flightCos.length];
     const isDirect = (vi % 3) !== 1;
+    const stopCities = isDirect ? [] : [["MXP","CDG","MAD","FCO","AMS"][vi % 5]];
     const starsDelta = vi % 3 === 0 ? 1 : vi % 3 === 1 ? -1 : 0;
     const stars      = Math.max(1, Math.min(5, base.hotel.stars + starsDelta));
     const rating     = Math.min(9.8, Math.max(6.5, parseFloat(((base.hotel.rating ?? 8.0) + (vi%5-2)*0.15).toFixed(1))));
@@ -83,6 +84,8 @@ function generateTripVariations(baseTrips: TripSuggestion[], targetCount: number
         departureTime: dep,
         arrivalTime: arrTime,
         isDirect,
+        stops: isDirect ? 0 : 1,
+        stopCities: isDirect ? [] : stopCities,
         price: Math.round(base.transport.price * mult / 5) * 5,
       },
       hotel: {
@@ -304,7 +307,7 @@ const FALLBACK_TRIPS: TripSuggestion[] = [
     description: "Torre Eiffel, musei mondiali e cucina d'autore nella Ville Lumière.", tripType: "round_trip",
     highlights: ["Torre Eiffel", "Louvre", "Montmartre"], imageUrl: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=600&q=80",
     transport: { type: "flight", company: "Air France", price: 220, duration: "2h 10m", isDirect: true, departureTime: "07:15", arrivalTime: "09:25" },
-    hotel: { name: "Hotel Le Marais", stars: 4, pricePerNight: 134, distanceFromCenter: 0.8, rating: 8.7, amenities: ["WiFi", "Colazione", "Bar"] },
+    hotel: { name: "Hotel Le Marais", stars: 4, pricePerNight: 134, originalPrice: 169, distanceFromCenter: 0.8, rating: 8.7, amenities: ["WiFi", "Colazione", "Bar"] },
     returnTransport: { type: "flight", company: "Air France", price: 195, duration: "2h 05m", isDirect: true },
   },
   {
@@ -343,9 +346,9 @@ const FALLBACK_TRIPS: TripSuggestion[] = [
     id: "fb-7", destination: "Santorini", country: "Grecia", totalPrice: 1120, durationDays: 7,
     description: "Chiese con cupole blu e tramonti da leggenda nelle Cicladi greche.", tripType: "round_trip",
     highlights: ["Tramonto a Oia", "Tour della caldera", "Degustazione vini"], imageUrl: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&q=80",
-    transport: { type: "flight", company: "Aegean Airlines", price: 310, duration: "2h 50m", isDirect: false, departureTime: "09:00", arrivalTime: "13:45" },
-    hotel: { name: "Oia Sunset Villas", stars: 4, pricePerNight: 98, distanceFromCenter: 1.5, rating: 9.1, amenities: ["WiFi", "Piscina", "Vista caldera"] },
-    returnTransport: { type: "flight", company: "Aegean Airlines", price: 295, duration: "2h 45m", isDirect: false },
+    transport: { type: "flight", company: "Aegean Airlines", price: 310, duration: "2h 50m", isDirect: false, departureTime: "09:00", arrivalTime: "13:45", stops: 1, stopCities: ["ATH"] },
+    hotel: { name: "Oia Sunset Villas", stars: 4, pricePerNight: 98, originalPrice: 128, distanceFromCenter: 1.5, rating: 9.1, amenities: ["WiFi", "Piscina", "Vista caldera"] },
+    returnTransport: { type: "flight", company: "Aegean Airlines", price: 295, duration: "2h 45m", isDirect: false, stops: 1, stopCities: ["ATH"] },
   },
   {
     id: "fb-8", destination: "Praga", country: "Repubblica Ceca", totalPrice: 560, durationDays: 4,
@@ -2224,20 +2227,34 @@ function TripCard({
 
             {/* Outbound flight row */}
             <div className="flex gap-1.5 mb-1 flex-wrap">
+              {/* One-way / Round-trip badge */}
+              <div className="flex items-center gap-1 bg-sky-500/75 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold">
+                <span>{trip.tripType === "one_way" ? `→ ${t.filters.oneWay}` : `↕ ${t.filters.roundTrip}`}</span>
+              </div>
+              {/* Airline */}
               <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
                 <Plane className="w-3 h-3 shrink-0" />
                 <span className="truncate max-w-[72px]">{trip.transport.company}</span>
               </div>
-              <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.transport.isDirect ? "bg-green-500/70" : "bg-black/50"}`}>
+              {/* Direct / stops badge */}
+              <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.transport.isDirect ? "bg-green-500/70" : "bg-amber-500/70"}`}>
                 {trip.transport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
-                <span>{trip.transport.isDirect ? "Diretto" : "Scali"}</span>
+                <span>{trip.transport.isDirect ? t.tripDetail.direct : (trip.transport.stops ? `${trip.transport.stops} ${t.tripDetail.withStops}` : t.tripDetail.withStops)}</span>
               </div>
+              {/* Stop city chip */}
+              {!trip.transport.isDirect && trip.transport.stopCities && trip.transport.stopCities.length > 0 && (
+                <div className="flex items-center gap-1 bg-amber-400/55 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                  <span>Via {trip.transport.stopCities[0]}</span>
+                </div>
+              )}
+              {/* Times */}
               {trip.transport.departureTime && (
                 <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
                   <Clock className="w-3 h-3 shrink-0" />
                   <span>{trip.transport.departureTime}{trip.transport.arrivalTime ? ` → ${trip.transport.arrivalTime}` : ""}</span>
                 </div>
               )}
+              {/* Price */}
               <div className="flex items-center gap-1 bg-primary/70 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold">
                 <span>{formatCurrency(trip.transport.price, lang)}</span>
               </div>
@@ -2250,10 +2267,15 @@ function TripCard({
                   <RotateCcw className="w-3 h-3 shrink-0" />
                   <span className="truncate max-w-[72px]">{trip.returnTransport.company}</span>
                 </div>
-                <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.returnTransport.isDirect ? "bg-green-500/60" : "bg-black/40"}`}>
+                <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.returnTransport.isDirect ? "bg-green-500/60" : "bg-amber-500/60"}`}>
                   {trip.returnTransport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
-                  <span>{trip.returnTransport.isDirect ? "Diretto" : "Scali"}</span>
+                  <span>{trip.returnTransport.isDirect ? t.tripDetail.direct : (trip.returnTransport.stops ? `${trip.returnTransport.stops} ${t.tripDetail.withStops}` : t.tripDetail.withStops)}</span>
                 </div>
+                {!trip.returnTransport.isDirect && trip.returnTransport.stopCities && trip.returnTransport.stopCities.length > 0 && (
+                  <div className="flex items-center gap-1 bg-amber-400/45 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                    <span>Via {trip.returnTransport.stopCities[0]}</span>
+                  </div>
+                )}
                 {trip.returnTransport.departureTime && (
                   <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
                     <Clock className="w-3 h-3 shrink-0" />
@@ -2276,9 +2298,23 @@ function TripCard({
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
                 <span>{trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}</span>
               </div>
+              {trip.hotel.distanceFromCenter != null && (
+                <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
+                  <MapPin className="w-3 h-3 shrink-0" />
+                  <span>{formatDistance(trip.hotel.distanceFromCenter, lang)}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
+                {trip.hotel.originalPrice != null && trip.hotel.originalPrice > trip.hotel.pricePerNight && (
+                  <span className="line-through text-white/45 text-[10px] mr-0.5">{formatCurrency(trip.hotel.originalPrice, lang)}</span>
+                )}
                 <span>{formatCurrency(trip.hotel.pricePerNight, lang)}/n</span>
               </div>
+              {trip.hotel.originalPrice != null && trip.hotel.originalPrice > trip.hotel.pricePerNight && (
+                <div className="flex items-center gap-1 bg-red-500/85 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-white">
+                  <span>-{Math.round((1 - trip.hotel.pricePerNight / trip.hotel.originalPrice) * 100)}% OFF</span>
+                </div>
+              )}
             </div>
 
             {/* Totale row */}
@@ -2341,9 +2377,11 @@ function TransportBlock({ label, transport, t, lang }: { label?: string; transpo
     <div>
       {label && <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{label}</p>}
       <div className="space-y-2 text-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <span className="font-semibold">{transport.company}</span>
-          <span className="text-xs text-muted-foreground">{transport.isDirect ? t.tripDetail.direct : t.tripDetail.withStops}</span>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${transport.isDirect ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"}`}>
+            {transport.isDirect ? t.tripDetail.direct : (transport.stops ? `${transport.stops} ${t.tripDetail.withStops}` : t.tripDetail.withStops)}
+          </span>
         </div>
         <div className="flex items-center">
           <div className="text-center min-w-[56px]">
@@ -2362,6 +2400,16 @@ function TransportBlock({ label, transport, t, lang }: { label?: string; transpo
             <p className="font-bold text-base">{transport.arrivalTime}</p>
           </div>
         </div>
+        {/* Stop cities */}
+        {!transport.isDirect && transport.stopCities && transport.stopCities.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-0.5">
+            {transport.stopCities.map((city, i) => (
+              <span key={i} className="text-xs bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700/40 dark:text-amber-300 rounded-full px-2.5 py-0.5 font-medium">
+                Via {city}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
