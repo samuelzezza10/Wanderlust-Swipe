@@ -15,7 +15,7 @@ import {
   Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, ExternalLink, Dice6,
   Crown, Zap, Sparkles, RefreshCw, Lightbulb, ChevronLeft, ChevronRight,
-  LayoutList, Layers, Users, Euro,
+  LayoutList, Layers, Users, Euro, AlertCircle,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -124,8 +124,15 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
     // If zero exact matches → keep ALL trips as alternatives (never empty)
   }
 
-  // ── STEP 2: All secondary filters are SOFT (never reduce to 0) ──────────
-  // Budget: demo mode — always show all trips regardless of price
+  // ── STEP 2: Budget is HARD — exclude trips where flight + hotel*nights
+  // (multiplied by travellers) exceeds the user budget. Safety net at STEP 4
+  // ensures we never render an empty deck, but the UI marks any survivor that
+  // still busts the budget with a red "Sfora Budget" badge so the user knows.
+  if (f.budget > 0) {
+    const people = Math.max(1, f.numberOfPeople ?? 1);
+    const t2 = out.filter((t) => tripTotalForParty(t, people) <= f.budget);
+    if (t2.length > 0) out = t2;
+  }
 
   // Flight preference (soft)
   if (f.flightPreference === "direct") {
@@ -167,6 +174,74 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
   if (out.length === 0) out = [...trips];
 
   return out.slice(0, 20);
+}
+
+/* ─── Budget helpers — single source of truth for cost & over-budget state ── */
+function tripTotalForParty(trip: TripSuggestion, numberOfPeople: number): number {
+  // trip.totalPrice already represents per-person cost (flight + hotel share),
+  // multiply by travellers for the party total the user actually pays.
+  return Math.round((trip.totalPrice ?? 0) * Math.max(1, numberOfPeople));
+}
+
+function budgetState(spent: number, budget: number): {
+  ratio: number;
+  status: "ok" | "warning" | "over";
+  barClass: string;
+  textClass: string;
+} {
+  if (!budget || budget <= 0) {
+    return { ratio: 0, status: "ok", barClass: "bg-emerald-500", textClass: "text-emerald-300" };
+  }
+  const ratio = spent / budget;
+  if (ratio > 1) {
+    return { ratio, status: "over", barClass: "bg-red-500", textClass: "text-red-300" };
+  }
+  if (ratio >= 0.85) {
+    return { ratio, status: "warning", barClass: "bg-amber-400", textClass: "text-amber-300" };
+  }
+  return { ratio, status: "ok", barClass: "bg-emerald-500", textClass: "text-emerald-300" };
+}
+
+/* ─── Budget meter — slim progress bar with live spent/max counter ──────── */
+function BudgetMeter({
+  spent, budget, lang, variant = "dark",
+}: {
+  spent: number;
+  budget: number;
+  lang: string;
+  variant?: "dark" | "light";
+}) {
+  if (!budget || budget <= 0) return null;
+  const { ratio, status, barClass } = budgetState(spent, budget);
+  const fillPct = Math.min(100, Math.max(2, Math.round(ratio * 100)));
+  const trackBg = variant === "dark" ? "bg-white/15" : "bg-zinc-200";
+  const labelClr = variant === "dark" ? "text-white/85" : "text-zinc-700";
+  const subClr = variant === "dark" ? "text-white/55" : "text-zinc-500";
+
+  return (
+    <div className="w-full select-none pointer-events-none">
+      <div className="flex items-baseline justify-between mb-1">
+        <span className={`text-[10px] font-semibold tracking-wide ${labelClr}`}>
+          {formatCurrency(spent, lang)}
+          <span className={`mx-1 ${subClr}`}>/</span>
+          <span className={subClr}>{formatCurrency(budget, lang)} max</span>
+        </span>
+        {status === "over" && (
+          <span className="text-[9px] font-bold uppercase tracking-wider text-red-400">
+            sfora budget
+          </span>
+        )}
+      </div>
+      <div className={`h-1.5 w-full rounded-full overflow-hidden ${trackBg}`}>
+        <motion.div
+          className={`h-full rounded-full ${barClass}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${fillPct}%` }}
+          transition={{ duration: 0.45, ease: "easeOut" }}
+        />
+      </div>
+    </div>
+  );
 }
 
 /* ─── Fallback trips shown when the API is unavailable ─────────────────── */
@@ -1314,6 +1389,15 @@ export default function Discover() {
     if (currentIndex >= trips.length) return;
     const trip = trips[currentIndex];
     if (direction === "right") {
+      // Hard-block saving trips that bust the user's budget — with a clear
+      // micro-feedback toast so the user understands why the swipe didn't stick.
+      const partyTotal = tripTotalForParty(trip, filters.numberOfPeople ?? 1);
+      if (filters.budget > 0 && partyTotal > filters.budget) {
+        toast.error("Sfora il budget — non puoi salvarlo", {
+          description: `${formatCurrency(partyTotal, lang)} su ${formatCurrency(filters.budget, lang)} max`,
+        });
+        return; // do NOT advance the deck — let the user undo/skip explicitly
+      }
       if (isSignedIn) {
         saveTrip.mutate({ data: { tripData: trip, destination: trip.destination, totalPrice: trip.totalPrice, imageUrl: trip.imageUrl } });
         addNotification(t.notifications.tripSaved, "trip_saved");
@@ -1884,13 +1968,16 @@ function TripListCard({
   onInfo: () => void;
 }) {
   const totalForAll = trip.totalPrice * numberOfPeople;
+  const isOverBudget = !!budget && budget > 0 && totalForAll > budget;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.25 }}
-      className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden"
+      className={`bg-white/10 backdrop-blur-sm border rounded-2xl overflow-hidden ${
+        isOverBudget ? "border-red-400/60" : "border-white/20"
+      }`}
     >
       <div className="flex gap-3 p-3">
         {/* Thumbnail */}
@@ -1901,9 +1988,16 @@ function TripListCard({
             className="w-24 h-24 rounded-xl object-cover"
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG; }}
           />
-          <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-sm rounded-lg px-1.5 py-0.5">
+          <div className={`absolute bottom-1 left-1 backdrop-blur-sm rounded-lg px-1.5 py-0.5 ${
+            isOverBudget ? "bg-red-500/90" : "bg-black/60"
+          }`}>
             <span className="text-white text-[10px] font-bold">{formatCurrency(totalForAll, lang)}</span>
           </div>
+          {isOverBudget && (
+            <div className="absolute top-1 left-1 bg-red-500/95 backdrop-blur-sm rounded-md px-1 py-0.5 pointer-events-none">
+              <AlertCircle className="w-3 h-3 text-white" />
+            </div>
+          )}
         </div>
 
         {/* Info */}
@@ -1936,6 +2030,13 @@ function TripListCard({
             </div>
 
             <p className="text-white/50 text-[11px] truncate">{trip.hotel.name} · {trip.durationDays}n</p>
+
+            {/* Budget meter for list view */}
+            {!!budget && budget > 0 && (
+              <div className="mt-1.5">
+                <BudgetMeter spent={totalForAll} budget={budget} lang={lang} variant="dark" />
+              </div>
+            )}
           </div>
 
           {/* Action buttons */}
@@ -1948,9 +2049,19 @@ function TripListCard({
             </button>
             <button
               onClick={onSave}
-              className="flex-1 h-8 rounded-xl bg-green-500/80 hover:bg-green-500 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+              disabled={isOverBudget}
+              title={isOverBudget ? "Questo viaggio supera il budget" : undefined}
+              className={`flex-1 h-8 rounded-xl text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
+                isOverBudget
+                  ? "bg-red-500/70 cursor-not-allowed opacity-80"
+                  : "bg-green-500/80 hover:bg-green-500"
+              }`}
             >
-              <Check className="w-3.5 h-3.5" /> {t.tripDetail.saveTrip}
+              {isOverBudget ? (
+                <><AlertCircle className="w-3.5 h-3.5" /> Sfora budget</>
+              ) : (
+                <><Check className="w-3.5 h-3.5" /> {t.tripDetail.saveTrip}</>
+              )}
             </button>
           </div>
         </div>
@@ -1988,6 +2099,7 @@ function TripCard({
   const roundTripTransport = trip.transport.price + (trip.returnTransport?.price ?? 0);
   // Total for ALL people (trip.totalPrice is per person)
   const totalForAll = (numberOfPeople ?? 1) * trip.totalPrice;
+  const isOverBudget = !!budget && budget > 0 && totalForAll > budget;
   const savings = budget && budget > 0 ? budget - totalForAll : 0;
   const savingsMsg = savings > 10
     ? t.fun.savingsMessages[trip.id.charCodeAt(trip.id.length - 1) % t.fun.savingsMessages.length]
@@ -2134,20 +2246,53 @@ function TripCard({
               </p>
               <div className="text-right shrink-0">
                 <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
-                <p className="text-2xl font-black">{formatCurrency(totalForAll, lang)}</p>
+                <p className={`text-2xl font-black ${isOverBudget ? "text-red-300" : ""}`}>
+                  {formatCurrency(totalForAll, lang)}
+                </p>
               </div>
             </div>
+
+            {/* Budget meter — slim progress bar with live spent/max counter */}
+            {!!budget && budget > 0 && (
+              <div className="mt-2">
+                <BudgetMeter spent={totalForAll} budget={budget} lang={lang} variant="dark" />
+              </div>
+            )}
           </div>
+
+          {/* Fixed red "Sfora Budget" badge — top-left, only when over budget */}
+          {isOverBudget && (
+            <div className="absolute top-4 left-4 z-10 pointer-events-none">
+              <div className="flex items-center gap-1 bg-red-500/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-lg">
+                <AlertCircle className="w-3 h-3" />
+                Sfora budget
+              </div>
+            </div>
+          )}
 
           {/* ── Prenota CTA — pointer-events-auto overrides parent none ── */}
           {isTop && (
             <div className="px-4 pb-4 pt-1">
               <button
                 onClick={(e) => { e.stopPropagation(); onInfo(); }}
-                className="pointer-events-auto w-full bg-white text-primary font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-white/90 active:scale-95 transition-all shadow-lg"
+                disabled={isOverBudget}
+                className={`pointer-events-auto w-full font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg ${
+                  isOverBudget
+                    ? "bg-red-500/80 text-white cursor-not-allowed opacity-90"
+                    : "bg-white text-primary hover:bg-white/90"
+                }`}
               >
-                <ExternalLink className="w-4 h-4" />
-                Prenota ora
+                {isOverBudget ? (
+                  <>
+                    <AlertCircle className="w-4 h-4" />
+                    Fuori dal budget
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="w-4 h-4" />
+                    Prenota ora
+                  </>
+                )}
               </button>
             </div>
           )}
