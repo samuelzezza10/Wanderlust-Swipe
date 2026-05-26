@@ -69,21 +69,49 @@ export async function diagnoseRapidApi(): Promise<{
 /* ── Low-level fetch ────────────────────────────────────────────────────── */
 
 /**
- * In-memory TTL cache. Booking-com15's free tier is ~100 req/month, and a
- * single user search burns 4 calls (resolve from + resolve to + searchFlights
- * + searchHotels via searchDestination). Caching identical queries for 1h
- * lets multiple users searching the same route share the same upstream call
- * and survives bursts of HMR-driven repeats during development.
+ * In-memory TTL cache, tiered by data volatility to mirror what large OTAs
+ * (Skyscanner, Booking) ship in production:
  *
- * Cached entries for negative results (null) get a much shorter TTL so we
- * don't lock in a transient 429 / 403 for a full hour.
+ *   FLIGHT   — 10 minutes. Prices & seat availability move on a minutes scale.
+ *   HOTEL    — 30 minutes. Room inventory turns over more slowly than flights.
+ *   STATIC   — 24 hours. Airport IATA codes & city dest_ids essentially never
+ *              change; caching them aggressively saves the bulk of our quota
+ *              (every flight or hotel search resolves 1-2 destinations first).
+ *
+ * Negative results (null) get a much shorter TTL so a transient 429/403
+ * doesn't lock a route out for the full positive TTL.
+ *
+ * Cache key = `path + sorted query params` — so e.g.
+ *   /api/v1/flights/searchFlights?fromId=ROM&toId=PAR&departDate=2026-07-15&adults=2
+ * is one key per (origin, destination, date, passengers) tuple, exactly as
+ * requested. Two users searching the same trip share the same cached entry.
  */
-const RAPID_CACHE_TTL_MS = 60 * 60 * 1000; // 1h for successful hits
-const RAPID_CACHE_NEG_TTL_MS = 60 * 1000; // 60s for null/failure responses
+export const CACHE_TTL = {
+  FLIGHT: 10 * 60 * 1000, // 10 min — Skyscanner-equivalent for live flight pricing
+  HOTEL: 30 * 60 * 1000, // 30 min — Booking-equivalent for room availability
+  STATIC: 24 * 60 * 60 * 1000, // 24 h — airport / city autocomplete
+  NEG: 60 * 1000, // 60 s — transient failure cooldown
+} as const;
+
 type CacheEntry = { value: unknown; expiresAt: number };
 const rapidCache = new Map<string, CacheEntry>();
 
-async function rapidGet<T = unknown>(path: string, query: Record<string, string | number | undefined>): Promise<T | null> {
+/**
+ * Build the canonical cache key. Sorts params alphabetically so that two
+ * callers passing the same logical query in different key orders share the
+ * same cache slot.
+ */
+function buildCacheKey(path: string, params: URLSearchParams): string {
+  const sorted = new URLSearchParams();
+  [...params.keys()].sort().forEach((k) => sorted.set(k, params.get(k)!));
+  return `${path}?${sorted.toString()}`;
+}
+
+async function rapidGet<T = unknown>(
+  path: string,
+  query: Record<string, string | number | undefined>,
+  ttlMs: number,
+): Promise<T | null> {
   if (!RAPIDAPI_KEY) {
     logger.warn("RAPIDAPI_KEY not set — skipping RapidAPI call");
     return null;
@@ -92,7 +120,7 @@ async function rapidGet<T = unknown>(path: string, query: Record<string, string 
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
   }
-  const cacheKey = `${path}?${params.toString()}`;
+  const cacheKey = buildCacheKey(path, params);
   const cached = rapidCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.value as T | null;
@@ -109,15 +137,15 @@ async function rapidGet<T = unknown>(path: string, query: Record<string, string 
     });
     if (!resp.ok) {
       logger.warn({ status: resp.status, path }, "RapidAPI request failed");
-      rapidCache.set(cacheKey, { value: null, expiresAt: Date.now() + RAPID_CACHE_NEG_TTL_MS });
+      rapidCache.set(cacheKey, { value: null, expiresAt: Date.now() + CACHE_TTL.NEG });
       return null;
     }
     const json = (await resp.json()) as T;
-    rapidCache.set(cacheKey, { value: json, expiresAt: Date.now() + RAPID_CACHE_TTL_MS });
+    rapidCache.set(cacheKey, { value: json, expiresAt: Date.now() + ttlMs });
     return json;
   } catch (err) {
     logger.error({ err, path }, "RapidAPI request error");
-    rapidCache.set(cacheKey, { value: null, expiresAt: Date.now() + RAPID_CACHE_NEG_TTL_MS });
+    rapidCache.set(cacheKey, { value: null, expiresAt: Date.now() + CACHE_TTL.NEG });
     return null;
   }
 }
@@ -136,18 +164,22 @@ interface RapidDestination {
 }
 
 async function resolveFlightAirport(query: string): Promise<string | null> {
+  // STATIC TTL: airport IATA codes are essentially immutable.
   const data = await rapidGet<{ data?: RapidDestination[] }>(
     "/api/v1/flights/searchDestination",
-    { query }
+    { query },
+    CACHE_TTL.STATIC,
   );
   const first = data?.data?.[0];
   return first?.id ?? first?.code ?? null;
 }
 
 async function resolveHotelDestId(query: string): Promise<string | null> {
+  // STATIC TTL: city dest_ids on Booking change extremely rarely.
   const data = await rapidGet<{ data?: RapidDestination[] }>(
     "/api/v1/hotels/searchDestination",
-    { query }
+    { query },
+    CACHE_TTL.STATIC,
   );
   const first = data?.data?.[0];
   return first?.dest_id ?? first?.id ?? null;
@@ -198,6 +230,7 @@ export async function searchFlightsRapid(params: {
     return [];
   }
 
+  // FLIGHT TTL (10 min): prices & seat counts move on a minutes scale.
   const data = await rapidGet<{ data?: { flightOffers?: RawFlightOffer[] } }>(
     "/api/v1/flights/searchFlights",
     {
@@ -208,7 +241,8 @@ export async function searchFlightsRapid(params: {
       adults: params.adults ?? 1,
       currency_code: "EUR",
       sort: "BEST",
-    }
+    },
+    CACHE_TTL.FLIGHT,
   );
 
   const offers = data?.data?.flightOffers ?? [];
@@ -289,6 +323,7 @@ export async function searchHotelsRapid(params: {
     )
   );
 
+  // HOTEL TTL (30 min): room inventory turns over more slowly than flights.
   const data = await rapidGet<{ data?: { hotels?: RawHotelHit[] } }>(
     "/api/v1/hotels/searchHotels",
     {
@@ -300,7 +335,8 @@ export async function searchHotelsRapid(params: {
       room_qty: params.rooms ?? 1,
       page_number: 1,
       currency_code: "EUR",
-    }
+    },
+    CACHE_TTL.HOTEL,
   );
 
   const hits = data?.data?.hotels ?? [];
