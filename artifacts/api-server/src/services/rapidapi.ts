@@ -231,27 +231,33 @@ export async function searchHotelsRapid(params: {
   );
 
   const hits = data?.data?.hotels ?? [];
-  const normalized: RapidHotelResult[] = hits.map((h) => {
+  // Compute exact (un-rounded) per-night cost for budget comparison, then
+  // round only for display — rounding before comparison can admit a hotel
+  // that's actually 150.4€/night under a 150€/night cap.
+  const enriched = hits.map((h) => {
     const p = h.property ?? {};
     const totalPrice = p.priceBreakdown?.grossPrice?.value ?? 0;
-    const pricePerNight = nights > 0 ? Math.round(totalPrice / nights) : Math.round(totalPrice);
+    const exactPerNight = nights > 0 ? totalPrice / nights : totalPrice;
     const hotelId = String(h.hotel_id ?? p.id ?? "");
     return {
-      hotelId,
-      name: p.name ?? p.wishlistName ?? "",
-      rating: Number((p.reviewScore ?? 0).toFixed(1)),
-      pricePerNight,
-      currency: p.priceBreakdown?.grossPrice?.currency ?? "EUR",
-      bookingUrl: hotelId
-        ? `https://www.booking.com/hotel/${hotelId}.html`
-        : `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(params.destination)}`,
-      address: "",
-      photoUrl: p.photoUrls?.[0],
+      exactPerNight,
+      result: {
+        hotelId,
+        name: p.name ?? p.wishlistName ?? "",
+        rating: Number((p.reviewScore ?? 0).toFixed(1)),
+        pricePerNight: Math.round(exactPerNight),
+        currency: p.priceBreakdown?.grossPrice?.currency ?? "EUR",
+        bookingUrl: hotelId
+          ? `https://www.booking.com/hotel/${hotelId}.html`
+          : `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(params.destination)}`,
+        address: "",
+        photoUrl: p.photoUrls?.[0],
+      } satisfies RapidHotelResult,
     };
   });
 
-  if (params.maxPricePerNight && params.maxPricePerNight > 0) {
-    return normalized.filter((h) => h.pricePerNight > 0 && h.pricePerNight <= params.maxPricePerNight!);
-  }
-  return normalized.filter((h) => h.pricePerNight > 0);
+  const cap = params.maxPricePerNight;
+  return enriched
+    .filter((h) => h.exactPerNight > 0 && (cap === undefined || h.exactPerNight <= cap))
+    .map((h) => h.result);
 }
