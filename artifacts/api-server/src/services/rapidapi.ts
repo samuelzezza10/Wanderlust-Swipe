@@ -18,7 +18,70 @@ export function isRapidApiConfigured(): boolean {
   return RAPIDAPI_KEY.length > 0;
 }
 
+/**
+ * Diagnostic helper — pings searchDestination and returns the raw upstream
+ * status + the host header we used. Lets us tell at a glance whether the
+ * RAPIDAPI_HOST env matches what the subscribed plan expects, without ever
+ * exposing the key itself.
+ */
+export async function diagnoseRapidApi(): Promise<{
+  host: string;
+  keySet: boolean;
+  flightsStatus: number | null;
+  hotelsStatus: number | null;
+  flightsBody?: string;
+  hotelsBody?: string;
+}> {
+  if (!RAPIDAPI_KEY) {
+    return { host: RAPIDAPI_HOST, keySet: false, flightsStatus: null, hotelsStatus: null };
+  }
+  const ping = async (path: string) => {
+    try {
+      const r = await fetch(`https://${RAPIDAPI_HOST}${path}?query=Rome`, {
+        headers: {
+          "X-RapidAPI-Key": RAPIDAPI_KEY,
+          "X-RapidAPI-Host": RAPIDAPI_HOST,
+          Accept: "application/json",
+        },
+      });
+      const body = await r.text();
+      // Truncate body so we don't dump full payloads, but keep enough to
+      // see the upstream error message (e.g. "You are not subscribed…").
+      return { status: r.status, body: body.slice(0, 200) };
+    } catch {
+      return { status: 0, body: "fetch threw" };
+    }
+  };
+  const [f, h] = await Promise.all([
+    ping("/api/v1/flights/searchDestination"),
+    ping("/api/v1/hotels/searchDestination"),
+  ]);
+  return {
+    host: RAPIDAPI_HOST,
+    keySet: true,
+    flightsStatus: f.status,
+    hotelsStatus: h.status,
+    flightsBody: f.body,
+    hotelsBody: h.body,
+  };
+}
+
 /* ── Low-level fetch ────────────────────────────────────────────────────── */
+
+/**
+ * In-memory TTL cache. Booking-com15's free tier is ~100 req/month, and a
+ * single user search burns 4 calls (resolve from + resolve to + searchFlights
+ * + searchHotels via searchDestination). Caching identical queries for 1h
+ * lets multiple users searching the same route share the same upstream call
+ * and survives bursts of HMR-driven repeats during development.
+ *
+ * Cached entries for negative results (null) get a much shorter TTL so we
+ * don't lock in a transient 429 / 403 for a full hour.
+ */
+const RAPID_CACHE_TTL_MS = 60 * 60 * 1000; // 1h for successful hits
+const RAPID_CACHE_NEG_TTL_MS = 60 * 1000; // 60s for null/failure responses
+type CacheEntry = { value: unknown; expiresAt: number };
+const rapidCache = new Map<string, CacheEntry>();
 
 async function rapidGet<T = unknown>(path: string, query: Record<string, string | number | undefined>): Promise<T | null> {
   if (!RAPIDAPI_KEY) {
@@ -29,6 +92,12 @@ async function rapidGet<T = unknown>(path: string, query: Record<string, string 
   for (const [k, v] of Object.entries(query)) {
     if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
   }
+  const cacheKey = `${path}?${params.toString()}`;
+  const cached = rapidCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value as T | null;
+  }
+
   const url = `https://${RAPIDAPI_HOST}${path}?${params.toString()}`;
   try {
     const resp = await fetch(url, {
@@ -40,11 +109,15 @@ async function rapidGet<T = unknown>(path: string, query: Record<string, string 
     });
     if (!resp.ok) {
       logger.warn({ status: resp.status, path }, "RapidAPI request failed");
+      rapidCache.set(cacheKey, { value: null, expiresAt: Date.now() + RAPID_CACHE_NEG_TTL_MS });
       return null;
     }
-    return (await resp.json()) as T;
+    const json = (await resp.json()) as T;
+    rapidCache.set(cacheKey, { value: json, expiresAt: Date.now() + RAPID_CACHE_TTL_MS });
+    return json;
   } catch (err) {
     logger.error({ err, path }, "RapidAPI request error");
+    rapidCache.set(cacheKey, { value: null, expiresAt: Date.now() + RAPID_CACHE_NEG_TTL_MS });
     return null;
   }
 }
