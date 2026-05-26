@@ -3,6 +3,7 @@ import { searchFlights as amadeusFlights, searchAirportsCities } from "../servic
 import { searchFlightPrices } from "../services/skyscanner";
 import { searchHotels, searchHotelsByDestination, buildBookingAffiliateLink } from "../services/booking";
 import {
+  diagnoseRapidApi,
   isRapidApiConfigured,
   searchFlightsRapid,
   searchHotelsRapid,
@@ -132,7 +133,34 @@ router.get("/external/flights/by-route", async (req, res) => {
     };
   });
 
-  return res.json({ flights });
+  // Fallback to RapidAPI Booking when Amadeus returns nothing AND RapidAPI is
+  // configured. Keeps the client contract identical — same FlightEnrichResult
+  // shape, same wrapper { flights: [...] } — so no client change needed.
+  if (flights.length === 0 && isRapidApiConfigured()) {
+    const rapid = await searchFlightsRapid({
+      origin:      origin.toUpperCase().slice(0, 3),
+      destination: destination.toUpperCase().slice(0, 3),
+      departDate:  departureDate.slice(0, 10),
+      returnDate:  returnDate ? returnDate.slice(0, 10) : undefined,
+      adults:      Math.max(1, parseInt(adults, 10)),
+    });
+    if (rapid.length > 0) {
+      return res.json({
+        flights: rapid.map((r) => ({
+          price:         r.price,
+          currency:      r.currency,
+          airline:       r.airline,
+          isDirect:      r.isDirect,
+          departureTime: r.departureTime,
+          arrivalTime:   r.arrivalTime,
+          duration:      r.duration,
+        })),
+        source: "rapidapi",
+      });
+    }
+  }
+
+  return res.json({ flights, source: "amadeus" });
 });
 
 router.get("/external/hotels/by-destination", async (req, res) => {
@@ -166,7 +194,38 @@ router.get("/external/hotels/by-destination", async (req, res) => {
     rooms: parseInt(rooms, 10),
   });
 
-  return res.json({ hotels, affiliateLink });
+  // Fallback to RapidAPI Booking when the official Booking pipeline returns
+  // nothing AND RapidAPI is configured. RapidHotelResult has hotelId:string;
+  // the client's BookingHotelResult expects hotelId:number — convert by
+  // parsing (booking.com hotel IDs are numeric) with a 0 fallback so the
+  // shape never breaks even on malformed upstream rows.
+  if (hotels.length === 0 && isRapidApiConfigured()) {
+    const rapid = await searchHotelsRapid({
+      destination,
+      checkin,
+      checkout,
+      adults: parseInt(adults, 10),
+      rooms: parseInt(rooms, 10),
+    });
+    if (rapid.length > 0) {
+      return res.json({
+        hotels: rapid.slice(0, parseInt(limit, 10)).map((h) => ({
+          hotelId:       Number(h.hotelId) || 0,
+          name:          h.name,
+          rating:        h.rating,
+          pricePerNight: h.pricePerNight,
+          currency:      h.currency,
+          bookingUrl:    h.bookingUrl,
+          address:       h.address,
+          photoUrl:      h.photoUrl,
+        })),
+        affiliateLink,
+        source: "rapidapi",
+      });
+    }
+  }
+
+  return res.json({ hotels, affiliateLink, source: "booking" });
 });
 
 /**
@@ -174,6 +233,18 @@ router.get("/external/hotels/by-destination", async (req, res) => {
  * Client passes max party total; we drop any offer that busts it BEFORE
  * sending results to the browser so the swipe deck can't show busts.
  */
+/**
+ * Diagnostic endpoint — reveals whether the upstream is reachable with the
+ * current key+host pair. Returns the host (safe), key-set flag, and the
+ * upstream HTTP status + a truncated error body so we can tell at a glance
+ * if it's a wrong-host (404), wrong-subscription (403), or rate-limit (429).
+ * Never returns the key itself.
+ */
+router.get("/external/rapid/_diag", async (_req, res) => {
+  const result = await diagnoseRapidApi();
+  return res.json(result);
+});
+
 router.get("/external/rapid/flights", async (req, res) => {
   const {
     origin,
