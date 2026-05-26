@@ -176,6 +176,51 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
   return out.slice(0, 20);
 }
 
+/* ─── Google Maps embed — separate component so it doesn't re-render the sheet ── */
+function TripMapSection({ destination, country }: { destination: string; country?: string }) {
+  const apiKey = (import.meta.env.VITE_GOOGLE_API_KEY as string | undefined) ?? "";
+  const place = country ? `${destination}, ${country}` : destination;
+  const query = encodeURIComponent(place);
+
+  // Fallback to a public Google Maps search link when no key is configured —
+  // never render a broken iframe that would just show a Google error page.
+  if (!apiKey) {
+    return (
+      <section className="bg-muted/40 rounded-2xl p-4">
+        <p className="font-bold text-base mb-2 flex items-center gap-2">
+          <MapPin className="w-4 h-4 text-primary" />
+          {destination}
+        </p>
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${query}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-primary font-semibold flex items-center gap-1.5 hover:underline"
+        >
+          Apri su Google Maps <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-2xl overflow-hidden border border-border/50">
+      <div className="bg-muted/40 px-4 py-3 flex items-center gap-2">
+        <MapPin className="w-4 h-4 text-primary" />
+        <p className="font-bold text-sm">{place}</p>
+      </div>
+      <iframe
+        title={`Mappa di ${destination}`}
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+        src={`https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${query}&zoom=11`}
+        className="w-full h-56 border-0 block"
+        allowFullScreen
+      />
+    </section>
+  );
+}
+
 /* ─── Budget helpers — single source of truth for cost & over-budget state ── */
 function tripTotalForParty(trip: TripSuggestion, numberOfPeople: number): number {
   // trip.totalPrice already represents per-person cost (flight + hotel share),
@@ -2638,6 +2683,9 @@ function TripDetailSheet({
                 adults={numberOfPeople ?? 1}
                 basePath={basePath}
               />
+
+              {/* Google Maps embed — uses VITE_GOOGLE_API_KEY (public Maps key, safe in client). */}
+              <TripMapSection destination={trip.destination} country={trip.country} />
 
               {/* Booking links */}
               <section className="bg-muted/40 rounded-2xl p-4">
