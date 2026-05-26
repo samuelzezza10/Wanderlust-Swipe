@@ -1967,7 +1967,7 @@ function TripListCard({
   onSave: () => void;
   onInfo: () => void;
 }) {
-  const totalForAll = trip.totalPrice * numberOfPeople;
+  const totalForAll = tripTotalForParty(trip, numberOfPeople);
   const isOverBudget = !!budget && budget > 0 && totalForAll > budget;
 
   return (
@@ -2097,8 +2097,8 @@ function TripCard({
   const nopeOpacity = useTransform(x, [0, -100], [0, 1]);
 
   const roundTripTransport = trip.transport.price + (trip.returnTransport?.price ?? 0);
-  // Total for ALL people (trip.totalPrice is per person)
-  const totalForAll = (numberOfPeople ?? 1) * trip.totalPrice;
+  // Total for ALL people — single source of truth shared with filter + swipe logic
+  const totalForAll = tripTotalForParty(trip, numberOfPeople ?? 1);
   const isOverBudget = !!budget && budget > 0 && totalForAll > budget;
   const savings = budget && budget > 0 ? budget - totalForAll : 0;
   const savingsMsg = savings > 10
@@ -2260,39 +2260,27 @@ function TripCard({
             )}
           </div>
 
-          {/* Fixed red "Sfora Budget" badge — top-left, only when over budget */}
+          {/* Fixed red "Sfora Budget" badge — top-center to avoid overlapping
+              the caption (top-left) and the share/info buttons (top-right). */}
           {isOverBudget && (
-            <div className="absolute top-4 left-4 z-10 pointer-events-none">
-              <div className="flex items-center gap-1 bg-red-500/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-lg">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+              <div className="flex items-center gap-1 bg-red-500/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-lg ring-1 ring-white/30">
                 <AlertCircle className="w-3 h-3" />
                 Sfora budget
               </div>
             </div>
           )}
 
-          {/* ── Prenota CTA — pointer-events-auto overrides parent none ── */}
+          {/* ── Prenota CTA — details remain accessible even when over budget.
+              The save action itself is blocked by the swipe handler with a toast. ── */}
           {isTop && (
             <div className="px-4 pb-4 pt-1">
               <button
                 onClick={(e) => { e.stopPropagation(); onInfo(); }}
-                disabled={isOverBudget}
-                className={`pointer-events-auto w-full font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg ${
-                  isOverBudget
-                    ? "bg-red-500/80 text-white cursor-not-allowed opacity-90"
-                    : "bg-white text-primary hover:bg-white/90"
-                }`}
+                className="pointer-events-auto w-full bg-white text-primary font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-white/90 active:scale-95 transition-all shadow-lg"
               >
-                {isOverBudget ? (
-                  <>
-                    <AlertCircle className="w-4 h-4" />
-                    Fuori dal budget
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink className="w-4 h-4" />
-                    Prenota ora
-                  </>
-                )}
+                <ExternalLink className="w-4 h-4" />
+                Prenota ora
               </button>
             </div>
           )}
