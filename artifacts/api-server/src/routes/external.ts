@@ -191,13 +191,25 @@ router.get("/external/rapid/flights", async (req, res) => {
     return res.status(400).json({ error: "origin, destination and departureDate are required" });
   }
 
+  // Strict budget validation — when caller passes a value, it MUST be a
+  // finite positive number. NaN / negatives silently disable the filter
+  // and we'd ship unbounded offers, which violates the "hard cap" guarantee.
+  let budgetCap: number | undefined;
+  if (maxBudgetTotal !== undefined && maxBudgetTotal !== "") {
+    const parsed = Number(maxBudgetTotal);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return res.status(400).json({ error: "maxBudgetTotal must be a positive number" });
+    }
+    budgetCap = parsed;
+  }
+
   const flights = await searchFlightsRapid({
     origin,
     destination,
     departDate: departureDate.slice(0, 10),
     returnDate: returnDate ? returnDate.slice(0, 10) : undefined,
     adults: Math.max(1, parseInt(adults, 10)),
-    maxBudgetTotal: maxBudgetTotal ? parseFloat(maxBudgetTotal) : undefined,
+    maxBudgetTotal: budgetCap,
   });
 
   return res.json({ flights, configured: true });
@@ -225,13 +237,24 @@ router.get("/external/rapid/hotels", async (req, res) => {
     return res.status(400).json({ error: "destination, checkin and checkout are required" });
   }
 
+  // Same strict numeric validation as flights — caller-supplied caps must
+  // be positive finite numbers or we 400 out instead of silently ignoring.
+  let nightCap: number | undefined;
+  if (maxPricePerNight !== undefined && maxPricePerNight !== "") {
+    const parsed = Number(maxPricePerNight);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return res.status(400).json({ error: "maxPricePerNight must be a positive number" });
+    }
+    nightCap = parsed;
+  }
+
   const hotels = await searchHotelsRapid({
     destination,
     checkin,
     checkout,
     adults: parseInt(adults, 10),
     rooms: parseInt(rooms, 10),
-    maxPricePerNight: maxPricePerNight ? parseFloat(maxPricePerNight) : undefined,
+    maxPricePerNight: nightCap,
   });
 
   const affiliateLink = buildBookingAffiliateLink({
