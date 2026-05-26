@@ -1179,19 +1179,24 @@ export default function Discover() {
             });
             restoreTrips();
           } else if (isNetworkError) {
-            // Server unreachable — likely still starting up or offline
-            toast.error(t.discover.networkError ?? t.discover.searchError, {
-              description: t.discover.networkErrorHint ?? t.discover.searchErrorHint,
-              duration: 6000,
-            });
-            restoreTrips();
+            // API unreachable (static hosting / server down) — silently show
+            // curated fallback trips with no error toast so the app stays usable.
+            setTrips(FALLBACK_TRIPS);
+            setCurrentIndex(0);
+            setHistory([]);
+            setHasSearched(true);
           } else {
-            // Any other error (4xx/5xx) — show toast, restore same-city trips only
-            toast.error(t.discover.searchError, {
-              description: t.discover.searchErrorHint,
-              duration: 5000,
-            });
-            restoreTrips();
+            // Any other error (4xx/5xx) — restore previous trips silently if
+            // available, otherwise fall back to curated local data.
+            const prev = prevTripsRef.current;
+            if (prev.length > 0) {
+              restoreTrips();
+            } else {
+              setTrips(FALLBACK_TRIPS);
+              setCurrentIndex(0);
+              setHistory([]);
+              setHasSearched(true);
+            }
           }
         },
       }
