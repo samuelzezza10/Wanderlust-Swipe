@@ -9,12 +9,14 @@ const port = rawPort ? Number(rawPort) : 3001;
 
 const basePath = process.env.BASE_PATH ?? '/';
 
-// Bridge the Replit Secret (process.env.GOOGLE_API_KEY) into the client bundle
-// as import.meta.env.VITE_GOOGLE_API_KEY. In CI (GitHub Actions) the same value
-// can be provided via the VITE_GOOGLE_API_KEY secret. The key is referrer-
-// restricted in Google Cloud Console — it's safe to ship in the static bundle
-// for Maps/Places. NEVER use this for Gemini (server-only).
-const googleApiKey = process.env.VITE_GOOGLE_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
+// Expose `VITE_GOOGLE_API_KEY` (and ONLY that) to the client bundle for
+// Maps/Places. We deliberately do NOT fall back to `GOOGLE_API_KEY`, because
+// that variable is the server-side Gemini key and must never reach the client.
+// To enable Maps/Places client-side, set `VITE_GOOGLE_API_KEY` explicitly:
+//   - In Replit dev: add it as a separate Secret (a Maps-only, referrer-
+//     restricted key from Google Cloud Console).
+//   - In CI: as the `VITE_GOOGLE_API_KEY` GitHub Actions secret.
+const googleApiKey = process.env.VITE_GOOGLE_API_KEY ?? "";
 
 export default defineConfig({
   base: basePath,
