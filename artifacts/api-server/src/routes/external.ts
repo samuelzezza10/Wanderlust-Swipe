@@ -175,9 +175,6 @@ router.get("/external/hotels/by-destination", async (req, res) => {
  * sending results to the browser so the swipe deck can't show busts.
  */
 router.get("/external/rapid/flights", async (req, res) => {
-  if (!isRapidApiConfigured()) {
-    return res.json({ flights: [], configured: false });
-  }
   const {
     origin,
     destination,
@@ -187,13 +184,11 @@ router.get("/external/rapid/flights", async (req, res) => {
     maxBudgetTotal,
   } = req.query as Record<string, string>;
 
+  // Validate inputs FIRST so callers get a proper 400 on bad params even when
+  // the upstream key is missing — silent 200s on garbage input hide bugs.
   if (!origin || !destination || !departureDate) {
     return res.status(400).json({ error: "origin, destination and departureDate are required" });
   }
-
-  // Strict budget validation — when caller passes a value, it MUST be a
-  // finite positive number. NaN / negatives silently disable the filter
-  // and we'd ship unbounded offers, which violates the "hard cap" guarantee.
   let budgetCap: number | undefined;
   if (maxBudgetTotal !== undefined && maxBudgetTotal !== "") {
     const parsed = Number(maxBudgetTotal);
@@ -201,6 +196,9 @@ router.get("/external/rapid/flights", async (req, res) => {
       return res.status(400).json({ error: "maxBudgetTotal must be a positive number" });
     }
     budgetCap = parsed;
+  }
+  if (!isRapidApiConfigured()) {
+    return res.json({ flights: [], configured: false });
   }
 
   const flights = await searchFlightsRapid({
@@ -221,9 +219,6 @@ router.get("/external/rapid/flights", async (req, res) => {
  * unavailable; otherwise serves as a second source.
  */
 router.get("/external/rapid/hotels", async (req, res) => {
-  if (!isRapidApiConfigured()) {
-    return res.json({ hotels: [], affiliateLink: "", configured: false });
-  }
   const {
     destination,
     checkin,
@@ -233,12 +228,10 @@ router.get("/external/rapid/hotels", async (req, res) => {
     maxPricePerNight,
   } = req.query as Record<string, string>;
 
+  // Validate inputs FIRST — bad params should 400 even when key missing.
   if (!destination || !checkin || !checkout) {
     return res.status(400).json({ error: "destination, checkin and checkout are required" });
   }
-
-  // Same strict numeric validation as flights — caller-supplied caps must
-  // be positive finite numbers or we 400 out instead of silently ignoring.
   let nightCap: number | undefined;
   if (maxPricePerNight !== undefined && maxPricePerNight !== "") {
     const parsed = Number(maxPricePerNight);
@@ -246,6 +239,9 @@ router.get("/external/rapid/hotels", async (req, res) => {
       return res.status(400).json({ error: "maxPricePerNight must be a positive number" });
     }
     nightCap = parsed;
+  }
+  if (!isRapidApiConfigured()) {
+    return res.json({ hotels: [], affiliateLink: "", configured: false });
   }
 
   const hotels = await searchHotelsRapid({
