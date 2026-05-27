@@ -226,11 +226,11 @@ function TripMapSection({ destination, country }: { destination: string; country
   );
 }
 
-/* ── Max overshoot allowed: trip total may sit up to +10% over the user's
- * budget. Anything above is filtered out, anything below is "in budget" with
- * no scary red warnings (we only show a soft yellow hint when ≥ 100%).
+/* ── Strict budget enforcement: trip total must be ≤ budget (BUDGET_TOLERANCE = 1.00).
+ * Any trip costing more than the user's budget is filtered out and marked red.
+ * Savings are highlighted in green when the total is below budget.
  */
-const BUDGET_TOLERANCE = 1.10;
+const BUDGET_TOLERANCE = 1.00; // strict: never exceed the budget by even €1
 
 /* "Over budget" label per language — used in toasts/badges where we don't
  * want to thread a new key through every translation block.
@@ -2045,10 +2045,10 @@ export default function Discover() {
         departureDate={filters.departureDate ?? null}
         returnDate={filters.returnDate ?? null}
         numberOfNights={filters.numberOfNights ?? 3}
+        departureAirport={filters.departureAirport}
+        arrivalAirport={filters.arrivalAirport}
         onSave={() => {
           if (detailTrip) {
-            // Same +10% tolerance guard so the detail-sheet save matches
-            // the swipe/list policy — single source of truth for budget.
             const partyTotal = tripTotalForParty(detailTrip, filters.numberOfPeople ?? 1);
             const cap = filters.budget * BUDGET_TOLERANCE;
             if (filters.budget > 0 && partyTotal > cap) {
@@ -2295,153 +2295,65 @@ function TripCard({
           </>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 text-white">
-          {/* Info overlay — pointer-events-none so drag/swipe still works over text */}
-          <div className="px-4 pt-4 pb-2 pointer-events-none">
-            <h2 className="text-2xl font-bold mb-0">{trip.destination}</h2>
-            <p className="text-white/80 text-sm font-medium mb-2">{trip.country}</p>
+        {/* ── Minimal card info — clean bottom overlay, no clutter ── */}
+        <div className="absolute bottom-0 left-0 right-0 text-white pointer-events-none">
+          <div className="px-5 pb-5 pt-24 bg-gradient-to-t from-black/92 via-black/55 to-transparent">
 
-            {/* Outbound flight row */}
-            <div className="flex gap-1.5 mb-1 flex-wrap">
-              {/* One-way / Round-trip badge */}
-              <div className="flex items-center gap-1 bg-sky-500/75 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold">
-                <span>{trip.tripType === "one_way" ? `→ ${t.filters.oneWay}` : `↕ ${t.filters.roundTrip}`}</span>
+            {/* Destination + total price */}
+            <div className="flex items-end justify-between gap-2 mb-2.5">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-3xl font-black leading-tight">{trip.destination}</h2>
+                <p className="text-white/75 text-sm mt-0.5 font-medium">{trip.country}</p>
               </div>
-              {/* Airline */}
-              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                <Plane className="w-3 h-3 shrink-0" />
-                <span className="truncate max-w-[72px]">{trip.transport.company}</span>
-              </div>
-              {/* Direct / stops badge */}
-              <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.transport.isDirect ? "bg-green-500/70" : "bg-amber-500/70"}`}>
-                {trip.transport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
-                <span>{trip.transport.isDirect ? t.tripDetail.direct : (trip.transport.stops ? `${trip.transport.stops} ${t.tripDetail.withStops}` : t.tripDetail.withStops)}</span>
-              </div>
-              {/* Stop city chip */}
-              {!trip.transport.isDirect && trip.transport.stopCities && trip.transport.stopCities.length > 0 && (
-                <div className="flex items-center gap-1 bg-amber-400/55 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                  <span>Via {trip.transport.stopCities[0]}</span>
-                </div>
-              )}
-              {/* Times */}
-              {trip.transport.departureTime && (
-                <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                  <Clock className="w-3 h-3 shrink-0" />
-                  <span>{trip.transport.departureTime}{trip.transport.arrivalTime ? ` → ${trip.transport.arrivalTime}` : ""}</span>
-                </div>
-              )}
-              {/* Price */}
-              <div className="flex items-center gap-1 bg-primary/70 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold">
-                <span>{formatCurrency(trip.transport.price, lang)}</span>
-              </div>
-            </div>
-
-            {/* Return flight row — only shown for round trips */}
-            {trip.returnTransport && (
-              <div className="flex gap-1.5 mb-1 flex-wrap">
-                <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                  <RotateCcw className="w-3 h-3 shrink-0" />
-                  <span className="truncate max-w-[72px]">{trip.returnTransport.company}</span>
-                </div>
-                <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.returnTransport.isDirect ? "bg-green-500/60" : "bg-amber-500/60"}`}>
-                  {trip.returnTransport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
-                  <span>{trip.returnTransport.isDirect ? t.tripDetail.direct : (trip.returnTransport.stops ? `${trip.returnTransport.stops} ${t.tripDetail.withStops}` : t.tripDetail.withStops)}</span>
-                </div>
-                {!trip.returnTransport.isDirect && trip.returnTransport.stopCities && trip.returnTransport.stopCities.length > 0 && (
-                  <div className="flex items-center gap-1 bg-amber-400/45 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                    <span>Via {trip.returnTransport.stopCities[0]}</span>
-                  </div>
-                )}
-                {trip.returnTransport.departureTime && (
-                  <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                    <Clock className="w-3 h-3 shrink-0" />
-                    <span>{trip.returnTransport.departureTime}{trip.returnTransport.arrivalTime ? ` → ${trip.returnTransport.arrivalTime}` : ""}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-1 bg-primary/60 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold">
-                  <span>{formatCurrency(trip.returnTransport.price, lang)}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Hotel row */}
-            <div className="flex gap-1.5 mb-2 flex-wrap">
-              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium max-w-[160px]">
-                <Hotel className="w-3 h-3 shrink-0" />
-                <span className="truncate">{trip.hotel.name.split(" ").slice(0, 3).join(" ")}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
-                <span>{trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}</span>
-              </div>
-              {trip.hotel.distanceFromCenter != null && (
-                <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
-                  <MapPin className="w-3 h-3 shrink-0" />
-                  <span>{formatDistance(trip.hotel.distanceFromCenter, lang)}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-medium">
-                {trip.hotel.originalPrice != null && trip.hotel.originalPrice > trip.hotel.pricePerNight && (
-                  <span className="line-through text-white/45 text-[10px] mr-0.5">{formatCurrency(trip.hotel.originalPrice, lang)}</span>
-                )}
-                <span>{formatCurrency(trip.hotel.pricePerNight, lang)}/n</span>
-              </div>
-              {trip.hotel.originalPrice != null && trip.hotel.originalPrice > trip.hotel.pricePerNight && (
-                <div className="flex items-center gap-1 bg-red-500/85 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-white">
-                  <span>-{Math.round((1 - trip.hotel.pricePerNight / trip.hotel.originalPrice) * 100)}% OFF</span>
-                </div>
-              )}
-            </div>
-
-            {/* Totale row */}
-            <div className="flex items-end justify-between">
-              <p className="text-[10px] text-white/50">
-                {trip.durationDays}n
-                {trip.returnTransport
-                  ? ` · ✈ ${formatCurrency(trip.transport.price + trip.returnTransport.price, lang)} A/R`
-                  : ` · ✈ ${formatCurrency(trip.transport.price, lang)}`}
-              </p>
               <div className="text-right shrink-0">
-                <p className="text-[10px] text-white/60 uppercase tracking-widest font-bold mb-0.5">{totalLabel}</p>
                 <p className={`text-2xl font-black ${isOverBudget ? "text-red-300" : ""}`}>
                   {formatCurrency(totalForAll, lang)}
                 </p>
+                <p className="text-[10px] text-white/55 uppercase tracking-wide font-semibold">{totalLabel}</p>
               </div>
             </div>
 
-            {/* Budget meter — slim progress bar with live spent/max counter */}
-            {!!budget && budget > 0 && (
-              <div className="mt-2">
-                <BudgetMeter spent={totalForAll} budget={budget} lang={lang} variant="dark" />
+            {/* Key chips: airline · direct/stops · nights · stars */}
+            <div className="flex gap-1.5 flex-wrap mb-2.5">
+              <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                <Plane className="w-3 h-3 shrink-0" />
+                <span className="truncate max-w-[72px]">{trip.transport.company}</span>
               </div>
-            )}
+              <div className={`flex items-center gap-1 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold ${trip.transport.isDirect ? "bg-green-500/80" : "bg-amber-500/80"}`}>
+                {trip.transport.isDirect ? <Check className="w-3 h-3 shrink-0" /> : <span className="opacity-80">~</span>}
+                <span>{trip.transport.isDirect ? t.tripDetail.direct : (trip.transport.stops ? `${trip.transport.stops} ${t.tripDetail.withStops}` : t.tripDetail.withStops)}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                <Clock className="w-3 h-3 shrink-0" />{trip.durationDays}n
+              </div>
+              <div className="flex items-center gap-1 bg-amber-500/70 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
+                <Star className="w-3 h-3 fill-white shrink-0" />{trip.hotel.stars}★
+              </div>
+            </div>
+
+            {/* Savings chip (prominent) or over-budget warning */}
+            {isOverBudget ? (
+              <div className="inline-flex items-center gap-1.5 bg-red-500/95 backdrop-blur-md px-3 py-1.5 rounded-full">
+                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="text-[11px] font-bold uppercase tracking-wide">{exceedsBudgetLabel(lang)}</span>
+              </div>
+            ) : savingsMsg ? (
+              <div className="inline-flex items-center gap-1.5 bg-green-500/90 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-lg shadow-green-900/30">
+                <span className="text-[12px] font-bold">💚 {savingsMsg}</span>
+              </div>
+            ) : null}
           </div>
-
-          {/* Fixed red "Sfora Budget" badge — top-center to avoid overlapping
-              the caption (top-left) and the share/info buttons (top-right). */}
-          {isOverBudget && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
-              <div className="flex items-center gap-1 bg-red-500/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-lg ring-1 ring-white/30">
-                <AlertCircle className="w-3 h-3" />
-                {exceedsBudgetLabel(lang)}
-              </div>
-            </div>
-          )}
-
-          {/* ── Prenota CTA — details remain accessible even when over budget.
-              The save action itself is blocked by the swipe handler with a toast. ── */}
-          {isTop && (
-            <div className="px-4 pb-4 pt-1">
-              <button
-                onClick={(e) => { e.stopPropagation(); onInfo(); }}
-                className="pointer-events-auto w-full bg-white text-primary font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-white/90 active:scale-95 transition-all shadow-lg"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Prenota ora
-              </button>
-            </div>
-          )}
         </div>
+
+        {/* Over-budget badge — top center, always visible even on non-top cards */}
+        {isOverBudget && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+            <div className="flex items-center gap-1 bg-red-500/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-lg ring-1 ring-white/25">
+              <AlertCircle className="w-3 h-3" />
+              {exceedsBudgetLabel(lang)}
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -2623,7 +2535,7 @@ function BookingHotelsSection({
 
 function TripDetailSheet({
   trip, onClose, isSignedIn, onSave, onShare, budget, numberOfPeople,
-  departureDate, returnDate, numberOfNights,
+  departureDate, returnDate, numberOfNights, departureAirport, arrivalAirport,
 }: {
   trip: TripSuggestion | null;
   onClose: () => void;
@@ -2635,6 +2547,8 @@ function TripDetailSheet({
   departureDate?: string | null;
   returnDate?: string | null;
   numberOfNights?: number;
+  departureAirport?: string;
+  arrivalAirport?: string;
 }) {
   const { t, lang } = useI18n();
 
@@ -2807,37 +2721,71 @@ function TripDetailSheet({
               {/* Google Maps embed — uses VITE_GOOGLE_API_KEY (public Maps key, safe in client). */}
               <TripMapSection destination={trip.destination} country={trip.country} />
 
-              {/* Booking links */}
-              <section className="bg-muted/40 rounded-2xl p-4">
-                <p className="font-bold text-base mb-1">{t.tripDetail.bookTitle}</p>
-                <p className="text-xs text-muted-foreground mb-3">{t.tripDetail.bookSubtitle}</p>
-                <div className="flex flex-col gap-2">
-                  <a
-                    href={`https://www.booking.com/searchresults.html?aid=travelbudget_fake001&ss=${encodeURIComponent(trip.destination)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 bg-[#003580] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#00245a] transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Hotel className="w-4 h-4" />
-                      {t.tripDetail.bookHotel}
-                    </span>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                  </a>
-                  <a
-                    href={`https://www.skyscanner.it/transport/flights/results/?utm_source=travelbudget&affiliateId=fake001&destination=${encodeURIComponent(trip.destination)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 bg-[#0770e3] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#0558b0] transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Plane className="w-4 h-4" />
-                      {t.tripDetail.bookFlight}
-                    </span>
-                    <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-                  </a>
-                </div>
-              </section>
+              {/* Booking links — real deep links with dates + IATA */}
+              {(() => {
+                const depIata = departureAirport ? extractIata(departureAirport) : null;
+                const arrIata = arrivalAirport
+                  ? extractIata(arrivalAirport)
+                  : extractIata(trip.destination);
+                const depDate = checkin.replace(/-/g, "");
+                const retDate = checkout.replace(/-/g, "");
+
+                const bookingUrl = [
+                  `https://www.booking.com/searchresults.html`,
+                  `?ss=${encodeURIComponent(trip.destination)}`,
+                  `&checkin=${checkin}`,
+                  `&checkout=${checkout}`,
+                  `&group_adults=${numberOfPeople ?? 1}`,
+                  `&no_rooms=1`,
+                  `&aid=304142`,
+                ].join("");
+
+                const skyscannerUrl = depIata && arrIata
+                  ? trip.tripType === "one_way"
+                    ? `https://www.skyscanner.it/transport/flights/${depIata.toLowerCase()}/${arrIata.toLowerCase()}/${depDate}/`
+                    : `https://www.skyscanner.it/transport/flights/${depIata.toLowerCase()}/${arrIata.toLowerCase()}/${depDate}/${retDate}/`
+                  : `https://www.skyscanner.it/transport/flights-from/${depIata?.toLowerCase() ?? "it"}/?query=${encodeURIComponent(trip.destination)}`;
+
+                return (
+                  <section className="bg-muted/40 rounded-2xl p-4">
+                    <p className="font-bold text-base mb-1">{t.tripDetail.bookTitle}</p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {checkin} → {checkout} · {numberOfPeople ?? 1} {(numberOfPeople ?? 1) > 1 ? "persone" : "persona"}
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <a
+                        href={bookingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 bg-[#003580] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#00245a] transition-colors active:scale-[0.98]"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Hotel className="w-4 h-4" />
+                          {t.tripDetail.bookHotel}
+                        </span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                      </a>
+                      <a
+                        href={skyscannerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 bg-[#0770e3] text-white rounded-xl px-4 py-3 font-semibold text-sm hover:bg-[#0558b0] transition-colors active:scale-[0.98]"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Plane className="w-4 h-4" />
+                          {t.tripDetail.bookFlight}
+                          {depIata && arrIata && (
+                            <span className="opacity-70 text-xs font-normal">
+                              {depIata} → {arrIata}
+                            </span>
+                          )}
+                        </span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+                      </a>
+                    </div>
+                  </section>
+                );
+              })()}
 
               {/* Share + Save */}
               <div className="flex gap-3">
