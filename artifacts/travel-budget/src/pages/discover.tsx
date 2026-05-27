@@ -127,13 +127,15 @@ function applyClientSideFilters(trips: TripSuggestion[], f: TripFilters): TripSu
     // If zero exact matches → keep ALL trips as alternatives (never empty)
   }
 
-  // ── STEP 2: Budget is HARD — exclude trips where flight + hotel*nights
-  // (multiplied by travellers) exceeds the user budget. Safety net at STEP 4
-  // ensures we never render an empty deck, but the UI marks any survivor that
-  // still busts the budget with a red "Sfora Budget" badge so the user knows.
+  // ── STEP 2: Budget is HARD with a 10% tolerance — exclude trips where
+  // flight + hotel*nights (multiplied by travellers) exceeds budget × 1.10.
+  // Anything within that ±10% band is acceptable; anything above is dropped.
+  // Safety net at STEP 4 ensures we never render an empty deck even if every
+  // trip is above the cap (rare).
   if (f.budget > 0) {
     const people = Math.max(1, f.numberOfPeople ?? 1);
-    const t2 = out.filter((t) => tripTotalForParty(t, people) <= f.budget);
+    const cap = f.budget * BUDGET_TOLERANCE;
+    const t2 = out.filter((t) => tripTotalForParty(t, people) <= cap);
     if (t2.length > 0) out = t2;
   }
 
@@ -221,6 +223,51 @@ function TripMapSection({ destination, country }: { destination: string; country
         allowFullScreen
       />
     </section>
+  );
+}
+
+/* ── Max overshoot allowed: trip total may sit up to +10% over the user's
+ * budget. Anything above is filtered out, anything below is "in budget" with
+ * no scary red warnings (we only show a soft yellow hint when ≥ 100%).
+ */
+const BUDGET_TOLERANCE = 1.10;
+
+/* "Over budget" label per language — used in toasts/badges where we don't
+ * want to thread a new key through every translation block.
+ */
+const EXCEEDS_BUDGET_LABEL: Record<string, string> = {
+  it: "Sfora budget",
+  en: "Over budget",
+  es: "Excede presupuesto",
+  fr: "Hors budget",
+  de: "Über Budget",
+  zh: "超出预算",
+};
+function exceedsBudgetLabel(lang: string): string {
+  return EXCEEDS_BUDGET_LABEL[lang] ?? EXCEEDS_BUDGET_LABEL.en;
+}
+
+/* ─── Hotel photo via Google Places (server-proxied) ──────────────────────── */
+function HotelPhoto({
+  query, alt, className,
+}: { query: string; alt: string; className?: string }) {
+  const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const [failed, setFailed] = useState(false);
+  if (!query.trim() || failed) {
+    return (
+      <div className={`${className ?? ""} bg-muted flex items-center justify-center`}>
+        <Hotel className="w-4 h-4 text-muted-foreground/60" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={`${basePath}/api/external/place-photo?query=${encodeURIComponent(query)}`}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 }
 
@@ -1440,9 +1487,10 @@ export default function Discover() {
       // Hard-block saving trips that bust the user's budget — with a clear
       // micro-feedback toast so the user understands why the swipe didn't stick.
       const partyTotal = tripTotalForParty(trip, filters.numberOfPeople ?? 1);
-      if (filters.budget > 0 && partyTotal > filters.budget) {
-        toast.error("Sfora il budget — non puoi salvarlo", {
-          description: `${formatCurrency(partyTotal, lang)} su ${formatCurrency(filters.budget, lang)} max`,
+      const budgetCap = filters.budget * BUDGET_TOLERANCE;
+      if (filters.budget > 0 && partyTotal > budgetCap) {
+        toast.error(exceedsBudgetLabel(lang), {
+          description: `${formatCurrency(partyTotal, lang)} / ${formatCurrency(filters.budget, lang)}`,
         });
         return; // do NOT advance the deck — let the user undo/skip explicitly
       }
@@ -1902,16 +1950,22 @@ export default function Discover() {
                 <span>{t.discover.loadingMore}</span>
               </div>
             )}
-            {/* Action buttons: ❌ ↩ ✓ + Filtri */}
-            <div className="flex items-center gap-4 mt-6">
-              <button onClick={() => handleSwipe("left")} className="rounded-full bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 68, height: 68 }}>
-                <X className="w-8 h-8 stroke-[2.5]" />
-              </button>
+            {/* Action buttons: ↩ | ❌ | ℹ INFO | ✓ | Filtri ────────────────
+             * Info button sits in the middle between dislike (❌) and like (✓)
+             * so the user can pull up trip details without leaving the deck.
+             */}
+            <div className="flex items-center gap-3 mt-6">
               <button onClick={handleUndo} disabled={history.length === 0} className="w-11 h-11 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform" title={t.onboarding.back}>
                 <RotateCcw className="w-4.5 h-4.5" />
               </button>
-              <button onClick={() => handleSwipe("right")} className="rounded-full bg-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 68, height: 68 }}>
-                <Check className="w-8 h-8 stroke-[2.5]" />
+              <button onClick={() => handleSwipe("left")} className="rounded-full bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 64, height: 64 }} title={t.discover.nope}>
+                <X className="w-7 h-7 stroke-[2.5]" />
+              </button>
+              <button onClick={() => { const top = trips[currentIndex]; if (top) setDetailTrip(top); }} disabled={!trips[currentIndex]} className="rounded-full bg-white shadow-[0_4px_20px_rgba(0,0,0,0.25)] border border-gray-200 flex items-center justify-center text-[hsl(215,85%,48%)] disabled:opacity-40 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform" style={{ width: 56, height: 56 }} title={t.discover.infoBtn}>
+                <Info className="w-6 h-6 stroke-[2.4]" />
+              </button>
+              <button onClick={() => handleSwipe("right")} className="rounded-full bg-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 64, height: 64 }} title={t.discover.like}>
+                <Check className="w-7 h-7 stroke-[2.5]" />
               </button>
               <button onClick={() => setFilterOpen(true)} className="w-11 h-11 rounded-full bg-white/20 shadow-md border border-white/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" title={t.filters.title}>
                 <SlidersHorizontal className="w-4.5 h-4.5" />
@@ -2098,7 +2152,7 @@ function TripListCard({
             <button
               onClick={onSave}
               disabled={isOverBudget}
-              title={isOverBudget ? "Questo viaggio supera il budget" : undefined}
+              title={isOverBudget ? exceedsBudgetLabel(lang) : undefined}
               className={`flex-1 h-8 rounded-xl text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
                 isOverBudget
                   ? "bg-red-500/70 cursor-not-allowed opacity-80"
@@ -2106,7 +2160,7 @@ function TripListCard({
               }`}
             >
               {isOverBudget ? (
-                <><AlertCircle className="w-3.5 h-3.5" /> Sfora budget</>
+                <><AlertCircle className="w-3.5 h-3.5" /> {exceedsBudgetLabel(lang)}</>
               ) : (
                 <><Check className="w-3.5 h-3.5" /> {t.tripDetail.saveTrip}</>
               )}
@@ -2347,7 +2401,7 @@ function TripCard({
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
               <div className="flex items-center gap-1 bg-red-500/95 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-lg ring-1 ring-white/30">
                 <AlertCircle className="w-3 h-3" />
-                Sfora budget
+                {exceedsBudgetLabel(lang)}
               </div>
             </div>
           )}
@@ -2454,7 +2508,7 @@ function BookingHotelsSection({
       checkin,
       checkout,
       adults: String(adults),
-      limit: "4",
+      limit: "1",
     });
     return q.toString();
   }, [destination, checkin, checkout, adults]);
@@ -2484,9 +2538,7 @@ function BookingHotelsSection({
           Hotel disponibili su Booking.com
         </p>
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 rounded-xl bg-muted animate-pulse" />
-          ))}
+          <div className="h-14 rounded-xl bg-muted animate-pulse" />
         </div>
       </section>
     );
@@ -2514,13 +2566,11 @@ function BookingHotelsSection({
             rel="noopener noreferrer"
             className="flex items-center gap-3 bg-background border rounded-xl px-3 py-2.5 hover:border-[#003580]/40 transition-colors"
           >
-            {h.photoUrl && (
-              <img
-                src={h.photoUrl}
-                alt={h.name}
-                className="w-12 h-12 rounded-lg object-cover shrink-0"
-              />
-            )}
+            <HotelPhoto
+              query={`${h.name} ${destination}`}
+              alt={h.name}
+              className="w-12 h-12 rounded-lg object-cover shrink-0"
+            />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate">{h.name}</p>
               <p className="text-xs text-muted-foreground truncate">{h.address}</p>
