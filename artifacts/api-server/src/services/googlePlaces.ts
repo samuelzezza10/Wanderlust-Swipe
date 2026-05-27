@@ -13,8 +13,23 @@
  */
 import { logger } from "../lib/logger";
 
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY ?? "";
+/* Prefer a dedicated server-only Places key when configured — it lets the
+ * user keep the existing GOOGLE_API_KEY locked to HTTP referrers for the
+ * browser Maps SDK, while a separate unrestricted (or IP-restricted) key
+ * handles server-side Places lookups without referrer drama.
+ */
+const GOOGLE_API_KEY =
+  (process.env.GOOGLE_PLACES_API_KEY ?? "").trim() ||
+  (process.env.GOOGLE_API_KEY ?? "").trim();
 const SEARCH_URL = "https://places.googleapis.com/v1/places:searchText";
+
+/* Optional Referer header for keys that ARE referrer-restricted (the legacy
+ * setup where one key was shared with the web Maps SDK). Defaults to the
+ * documented GitHub Pages origin; override via GOOGLE_PLACES_REFERER env.
+ * Only sent when explicitly configured — unrestricted keys work without it.
+ */
+const REFERER = (process.env.GOOGLE_PLACES_REFERER ?? "").trim();
+
 const PHOTO_TTL_MS = 1000 * 60 * 60 * 24; // 24h
 const NEGATIVE_TTL_MS = 1000 * 60 * 30; // remember 404s for 30min, don't retry
 
@@ -57,6 +72,7 @@ export async function getPlacePhotoUrl(query: string): Promise<string | null> {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": GOOGLE_API_KEY,
         "X-Goog-FieldMask": "places.id,places.displayName,places.photos.name",
+        ...(REFERER ? { Referer: REFERER } : {}),
       },
       body: JSON.stringify({ textQuery: query, pageSize: 1 }),
     });
