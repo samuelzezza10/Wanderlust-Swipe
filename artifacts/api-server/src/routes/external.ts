@@ -8,8 +8,53 @@ import {
   searchFlightsRapid,
   searchHotelsRapid,
 } from "../services/rapidapi";
+import { getPlacePhotoUrl, isGooglePlacesConfigured } from "../services/googlePlaces";
 
 const router = Router();
+
+/* ── Google Places photo proxy ─────────────────────────────────────────────
+ * Looks up a place by text query (e.g. "Hotel Adlon Berlin") via Google
+ * Places API v1, then streams its first photo back to the client. The
+ * GOOGLE_API_KEY env var is used server-side ONLY — the upstream URL with
+ * the key never reaches the browser. Cached server-side for 24h per query.
+ * Returns 204 (no content) when no photo is found, so <img onError> can
+ * fall back to a placeholder without flooding the console with 404s.
+ */
+router.get("/external/place-photo", async (req, res) => {
+  const query = String(req.query.query ?? "").trim().slice(0, 200);
+  if (!query) {
+    res.status(400).json({ error: "missing_query" });
+    return;
+  }
+  if (!isGooglePlacesConfigured()) {
+    res.status(204).end();
+    return;
+  }
+  try {
+    const url = await getPlacePhotoUrl(query);
+    if (!url) {
+      res.setHeader("Cache-Control", "public, max-age=1800");
+      res.status(204).end();
+      return;
+    }
+    const photoResp = await fetch(url);
+    if (!photoResp.ok) {
+      req.log?.warn({ status: photoResp.status, query }, "place-photo upstream not ok");
+      res.status(204).end();
+      return;
+    }
+    const buf = Buffer.from(await photoResp.arrayBuffer());
+    res.setHeader(
+      "Content-Type",
+      photoResp.headers.get("content-type") ?? "image/jpeg",
+    );
+    res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+    res.send(buf);
+  } catch (err) {
+    req.log?.error({ err, query }, "place-photo proxy threw");
+    res.status(204).end();
+  }
+});
 
 /* ── Mock data — last-resort fallback when all upstream APIs are unavailable ─
  *
