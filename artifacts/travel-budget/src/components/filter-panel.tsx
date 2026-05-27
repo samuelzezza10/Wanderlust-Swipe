@@ -301,10 +301,20 @@ export function FilterSheet({
     const errs: Record<string, string> = {};
     const dep = f.departureAirport;
     const arr = f.arrivalAirport;
+    // Required: destination
+    if (!arr || arr.trim().toLowerCase() === "any") {
+      errs["arrival"] = t.filters.arrivalRequired ?? "Seleziona la destinazione";
+    }
+    // Required: budget > 0
+    if (!f.budget || f.budget <= 0) {
+      errs["budget"] = "Inserisci il tuo budget massimo";
+    }
+    // Date logic
     if (f.departureDate && f.returnDate && f.returnDate < f.departureDate) {
       errs["returnDate"] = t.filters.returnBeforeDeparture;
     }
-    if (dep && arr) {
+    // Same departure/arrival city
+    if (dep && arr && !errs["arrival"]) {
       const depCity = dep.split(" (")[0].trim().toLowerCase();
       const arrCity = arr.split(" (")[0].trim().toLowerCase();
       if (depCity === arrCity) errs["arrival"] = t.filters.sameLocation;
@@ -335,15 +345,18 @@ export function FilterSheet({
 
   const handleApply = () => {
     setTried(true);
-    const arr = draft.arrivalAirport.trim();
-    if (!arr || arr.toLowerCase() === "any") {
-      setErrors({ arrival: t.filters.arrivalRequired ?? "Seleziona una destinazione" });
+    const errs = validate(draft);
+    setErrors(errs);
+    // Scroll to first error
+    if (errs["arrival"]) {
       arrivalRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    const errs = validate(draft);
-    setErrors(errs);
-    if (errs["arrival"]) return;
+    if (errs["budget"]) {
+      budgetRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (Object.keys(errs).length > 0) return;
     const finalDraft: TripFilters = { ...draft, departureStation: "", arrivalStation: "", returnStation: "" };
     onApply(finalDraft);
     onClose();
@@ -381,17 +394,21 @@ export function FilterSheet({
 
             {/* ── Validation banner ── */}
             {tried && hasErrors && (
-              <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 flex gap-3 items-start">
-                <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+              <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex gap-3 items-start">
+                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold text-red-700">{t.filters.validationTitle}</p>
-                  <p className="text-xs text-red-500 mt-0.5">{t.filters.validationSubtitle}</p>
+                  <p className="text-xs text-red-500 mt-0.5">
+                    {errors["arrival"] ? "Seleziona la destinazione." : ""}
+                    {errors["budget"] ? " Inserisci il budget." : ""}
+                    {errors["returnDate"] ? " La data di ritorno deve essere dopo la partenza." : ""}
+                  </p>
                 </div>
               </div>
             )}
 
             {/* ── Tipo viaggio ── */}
-            <FilterSection label={t.filters.tripTypeLabel}>
+            <ColorSection label={t.filters.tripTypeLabel} accent="sky">
               <div className="flex gap-2">
                 <PillButton
                   active={draft.tripType === "round_trip"}
@@ -406,10 +423,10 @@ export function FilterSheet({
                   {t.filters.oneWay}
                 </PillButton>
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Ordina per ── */}
-            <FilterSection label={t.filters.sortBy}>
+            <ColorSection label={t.filters.sortBy} accent="violet">
               <div className="flex gap-2">
                 {([
                   { value: "best_value", label: t.filters.sortBestValue },
@@ -421,11 +438,11 @@ export function FilterSheet({
                   </PillButton>
                 ))}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Rotte ── */}
-            <FilterSection label="Destinazione">
-              <div className={`border rounded-2xl overflow-visible transition-colors ${(errors["departure"] || errors["arrival"]) ? "border-red-300" : "border-zinc-200"}`}>
+            <ColorSection label="✈️ Destinazione" accent="blue" required>
+              <div className={`border rounded-2xl overflow-visible transition-colors ${(errors["departure"] || errors["arrival"]) ? "border-red-400 ring-1 ring-red-200" : "border-blue-100 bg-blue-50/30"}`}>
                 {/* Departure */}
                 <div ref={departureRef} className="p-4">
                   <FieldLabel><Plane className="w-3 h-3" /> {t.filters.departureAirport}</FieldLabel>
@@ -438,11 +455,14 @@ export function FilterSheet({
                   {errors["departure"] && <FieldError>{errors["departure"]}</FieldError>}
                 </div>
 
-                <div className="h-px bg-zinc-100 mx-4" />
+                <div className="h-px bg-blue-100/60 mx-4" />
 
                 {/* Arrival */}
-                <div ref={arrivalRef} className={`p-4 ${draft.tripType !== "one_way" ? "" : ""}`}>
-                  <FieldLabel>Destinazione</FieldLabel>
+                <div ref={arrivalRef} className="p-4">
+                  <FieldLabel>
+                    Destinazione
+                    <span className="text-red-500 font-bold ml-0.5">*</span>
+                  </FieldLabel>
                   <LocationAutocomplete
                     value={draft.arrivalAirport}
                     onChange={(v) => set("arrivalAirport", v)}
@@ -455,7 +475,7 @@ export function FilterSheet({
                 {/* Return — round trip only */}
                 {draft.tripType !== "one_way" && (
                   <>
-                    <div className="h-px bg-zinc-100 mx-4" />
+                    <div className="h-px bg-blue-100/60 mx-4" />
                     <div className="p-4">
                       <FieldLabel>Ritorno (opzionale)</FieldLabel>
                       <LocationAutocomplete
@@ -468,13 +488,16 @@ export function FilterSheet({
                   </>
                 )}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Budget ── */}
             <div ref={budgetRef} className="space-y-3">
-              <SectionLabel>{t.filters.budget}</SectionLabel>
-              <div className="flex items-center gap-2 border border-zinc-200 rounded-2xl px-4 py-3.5 bg-white focus-within:border-zinc-400 transition-colors">
-                <span className="text-lg font-semibold text-zinc-300 select-none">{currencySymbol}</span>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">💶 {t.filters.budget}</p>
+                <span className="text-red-500 font-bold text-xs">*</span>
+              </div>
+              <div className={`flex items-center gap-2 border rounded-2xl px-4 py-3.5 bg-white transition-colors ${errors["budget"] ? "border-red-400 ring-1 ring-red-200 bg-red-50/30" : "border-emerald-200 focus-within:border-emerald-400"}`}>
+                <span className="text-lg font-semibold text-emerald-400 select-none">{currencySymbol}</span>
                 <input
                   type="number"
                   min={0}
@@ -488,8 +511,9 @@ export function FilterSheet({
                   placeholder="es. 1500"
                 />
               </div>
+              {errors["budget"] && <FieldError>{errors["budget"]}</FieldError>}
               <p className="text-xs text-zinc-400 mt-1 px-1">
-                {t.filters.budgetHint ?? "Scrivi il tuo budget massimo totale (volo + hotel)"}
+                {t.filters.budgetHint ?? "Budget totale per persona: volo + hotel. Non verrà mai superato."}
               </p>
               <div className="flex gap-2 flex-wrap">
                 {[500, 1000, 2000, 5000, 10000].map((v) => (
@@ -499,8 +523,8 @@ export function FilterSheet({
                     onClick={() => set("budget", v)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                       draft.budget === v
-                        ? "bg-zinc-900 text-white border-zinc-900"
-                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-500 shadow-sm shadow-emerald-200"
+                        : "bg-white text-zinc-600 border-zinc-200 hover:border-emerald-300"
                     }`}
                   >
                     {currencySymbol}{v.toLocaleString()}
@@ -510,44 +534,49 @@ export function FilterSheet({
             </div>
 
             {/* ── Persone + Stanze ── */}
-            <FilterSection label={t.filters.travelers}>
+            <ColorSection label={`👥 ${t.filters.travelers}`} accent="violet">
               <div className="flex gap-4 flex-wrap">
                 <Stepper label={t.filters.travelers} value={draft.numberOfPeople} min={1} max={12} onChange={(v) => set("numberOfPeople", v)} />
                 <Stepper label={t.filters.children} value={draft.numberOfChildren} min={0} max={10} onChange={(v) => set("numberOfChildren", v)} />
                 <Stepper label={t.filters.pets} value={draft.numberOfPets} min={0} max={5} onChange={(v) => set("numberOfPets", v)} />
                 <Stepper label="Stanze" value={draft.numberOfRooms} min={1} max={10} onChange={(v) => set("numberOfRooms", v)} />
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Date ── */}
             <div ref={datesRef} className="space-y-3">
-              <SectionLabel>
-                {draft.tripType === "one_way" ? t.filters.departureDate : `${t.filters.departureDate} / ${t.filters.returnDate}`}
-              </SectionLabel>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-orange-500">
+                📅 {draft.tripType === "one_way" ? t.filters.departureDate : `${t.filters.departureDate} / ${t.filters.returnDate}`}
+              </p>
+              {!draft.departureDate && (
+                <p className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                  💡 Suggerito: inserisci le date per trovare prezzi reali su Booking e Skyscanner
+                </p>
+              )}
               <div className={`grid gap-3 ${draft.tripType === "one_way" ? "grid-cols-1" : "grid-cols-2"}`}>
                 <div>
-                  <label className="text-xs text-zinc-400 block mb-1.5">{t.filters.departureDate}</label>
+                  <label className="text-xs text-orange-500 font-semibold block mb-1.5">{t.filters.departureDate}</label>
                   <input
                     type="date"
                     value={draft.departureDate}
                     min={new Date().toISOString().split("T")[0]}
                     onChange={(e) => set("departureDate", e.target.value)}
-                    className={`w-full border rounded-xl px-3 py-2.5 text-sm bg-white text-zinc-800 transition-colors focus:outline-none focus:border-zinc-400 ${
-                      errors["departureDate"] ? "border-red-300 bg-red-50" : "border-zinc-200"
+                    className={`w-full border rounded-xl px-3 py-2.5 text-sm bg-white text-zinc-800 transition-colors focus:outline-none focus:border-orange-400 ${
+                      errors["departureDate"] ? "border-red-300 bg-red-50" : "border-orange-200"
                     }`}
                   />
                   {errors["departureDate"] && <FieldError>{errors["departureDate"]}</FieldError>}
                 </div>
                 {draft.tripType !== "one_way" && (
                   <div>
-                    <label className="text-xs text-zinc-400 block mb-1.5">{t.filters.returnDate}</label>
+                    <label className="text-xs text-orange-500 font-semibold block mb-1.5">{t.filters.returnDate}</label>
                     <input
                       type="date"
                       value={draft.returnDate}
                       min={draft.departureDate || new Date().toISOString().split("T")[0]}
                       onChange={(e) => set("returnDate", e.target.value)}
-                      className={`w-full border rounded-xl px-3 py-2.5 text-sm bg-white text-zinc-800 transition-colors focus:outline-none focus:border-zinc-400 ${
-                        errors["returnDate"] ? "border-red-300 bg-red-50" : "border-zinc-200"
+                      className={`w-full border rounded-xl px-3 py-2.5 text-sm bg-white text-zinc-800 transition-colors focus:outline-none focus:border-orange-400 ${
+                        errors["returnDate"] ? "border-red-300 bg-red-50" : "border-orange-200"
                       }`}
                     />
                     {errors["returnDate"] && <FieldError>{errors["returnDate"]}</FieldError>}
@@ -560,19 +589,19 @@ export function FilterSheet({
             </div>
 
             {/* ── Notti ── */}
-            <FilterSection label={`${t.filters.nights} — ${draft.numberOfNights} ${(t.filters.nights ?? "").toLowerCase()}`}>
+            <ColorSection label={`🌙 ${t.filters.nights} — ${draft.numberOfNights} ${(t.filters.nights ?? "").toLowerCase()}`} accent="sky">
               <input
                 type="range" min={1} max={30} step={1} value={draft.numberOfNights}
                 onChange={(e) => set("numberOfNights", Number(e.target.value))}
-                className="w-full accent-zinc-900"
+                className="w-full accent-sky-500"
               />
               <div className="flex justify-between text-xs text-zinc-400">
                 <span>1</span><span>30</span>
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Tipo volo ── */}
-            <FilterSection label={t.filters.flightType}>
+            <ColorSection label={`✈️ ${t.filters.flightType}`} accent="sky">
               <div className="flex gap-2 flex-wrap">
                 {([
                   { value: "any", label: t.filters.anyFlight },
@@ -584,10 +613,10 @@ export function FilterSheet({
                   </PillButton>
                 ))}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Orario partenza ── */}
-            <FilterSection label={t.filters.departureTime}>
+            <ColorSection label={`⏰ ${t.filters.departureTime}`} accent="sky">
               <div className="flex gap-2 flex-wrap">
                 {([
                   { value: "any", label: t.filters.anyFlight },
@@ -600,46 +629,22 @@ export function FilterSheet({
                   </PillButton>
                 ))}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Durata massima viaggio ── */}
-            <FilterSection label={`${t.filters.maxTravelTime} — ${draft.maxTravelTimeHours !== null ? `≤ ${draft.maxTravelTimeHours}h` : t.filters.noLimit}`}>
+            <ColorSection label={`⏱ ${t.filters.maxTravelTime} — ${draft.maxTravelTimeHours !== null ? `≤ ${draft.maxTravelTimeHours}h` : t.filters.noLimit}`} accent="sky">
               <input
                 type="range" min={1} max={24} step={1} value={draft.maxTravelTimeHours ?? 24}
                 onChange={(e) => { const v = Number(e.target.value); set("maxTravelTimeHours", v >= 24 ? null : v); }}
-                className="w-full accent-zinc-900"
+                className="w-full accent-sky-500"
               />
               <div className="flex justify-between text-xs text-zinc-400">
                 <span>1h</span><span>{t.filters.noLimit}</span>
               </div>
-            </FilterSection>
-
-            {/* ── Max dist aeroporto ── */}
-            <FilterSection label={`${t.filters.maxAirportDist} — ${draft.maxDistanceFromAirportKm !== null ? `≤ ${draft.maxDistanceFromAirportKm} km` : t.filters.noLimit}`}>
-              <input
-                type="range" min={5} max={100} step={5} value={draft.maxDistanceFromAirportKm ?? 100}
-                onChange={(e) => { const v = Number(e.target.value); set("maxDistanceFromAirportKm", v >= 100 ? null : v); }}
-                className="w-full accent-zinc-900"
-              />
-              <div className="flex justify-between text-xs text-zinc-400">
-                <span>5 km</span><span>{t.filters.noLimit}</span>
-              </div>
-            </FilterSection>
-
-            {/* ── Max hotel → centro ── */}
-            <FilterSection label={`${t.filters.maxCenterDist} — ${draft.maxHotelDistanceFromCenterKm !== null ? `≤ ${draft.maxHotelDistanceFromCenterKm} km` : t.filters.noLimit}`}>
-              <input
-                type="range" min={1} max={20} step={1} value={draft.maxHotelDistanceFromCenterKm ?? 20}
-                onChange={(e) => { const v = Number(e.target.value); set("maxHotelDistanceFromCenterKm", v >= 20 ? null : v); }}
-                className="w-full accent-zinc-900"
-              />
-              <div className="flex justify-between text-xs text-zinc-400">
-                <span>1 km</span><span>{t.filters.noLimit}</span>
-              </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Sistemazione ── */}
-            <FilterSection label={t.filters.accommodation}>
+            <ColorSection label={`🏨 ${t.filters.accommodation}`} accent="amber">
               <div className="flex gap-2 flex-wrap">
                 {([
                   { value: "null", label: t.filters.anyAcc },
@@ -656,10 +661,10 @@ export function FilterSheet({
                   </PillButton>
                 ))}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Tipo struttura ── */}
-            <FilterSection label={t.filters.propertyType}>
+            <ColorSection label={`🏠 ${t.filters.propertyType}`} accent="amber">
               <div className="grid grid-cols-2 gap-2">
                 {(["any", "hotel", "apartment", "hostel"] as const).map((v) => (
                   <button
@@ -667,18 +672,18 @@ export function FilterSheet({
                     onClick={() => set("propertyType", v as TripFilters["propertyType"])}
                     className={`py-3 rounded-2xl border text-sm font-medium transition-all ${
                       draft.propertyType === v
-                        ? "bg-zinc-900 text-white border-zinc-900"
-                        : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 shadow-sm"
+                        : "bg-white text-zinc-700 border-zinc-200 hover:border-amber-300"
                     }`}
                   >
                     {v === "any" ? t.filters.anyAcc : v === "hotel" ? t.filters.hotelOnly : v === "apartment" ? t.filters.apartmentOnly : t.filters.hostelOnly}
                   </button>
                 ))}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Valutazione minima ── */}
-            <FilterSection label={t.filters.ratingFilter}>
+            <ColorSection label={`⭐ ${t.filters.ratingFilter}`} accent="amber">
               <div className="flex gap-2 flex-wrap">
                 {([null, 7, 8, 9] as const).map((v) => (
                   <button
@@ -686,18 +691,18 @@ export function FilterSheet({
                     onClick={() => set("minHotelRating", draft.minHotelRating === v ? null : v)}
                     className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
                       (v === null && draft.minHotelRating === null) || (v !== null && draft.minHotelRating === v)
-                        ? "bg-zinc-900 text-white border-zinc-900"
-                        : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 shadow-sm"
+                        : "bg-white text-zinc-600 border-zinc-200 hover:border-amber-300"
                     }`}
                   >
                     {v === null ? t.filters.anyFlight : `≥ ${v}/10`}
                   </button>
                 ))}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             {/* ── Servizi hotel ── */}
-            <FilterSection label={t.filters.hotelFeatures}>
+            <ColorSection label={`✅ ${t.filters.hotelFeatures}`} accent="amber">
               <div className="grid grid-cols-2 gap-2">
                 {([
                   { key: "freeCancellation", label: t.filters.freeCancellation },
@@ -715,8 +720,8 @@ export function FilterSheet({
                       onClick={() => toggle(key)}
                       className={`flex items-center justify-between gap-2 px-3.5 py-3 rounded-2xl border text-sm text-left transition-all ${
                         active
-                          ? "bg-zinc-900 text-white border-zinc-900"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-500 shadow-sm"
+                          : "bg-white text-zinc-700 border-zinc-200 hover:border-amber-300"
                       }`}
                     >
                       <span className="leading-tight text-xs font-medium">{label}</span>
@@ -725,7 +730,7 @@ export function FilterSheet({
                   );
                 })}
               </div>
-            </FilterSection>
+            </ColorSection>
 
             <div className="h-2" />
           </div>
@@ -735,14 +740,14 @@ export function FilterSheet({
         <div className="px-5 pb-8 pt-4 border-t border-zinc-100 bg-white shrink-0">
           <Button
             size="lg"
-            className={`w-full text-sm font-semibold rounded-2xl transition-all ${
+            className={`w-full text-sm font-semibold rounded-2xl transition-all shadow-lg ${
               tried && hasErrors
-                ? "bg-red-500 hover:bg-red-600 text-white"
-                : "bg-zinc-900 hover:bg-zinc-800 text-white"
+                ? "bg-red-500 hover:bg-red-600 text-white shadow-red-200"
+                : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-200"
             }`}
             onClick={handleApply}
           >
-            {tried && hasErrors ? t.filters.validationTitle : t.filters.apply}
+            {tried && hasErrors ? "⚠️ " + t.filters.validationTitle : t.filters.apply}
           </Button>
         </div>
       </SheetContent>
@@ -751,18 +756,32 @@ export function FilterSheet({
 }
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
-function SectionLabel({ children }: { children: React.ReactNode }) {
+const ACCENT_COLORS: Record<string, { label: string; border: string; bg: string }> = {
+  blue:   { label: "text-blue-600",   border: "border-l-blue-500",   bg: "bg-blue-50/40"   },
+  sky:    { label: "text-sky-600",    border: "border-l-sky-500",    bg: "bg-sky-50/40"    },
+  emerald:{ label: "text-emerald-600",border: "border-l-emerald-500",bg: "bg-emerald-50/40"},
+  orange: { label: "text-orange-500", border: "border-l-orange-500", bg: "bg-orange-50/40" },
+  violet: { label: "text-violet-600", border: "border-l-violet-500", bg: "bg-violet-50/40" },
+  amber:  { label: "text-amber-600",  border: "border-l-amber-500",  bg: "bg-amber-50/40"  },
+  zinc:   { label: "text-zinc-500",   border: "border-l-zinc-300",   bg: ""                },
+};
+
+function ColorSection({ label, children, accent = "zinc", required = false }: { label: string; children: React.ReactNode; accent?: string; required?: boolean }) {
+  const c = ACCENT_COLORS[accent] ?? ACCENT_COLORS.zinc;
   return (
-    <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">{children}</p>
+    <div className={`space-y-3 pl-3 border-l-2 ${c.border}`}>
+      <div className="flex items-center gap-1.5">
+        <p className={`text-[11px] font-bold uppercase tracking-wider ${c.label}`}>{label}</p>
+        {required && <span className="text-red-500 font-bold text-[11px]">*</span>}
+      </div>
+      {children}
+    </div>
   );
 }
 
-function FilterSection({ label, children }: { label: string; children: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-3">
-      <SectionLabel>{label}</SectionLabel>
-      {children}
-    </div>
+    <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">{children}</p>
   );
 }
 
@@ -788,8 +807,8 @@ function PillButton({ active, onClick, children }: { active: boolean; onClick: (
       onClick={onClick}
       className={`flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
         active
-          ? "bg-zinc-900 text-white border-zinc-900"
-          : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+          ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-600 shadow-sm shadow-blue-200"
+          : "bg-white text-zinc-600 border-zinc-200 hover:border-blue-300"
       }`}
     >
       {children}
