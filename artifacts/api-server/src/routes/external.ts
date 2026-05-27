@@ -37,7 +37,13 @@ router.get("/external/place-photo", async (req, res) => {
       res.status(204).end();
       return;
     }
-    const photoResp = await fetch(url);
+    // Optional Referer header for keys that ARE referrer-restricted. Only
+    // sent when explicitly configured — unrestricted server keys work without.
+    const photoReferer = (process.env.GOOGLE_PLACES_REFERER ?? "").trim();
+    const photoResp = await fetch(
+      url,
+      photoReferer ? { headers: { Referer: photoReferer } } : undefined,
+    );
     if (!photoResp.ok) {
       req.log?.warn({ status: photoResp.status, query }, "place-photo upstream not ok");
       res.status(204).end();
