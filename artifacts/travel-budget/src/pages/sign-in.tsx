@@ -66,10 +66,10 @@ export default function SignInPage() {
           />
         </div>
 
-        <p className="mt-6 text-white/60 text-xs text-center">
-          <Link href="/privacy" className="hover:text-white/90 underline">Privacy</Link>
+        <p className="mt-6 text-white text-sm text-center drop-shadow-md">
+          <Link href="/privacy" className="font-semibold underline underline-offset-2 hover:text-[hsl(25,90%,80%)]">Privacy</Link>
           {" · "}
-          <Link href="/terms" className="hover:text-white/90 underline">Termini</Link>
+          <Link href="/terms" className="font-semibold underline underline-offset-2 hover:text-[hsl(25,90%,80%)]">Termini</Link>
         </p>
       </div>
     </div>
