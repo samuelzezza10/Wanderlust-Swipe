@@ -1132,6 +1132,7 @@ export function LocationAutocomplete({
   const dropdown = open && matches.length > 0
     ? (
         <div
+          data-autocomplete-dropdown="true"
           style={{ ...dropdownStyle, overflowY: "auto" }}
           className="bg-white border border-gray-200 rounded-2xl shadow-2xl"
         >
@@ -1139,10 +1140,10 @@ export function LocationAutocomplete({
             <button
               key={i}
               type="button"
-              onMouseDown={(e) => {
-                // Prevent input blur so the click fully registers, then
-                // select immediately on mousedown (avoids the race where
-                // the portal dropdown closes before onClick fires).
+              onPointerDown={(e) => {
+                // onPointerDown fires for BOTH mouse and touch, before blur.
+                // preventDefault keeps the input focused so the Sheet doesn't
+                // interpret this as an outside-click and close itself.
                 e.preventDefault();
                 handleSelect(loc);
               }}
