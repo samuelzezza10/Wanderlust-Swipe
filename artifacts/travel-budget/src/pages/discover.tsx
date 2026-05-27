@@ -323,7 +323,7 @@ function BudgetMeter({
         </span>
         {status === "over" && (
           <span className="text-[9px] font-bold uppercase tracking-wider text-red-400">
-            sfora budget
+            {exceedsBudgetLabel(lang)}
           </span>
         )}
       </div>
@@ -1176,8 +1176,10 @@ export default function Discover() {
                 const hotelPpN    = ho ? ho.pricePerNight         : trip.hotel.pricePerNight;
                 const totalPrice  = Math.round(flightPrice + hotelPpN * nights);
 
-                // Budget filter: only active when both real sources available
-                if (bothReal && totalPrice > budget * 1.05) return;
+                // Budget filter: only active when both real sources available.
+                // Use the shared BUDGET_TOLERANCE so enrichment matches the
+                // main filter+save policy (single source of truth).
+                if (bothReal && totalPrice > budget * BUDGET_TOLERANCE) return;
 
                 packages.push({
                   ...trip,
@@ -1987,6 +1989,16 @@ export default function Discover() {
                   numberOfPeople={filters.numberOfPeople}
                   departureFrom={filters.departureAirport || filters.departureStation || ""}
                   onSave={() => {
+                    // Same +10% tolerance guard as the swipe-right path so
+                    // every save flow (swipe, list, detail) honours one rule.
+                    const partyTotal = tripTotalForParty(trip, filters.numberOfPeople ?? 1);
+                    const cap = filters.budget * BUDGET_TOLERANCE;
+                    if (filters.budget > 0 && partyTotal > cap) {
+                      toast.error(exceedsBudgetLabel(lang), {
+                        description: `${formatCurrency(partyTotal, lang)} / ${formatCurrency(filters.budget, lang)}`,
+                      });
+                      return;
+                    }
                     if (isSignedIn) {
                       saveTrip.mutate({ data: { tripData: trip, destination: trip.destination, totalPrice: trip.totalPrice, imageUrl: trip.imageUrl } });
                       addNotification(t.notifications.tripSaved, "trip_saved");
@@ -2035,6 +2047,16 @@ export default function Discover() {
         numberOfNights={filters.numberOfNights ?? 3}
         onSave={() => {
           if (detailTrip) {
+            // Same +10% tolerance guard so the detail-sheet save matches
+            // the swipe/list policy — single source of truth for budget.
+            const partyTotal = tripTotalForParty(detailTrip, filters.numberOfPeople ?? 1);
+            const cap = filters.budget * BUDGET_TOLERANCE;
+            if (filters.budget > 0 && partyTotal > cap) {
+              toast.error(exceedsBudgetLabel(lang), {
+                description: `${formatCurrency(partyTotal, lang)} / ${formatCurrency(filters.budget, lang)}`,
+              });
+              return;
+            }
             if (isSignedIn) {
               saveTrip.mutate({ data: { tripData: detailTrip, destination: detailTrip.destination, totalPrice: detailTrip.totalPrice, imageUrl: detailTrip.imageUrl } });
               setDetailTrip(null);
@@ -2070,7 +2092,7 @@ function TripListCard({
   onInfo: () => void;
 }) {
   const totalForAll = tripTotalForParty(trip, numberOfPeople);
-  const isOverBudget = !!budget && budget > 0 && totalForAll > budget;
+  const isOverBudget = !!budget && budget > 0 && totalForAll > budget * BUDGET_TOLERANCE;
 
   return (
     <motion.div
@@ -2201,7 +2223,7 @@ function TripCard({
   const roundTripTransport = trip.transport.price + (trip.returnTransport?.price ?? 0);
   // Total for ALL people — single source of truth shared with filter + swipe logic
   const totalForAll = tripTotalForParty(trip, numberOfPeople ?? 1);
-  const isOverBudget = !!budget && budget > 0 && totalForAll > budget;
+  const isOverBudget = !!budget && budget > 0 && totalForAll > budget * BUDGET_TOLERANCE;
   const savings = budget && budget > 0 ? budget - totalForAll : 0;
   const savingsMsg = savings > 10
     ? t.fun.savingsMessages[trip.id.charCodeAt(trip.id.length - 1) % t.fun.savingsMessages.length]
