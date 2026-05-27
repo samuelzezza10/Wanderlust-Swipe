@@ -536,7 +536,7 @@ function ShareModal({
 
   if (!trip) return null;
 
-  const shareText = `✈️ ${trip.destination}, ${trip.country} — ${trip.durationDays} notti a ${formatCurrency(trip.totalPrice, lang)}/persona! Scoperto su TravelBudget 🌍`;
+  const shareText = `✈️ ${trip.destination}, ${trip.country} — ${trip.durationDays} ${t.tripDetail.nights} ${formatCurrency(trip.totalPrice, lang)}/${t.tripDetail.person}! TravelBudget 🌍`;
   const waUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
   const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}&quote=${encodeURIComponent(shareText)}`;
 
@@ -1918,11 +1918,18 @@ export default function Discover() {
 
         {viewMode === "swipe" ? (
           /* ── SWIPE DECK ── */
-          <div className="flex-1 flex flex-col items-center justify-center p-4 overflow-hidden">
-            <div className="relative w-full max-w-sm aspect-[3/4]">
+          <div className="flex-1 flex flex-col items-center justify-center p-2 overflow-hidden">
+            <div className="relative w-full max-w-xs" style={{ aspectRatio: "3/4", maxHeight: "min(66dvh, 400px)" }}>
               <AnimatePresence>
-                {trips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
-                  const stack = trips.slice(currentIndex, currentIndex + 3);
+                {(() => {
+                  const bgt = filters.budget;
+                  const ppl = Math.max(1, filters.numberOfPeople ?? 1);
+                  const cap = bgt > 0 ? bgt * BUDGET_TOLERANCE : Infinity;
+                  const visibleTrips = trips.filter(
+                    (t) => cap === Infinity || tripTotalForParty(t, ppl) <= cap
+                  );
+                  return visibleTrips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
+                  const stack = visibleTrips.slice(currentIndex, currentIndex + 3);
                   const isTop = i === stack.length - 1;
                   return (
                     <TripCard
@@ -1942,7 +1949,8 @@ export default function Discover() {
                       numberOfPeople={filters.numberOfPeople}
                     />
                   );
-                })}
+                  });
+                })()}
               </AnimatePresence>
             </div>
             {/* Loading more indicator below deck */}
@@ -2324,7 +2332,7 @@ function TripCard({
                 <span>{trip.transport.isDirect ? t.tripDetail.direct : (trip.transport.stops ? `${trip.transport.stops} ${t.tripDetail.withStops}` : t.tripDetail.withStops)}</span>
               </div>
               <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
-                <Clock className="w-3 h-3 shrink-0" />{trip.durationDays}n
+                <Clock className="w-3 h-3 shrink-0" />{trip.durationDays}{t.tripDetail.nightsAbbr}
               </div>
               <div className="flex items-center gap-1 bg-amber-500/70 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-semibold">
                 <Star className="w-3 h-3 fill-white shrink-0" />{trip.hotel.stars}★
@@ -2427,111 +2435,6 @@ interface FlightEnrichResult {
 
 /* ─── Trip Detail Sheet ──────────────────────────────────────────────────── */
 
-function BookingHotelsSection({
-  destination, checkin, checkout, adults, basePath,
-}: {
-  destination: string;
-  checkin: string;
-  checkout: string;
-  adults: number;
-  basePath: string;
-}) {
-  const params = useMemo(() => {
-    const q = new URLSearchParams({
-      destination,
-      checkin,
-      checkout,
-      adults: String(adults),
-      limit: "1",
-    });
-    return q.toString();
-  }, [destination, checkin, checkout, adults]);
-
-  const { data, isLoading, isError } = useQuery<{
-    hotels: BookingHotelResult[];
-    affiliateLink: string;
-  }>({
-    queryKey: ["booking-hotels", destination, checkin, checkout, adults],
-    queryFn: async () => {
-      const resp = await fetch(`${basePath}/api/external/hotels/by-destination?${params}`);
-      if (!resp.ok) throw new Error("booking_fetch_failed");
-      return resp.json() as Promise<{ hotels: BookingHotelResult[]; affiliateLink: string }>;
-    },
-    staleTime: 1000 * 60 * 10,
-    retry: 1,
-  });
-
-  const hotels = data?.hotels ?? [];
-  const affiliateLink = data?.affiliateLink ?? `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(destination)}&aid=304142`;
-
-  if (isLoading) {
-    return (
-      <section className="bg-muted/40 rounded-2xl p-4 space-y-3">
-        <p className="font-bold text-base flex items-center gap-2">
-          <Hotel className="w-4 h-4 text-[#003580]" />
-          Hotel disponibili su Booking.com
-        </p>
-        <div className="space-y-2">
-          <div className="h-14 rounded-xl bg-muted animate-pulse" />
-        </div>
-      </section>
-    );
-  }
-
-  if (isError || hotels.length === 0) return null;
-
-  return (
-    <section className="bg-muted/40 rounded-2xl p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="font-bold text-base flex items-center gap-2">
-          <Hotel className="w-4 h-4 text-[#003580]" />
-          Hotel disponibili su Booking.com
-        </p>
-        <span className="text-[10px] bg-[#003580]/10 text-[#003580] font-semibold px-2 py-0.5 rounded-full">
-          LIVE
-        </span>
-      </div>
-      <div className="space-y-2">
-        {hotels.map((h) => (
-          <a
-            key={h.hotelId}
-            href={h.bookingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 bg-background border rounded-xl px-3 py-2.5 hover:border-[#003580]/40 transition-colors"
-          >
-            <HotelPhoto
-              query={`${h.name} ${destination}`}
-              alt={h.name}
-              className="w-12 h-12 rounded-lg object-cover shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{h.name}</p>
-              <p className="text-xs text-muted-foreground truncate">{h.address}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                <span className="text-xs font-medium">{h.rating}</span>
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-sm font-bold text-[#003580]">€{h.pricePerNight}</p>
-              <p className="text-[10px] text-muted-foreground">a notte</p>
-            </div>
-          </a>
-        ))}
-      </div>
-      <a
-        href={affiliateLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full bg-[#003580] text-white rounded-xl py-2.5 text-sm font-semibold hover:bg-[#00245a] transition-colors"
-      >
-        Vedi tutti gli hotel
-        <ExternalLink className="w-3.5 h-3.5 opacity-70" />
-      </a>
-    </section>
-  );
-}
 
 function TripDetailSheet({
   trip, onClose, isSignedIn, onSave, onShare, budget, numberOfPeople,
@@ -2709,15 +2612,6 @@ function TripDetailSheet({
                 ⚠️ {t.legal.priceDisclaimer}
               </p>
 
-              {/* Real hotels from Booking.com */}
-              <BookingHotelsSection
-                destination={trip.destination}
-                checkin={checkin}
-                checkout={checkout}
-                adults={numberOfPeople ?? 1}
-                basePath={basePath}
-              />
-
               {/* Google Maps embed — uses VITE_GOOGLE_API_KEY (public Maps key, safe in client). */}
               <TripMapSection destination={trip.destination} country={trip.country} />
 
@@ -2750,7 +2644,7 @@ function TripDetailSheet({
                   <section className="bg-muted/40 rounded-2xl p-4">
                     <p className="font-bold text-base mb-1">{t.tripDetail.bookTitle}</p>
                     <p className="text-xs text-muted-foreground mb-3">
-                      {checkin} → {checkout} · {numberOfPeople ?? 1} {(numberOfPeople ?? 1) > 1 ? "persone" : "persona"}
+                      {checkin} → {checkout} · {numberOfPeople ?? 1} {(numberOfPeople ?? 1) > 1 ? t.tripDetail.people : t.tripDetail.person}
                     </p>
                     <div className="flex flex-col gap-2">
                       <a
