@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { Plane, TrainFront, X } from "lucide-react";
 
 type LocationKind = "airport" | "station";
@@ -1138,8 +1139,13 @@ export function LocationAutocomplete({
             <button
               key={i}
               type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleSelect(loc)}
+              onMouseDown={(e) => {
+                // Prevent input blur so the click fully registers, then
+                // select immediately on mousedown (avoids the race where
+                // the portal dropdown closes before onClick fires).
+                e.preventDefault();
+                handleSelect(loc);
+              }}
               className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-gray-50 active:bg-gray-100 text-left border-b border-gray-100 last:border-0 transition-colors"
             >
               {loc.kind === "airport" ? (
@@ -1167,7 +1173,7 @@ export function LocationAutocomplete({
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            onChange("");
+            onChange(e.target.value);
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
@@ -1180,7 +1186,7 @@ export function LocationAutocomplete({
           </button>
         ) : null}
       </div>
-      {dropdown}
+      {dropdown ? createPortal(dropdown, document.body) : null}
     </div>
   );
 }
