@@ -186,7 +186,7 @@ export function FilterBar({
   if (filters.tripType === "one_way") chips.push(t.filters.oneWay);
   if (filters.numberOfChildren > 0) chips.push(`${filters.numberOfChildren} ${(t.filters.children ?? "").toLowerCase()}`);
   if (filters.numberOfPets > 0) chips.push(`${filters.numberOfPets} ${(t.filters.pets ?? "").toLowerCase()}`);
-  if (filters.numberOfRooms > 1) chips.push(`${filters.numberOfRooms} stanze`);
+  if (filters.numberOfRooms > 1) chips.push(`${filters.numberOfRooms} ${(t.filters.rooms ?? "rooms").toLowerCase()}`);
   if (filters.flightPreference === "direct") chips.push(t.filters.directOnly);
   if (filters.flightPreference === "with_stops") chips.push(t.filters.withStops);
   if (filters.breakfastIncluded) chips.push(t.filters.breakfastIncluded);
@@ -368,7 +368,15 @@ export function FilterSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="bottom" className="h-[100dvh] p-0 rounded-none overflow-hidden flex flex-col bg-white">
+      <SheetContent
+        side="bottom"
+        className="h-[100dvh] p-0 rounded-none overflow-hidden flex flex-col bg-white"
+        onPointerDownOutside={(e) => {
+          // Don't close the sheet when tapping the portaled autocomplete dropdown.
+          const target = e.target as HTMLElement | null;
+          if (target?.closest?.('[data-autocomplete-dropdown]')) e.preventDefault();
+        }}
+      >
 
         {/* ── Header ── */}
         <SheetHeader className="px-5 pt-6 pb-4 border-b border-zinc-100 flex-row items-center justify-between shrink-0">
@@ -539,7 +547,7 @@ export function FilterSheet({
                 <Stepper label={t.filters.travelers} value={draft.numberOfPeople} min={1} max={12} onChange={(v) => set("numberOfPeople", v)} />
                 <Stepper label={t.filters.children} value={draft.numberOfChildren} min={0} max={10} onChange={(v) => set("numberOfChildren", v)} />
                 <Stepper label={t.filters.pets} value={draft.numberOfPets} min={0} max={5} onChange={(v) => set("numberOfPets", v)} />
-                <Stepper label="Stanze" value={draft.numberOfRooms} min={1} max={10} onChange={(v) => set("numberOfRooms", v)} />
+                <Stepper label={t.filters.rooms ?? "Rooms"} value={draft.numberOfRooms} min={1} max={20} onChange={(v) => set("numberOfRooms", v)} />
               </div>
             </ColorSection>
 
