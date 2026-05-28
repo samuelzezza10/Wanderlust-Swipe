@@ -15,7 +15,7 @@ import {
   Clock, Star, Navigation, Wifi, WifiOff, ArrowRight, SlidersHorizontal,
   Share2, MessageCircle, Facebook, Copy, ExternalLink, Dice6,
   Crown, Zap, Sparkles, RefreshCw, Lightbulb, ChevronLeft, ChevronRight,
-  LayoutList, Layers, Users, Euro, AlertCircle,
+  LayoutList, Layers, Users, Euro, AlertCircle, Heart, User,
 } from "lucide-react";
 import { useAuth } from "@clerk/react";
 import { useLocation } from "wouter";
@@ -1870,122 +1870,148 @@ export default function Discover() {
   /* ── Main swipe / list deck ── */
   return (
     <>
-      <div className="flex-1 flex flex-col bg-primary overflow-hidden">
-        <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} compact />
+      {/* ════════════════════ TINDER-STYLE LAYOUT ════════════════════ */}
+      <div className="flex-1 flex flex-col bg-[#f5f5f5] overflow-hidden">
 
-        {/* ── Filter bar with recent searches ── */}
-        <FilterBar
-          filters={filters}
-          onEdit={() => setFilterOpen(true)}
-          recentSearches={recentChips.length > 0 ? recentChips : undefined}
-        />
+        {/* ── Top bar — filter | logo | profile ── */}
+        <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm z-10">
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 active:scale-90 transition-transform"
+            aria-label={t.filters.title}
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+          </button>
 
-        {/* ── Top bar: counter + view toggle ── */}
-        <div className="flex items-center justify-between px-4 pt-2 pb-1">
-          {viewMode === "swipe" ? (
-            <div className="flex items-center gap-2">
-              <button onClick={handlePrev} disabled={currentIndex === 0} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform">
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-white text-sm font-bold tabular-nums bg-black/30 px-3 py-1 rounded-full">
-                Card {currentIndex + 1} su {trips.length}{isLoadingMore ? "+" : ""}
-              </span>
-              <button onClick={handleNext} disabled={currentIndex >= trips.length - 1} className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-white disabled:opacity-30 active:scale-95 transition-transform">
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <span className="text-white/80 text-sm font-semibold">
-              {trips.length}{isLoadingMore ? "+" : ""} {t.discover.nResults}
-            </span>
-          )}
-          {/* Mode toggle */}
-          <div className="flex items-center bg-white/15 rounded-xl p-0.5 gap-0.5">
-            <button
-              onClick={() => setViewMode("swipe")}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all ${viewMode === "swipe" ? "bg-white text-primary shadow-sm" : "text-white/70 hover:text-white"}`}
-            >
-              <Layers className="w-3.5 h-3.5" /> Swipe
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all ${viewMode === "list" ? "bg-white text-primary shadow-sm" : "text-white/70 hover:text-white"}`}
-            >
-              <LayoutList className="w-3.5 h-3.5" /> {t.discover.viewList}
-            </button>
-          </div>
+          <span className="text-xl font-black tracking-tight text-primary select-none">
+            TravelBudget ✈️
+          </span>
+
+          <button
+            onClick={() => setLocation("/profile")}
+            className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 active:scale-90 transition-transform"
+            aria-label={t.nav.profile}
+          >
+            <User className="w-5 h-5" />
+          </button>
         </div>
 
         {viewMode === "swipe" ? (
-          /* ── SWIPE DECK ── */
-          <div className="flex-1 flex flex-col items-center justify-center p-2 overflow-hidden">
-            <div className="relative w-full max-w-xs" style={{ aspectRatio: "3/4", maxHeight: "min(66dvh, 400px)" }}>
-              <AnimatePresence>
-                {(() => {
-                  const bgt = filters.budget;
-                  const ppl = Math.max(1, filters.numberOfPeople ?? 1);
-                  const cap = bgt > 0 ? bgt * BUDGET_TOLERANCE : Infinity;
-                  const visibleTrips = trips.filter(
-                    (t) => cap === Infinity || tripTotalForParty(t, ppl) <= cap
-                  );
-                  return visibleTrips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
-                  const stack = visibleTrips.slice(currentIndex, currentIndex + 3);
-                  const isTop = i === stack.length - 1;
-                  return (
-                    <TripCard
-                      key={trip.id}
-                      trip={trip}
-                      isTop={isTop}
-                      index={i}
-                      onSwipe={handleSwipe}
-                      onInfo={() => setDetailTrip(trip)}
-                      onShare={() => setShareTrip(trip)}
-                      likeLabel={t.discover.like}
-                      nopeLabel={t.discover.nope}
-                      totalLabel={t.discover.total}
-                      caption={hashCaption(trip.id, t.fun.captions)}
-                      departureFrom={filters.departureAirport || filters.departureStation}
-                      budget={filters.budget}
-                      numberOfPeople={filters.numberOfPeople}
-                    />
-                  );
-                  });
-                })()}
-              </AnimatePresence>
-            </div>
-            {/* Loading more indicator below deck */}
-            {isLoadingMore && (
-              <div className="flex items-center gap-2 mt-3 text-white/60 text-xs">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>{t.discover.loadingMore}</span>
+          /* ── SWIPE VIEW (Tinder layout) ── */
+          <>
+            {/* Card area — fills ALL remaining space */}
+            <div className="flex-1 min-h-0 p-3 pb-2">
+              <div className="relative w-full h-full">
+                <AnimatePresence>
+                  {(() => {
+                    const bgt = filters.budget;
+                    const ppl = Math.max(1, filters.numberOfPeople ?? 1);
+                    const cap = bgt > 0 ? bgt * BUDGET_TOLERANCE : Infinity;
+                    const vTrips = trips.filter(
+                      (tr) => cap === Infinity || tripTotalForParty(tr, ppl) <= cap
+                    );
+                    return vTrips.slice(currentIndex, currentIndex + 3).reverse().map((trip, i) => {
+                      const stack = vTrips.slice(currentIndex, currentIndex + 3);
+                      const isTop = i === stack.length - 1;
+                      return (
+                        <TripCard
+                          key={trip.id}
+                          trip={trip}
+                          isTop={isTop}
+                          index={i}
+                          onSwipe={handleSwipe}
+                          onInfo={() => setDetailTrip(trip)}
+                          onShare={() => setShareTrip(trip)}
+                          likeLabel={t.discover.like}
+                          nopeLabel={t.discover.nope}
+                          totalLabel={t.discover.total}
+                          caption={hashCaption(trip.id, t.fun.captions)}
+                          departureFrom={filters.departureAirport || filters.departureStation}
+                          budget={filters.budget}
+                          numberOfPeople={filters.numberOfPeople}
+                        />
+                      );
+                    });
+                  })()}
+                </AnimatePresence>
+
+                {/* Loading overlay inside card area */}
+                {isLoadingMore && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex items-center gap-2 bg-black/55 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-full">
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                    <span>{t.discover.loadingMore}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {/* Action buttons: ↩ | ❌ | ℹ INFO | ✓ | Filtri ────────────────
-             * Info button sits in the middle between dislike (❌) and like (✓)
-             * so the user can pull up trip details without leaving the deck.
-             */}
-            <div className="flex items-center gap-3 mt-6">
-              <button onClick={handleUndo} disabled={history.length === 0} className="w-11 h-11 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center text-gray-500 disabled:opacity-30 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform" title={t.onboarding.back}>
-                <RotateCcw className="w-4.5 h-4.5" />
+            </div>
+
+            {/* ── Tinder action bar ── */}
+            <div className="shrink-0 bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.07)] px-5 py-4 flex items-center justify-around">
+              {/* ↩ Undo */}
+              <button
+                onClick={handleUndo}
+                disabled={history.length === 0}
+                className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 shadow-sm flex items-center justify-center text-amber-400 disabled:opacity-30 disabled:cursor-not-allowed active:scale-90 transition-transform"
+                title={t.onboarding.back}
+              >
+                <RotateCcw className="w-5 h-5" />
               </button>
-              <button onClick={() => handleSwipe("left")} className="rounded-full bg-red-500 shadow-[0_4px_20px_rgba(239,68,68,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 64, height: 64 }} title={t.discover.nope}>
-                <X className="w-7 h-7 stroke-[2.5]" />
+
+              {/* ❌ NOPE */}
+              <button
+                onClick={() => handleSwipe("left")}
+                className="w-[68px] h-[68px] rounded-full bg-white border-[3px] border-red-400 shadow-md flex items-center justify-center text-red-500 active:scale-90 transition-transform"
+                title={t.discover.nope}
+              >
+                <X className="w-8 h-8 stroke-[2.5]" />
               </button>
-              <button onClick={() => { const top = trips[currentIndex]; if (top) setDetailTrip(top); }} disabled={!trips[currentIndex]} className="rounded-full bg-white shadow-[0_4px_20px_rgba(0,0,0,0.25)] border border-gray-200 flex items-center justify-center text-[hsl(215,85%,48%)] disabled:opacity-40 disabled:cursor-not-allowed hover:scale-110 active:scale-95 transition-transform" style={{ width: 56, height: 56 }} title={t.discover.infoBtn}>
-                <Info className="w-6 h-6 stroke-[2.4]" />
+
+              {/* ℹ️ INFO */}
+              <button
+                onClick={() => { const top = trips[currentIndex]; if (top) setDetailTrip(top); }}
+                disabled={!trips[currentIndex]}
+                className="w-12 h-12 rounded-full bg-white border-2 border-blue-300 shadow-sm flex items-center justify-center text-blue-500 disabled:opacity-40 disabled:cursor-not-allowed active:scale-90 transition-transform"
+                title={t.discover.infoBtn}
+              >
+                <Info className="w-5 h-5" />
               </button>
-              <button onClick={() => handleSwipe("right")} className="rounded-full bg-green-500 shadow-[0_4px_20px_rgba(34,197,94,0.5)] flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" style={{ width: 64, height: 64 }} title={t.discover.like}>
-                <Check className="w-7 h-7 stroke-[2.5]" />
+
+              {/* ❤️ LIKE */}
+              <button
+                onClick={() => handleSwipe("right")}
+                className="w-[68px] h-[68px] rounded-full bg-white border-[3px] border-green-400 shadow-md flex items-center justify-center text-green-500 active:scale-90 transition-transform"
+                title={t.discover.like}
+              >
+                <Heart className="w-8 h-8" />
               </button>
-              <button onClick={() => setFilterOpen(true)} className="w-11 h-11 rounded-full bg-white/20 shadow-md border border-white/30 flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-transform" title={t.filters.title}>
-                <SlidersHorizontal className="w-4.5 h-4.5" />
+
+              {/* ≡ LIST */}
+              <button
+                onClick={() => setViewMode("list")}
+                className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 shadow-sm flex items-center justify-center text-gray-400 active:scale-90 transition-transform"
+                title={t.discover.viewList}
+              >
+                <LayoutList className="w-5 h-5" />
               </button>
             </div>
-          </div>
+          </>
         ) : (
           /* ── LIST VIEW ── */
-          <div className="flex-1 overflow-y-auto px-3 pt-2 pb-24">
-            <div className="space-y-3 max-w-lg mx-auto">
+          <div className="flex-1 overflow-y-auto">
+            {/* Sticky back bar */}
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm px-4 py-3 flex items-center gap-3">
+              <button
+                onClick={() => setViewMode("swipe")}
+                className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 active:scale-90 transition-transform"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="font-semibold text-gray-800 text-sm">
+                {trips.length}{isLoadingMore ? "+" : ""} {t.discover.nResults}
+              </span>
+            </div>
+
+            <div className="px-3 pt-3 pb-24 space-y-2 max-w-lg mx-auto">
               {trips.map((trip, idx) => (
                 <TripListCard
                   key={trip.id}
@@ -1997,8 +2023,6 @@ export default function Discover() {
                   numberOfPeople={filters.numberOfPeople}
                   departureFrom={filters.departureAirport || filters.departureStation || ""}
                   onSave={() => {
-                    // Same +10% tolerance guard as the swipe-right path so
-                    // every save flow (swipe, list, detail) honours one rule.
                     const partyTotal = tripTotalForParty(trip, filters.numberOfPeople ?? 1);
                     const cap = filters.budget * BUDGET_TOLERANCE;
                     if (filters.budget > 0 && partyTotal > cap) {
@@ -2017,10 +2041,11 @@ export default function Discover() {
                   onInfo={() => setDetailTrip(trip)}
                 />
               ))}
-              {/* Load more at bottom of list */}
+
+              {/* Load more */}
               <div className="py-4 flex justify-center">
                 {isLoadingMore ? (
-                  <div className="flex items-center gap-2 text-white/60 text-sm">
+                  <div className="flex items-center gap-2 text-gray-500 text-sm">
                     <RefreshCw className="w-4 h-4 animate-spin" />
                     <span>{t.profile.loading}</span>
                   </div>
@@ -2028,13 +2053,13 @@ export default function Discover() {
                   <button
                     onClick={() => loadMore(filters)}
                     disabled={generateTrips.isPending}
-                    className="px-6 py-2.5 bg-white/20 hover:bg-white/30 border border-white/30 rounded-xl text-white text-sm font-semibold transition-colors flex items-center gap-2"
+                    className="px-6 py-2.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
                   >
                     <RefreshCw className="w-4 h-4" />
                     {t.discover.generateMore}
                   </button>
                 ) : (
-                  <p className="text-white/50 text-sm">{t.discover.seenAll}</p>
+                  <p className="text-gray-400 text-sm">{t.discover.seenAll}</p>
                 )}
               </div>
             </div>
@@ -2107,8 +2132,8 @@ function TripListCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.25 }}
-      className={`bg-white/10 backdrop-blur-sm border rounded-2xl overflow-hidden ${
-        isOverBudget ? "border-red-400/60" : "border-white/20"
+      className={`bg-white border rounded-2xl overflow-hidden shadow-sm ${
+        isOverBudget ? "border-red-300" : "border-gray-100"
       }`}
     >
       <div className="flex gap-3 p-3">
@@ -2120,13 +2145,13 @@ function TripListCard({
             className="w-24 h-24 rounded-xl object-cover"
             onError={(e) => { (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_IMG; }}
           />
-          <div className={`absolute bottom-1 left-1 backdrop-blur-sm rounded-lg px-1.5 py-0.5 ${
-            isOverBudget ? "bg-red-500/90" : "bg-black/60"
+          <div className={`absolute bottom-1 left-1 rounded-lg px-1.5 py-0.5 ${
+            isOverBudget ? "bg-red-500/95" : "bg-black/65"
           }`}>
             <span className="text-white text-[10px] font-bold">{formatCurrency(totalForAll, lang)}</span>
           </div>
           {isOverBudget && (
-            <div className="absolute top-1 left-1 bg-red-500/95 backdrop-blur-sm rounded-md px-1 py-0.5 pointer-events-none">
+            <div className="absolute top-1 left-1 bg-red-500/95 rounded-md px-1 py-0.5 pointer-events-none">
               <AlertCircle className="w-3 h-3 text-white" />
             </div>
           )}
@@ -2137,36 +2162,36 @@ function TripListCard({
           <div>
             <div className="flex items-start justify-between gap-1 mb-1">
               <div>
-                <p className="text-white font-bold text-base leading-tight">{trip.destination}</p>
-                <p className="text-white/60 text-xs">{trip.country}</p>
+                <p className="text-gray-900 font-bold text-base leading-tight">{trip.destination}</p>
+                <p className="text-gray-500 text-xs">{trip.country}</p>
               </div>
             </div>
 
             {/* Pills row */}
             <div className="flex flex-wrap gap-1 mb-1.5">
-              <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-0.5 bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full">
                 <Clock className="w-3 h-3" />{trip.transport.duration}
               </span>
-              <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-0.5 bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                 {trip.hotel.rating != null ? trip.hotel.rating.toFixed(1) : "–"}
               </span>
-              <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-0.5 bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full">
                 <MapPin className="w-3 h-3" />{formatDistance(trip.hotel.distanceFromCenter, lang)}
               </span>
               {departureFrom && (
-                <span className="flex items-center gap-0.5 bg-white/15 text-white text-[11px] px-2 py-0.5 rounded-full">
+                <span className="flex items-center gap-0.5 bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full">
                   <Plane className="w-3 h-3" />{departureFrom.split(" (")[0].split(" ")[0]}
                 </span>
               )}
             </div>
 
-            <p className="text-white/50 text-[11px] truncate">{trip.hotel.name} · {trip.durationDays}n</p>
+            <p className="text-gray-400 text-[11px] truncate">{trip.hotel.name} · {trip.durationDays}n</p>
 
             {/* Budget meter for list view */}
             {!!budget && budget > 0 && (
               <div className="mt-1.5">
-                <BudgetMeter spent={totalForAll} budget={budget} lang={lang} variant="dark" />
+                <BudgetMeter spent={totalForAll} budget={budget} lang={lang} variant="light" />
               </div>
             )}
           </div>
@@ -2175,7 +2200,7 @@ function TripListCard({
           <div className="flex gap-2 mt-2">
             <button
               onClick={onInfo}
-              className="flex-1 h-8 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+              className="flex-1 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
             >
               <Info className="w-3.5 h-3.5" /> {t.discover.infoBtn}
             </button>
@@ -2185,14 +2210,14 @@ function TripListCard({
               title={isOverBudget ? exceedsBudgetLabel(lang) : undefined}
               className={`flex-1 h-8 rounded-xl text-white text-xs font-semibold flex items-center justify-center gap-1 transition-colors ${
                 isOverBudget
-                  ? "bg-red-500/70 cursor-not-allowed opacity-80"
-                  : "bg-green-500/80 hover:bg-green-500"
+                  ? "bg-red-400 cursor-not-allowed opacity-80"
+                  : "bg-green-500 hover:bg-green-600"
               }`}
             >
               {isOverBudget ? (
                 <><AlertCircle className="w-3.5 h-3.5" /> {exceedsBudgetLabel(lang)}</>
               ) : (
-                <><Check className="w-3.5 h-3.5" /> {t.tripDetail.saveTrip}</>
+                <><Heart className="w-3.5 h-3.5" /> {t.tripDetail.saveTrip}</>
               )}
             </button>
           </div>
