@@ -508,11 +508,11 @@ export function FilterSheet({
                 <span className="text-lg font-semibold text-emerald-400 select-none">{currencySymbol}</span>
                 <input
                   type="number"
-                  min={0}
-                  max={20000}
+                  min={1}
+                  max={99999}
                   value={draft.budget || ""}
                   onChange={(e) => {
-                    const v = Math.max(0, Math.min(20000, parseInt(e.target.value, 10) || 0));
+                    const v = Math.max(1, parseInt(e.target.value, 10) || 0);
                     set("budget", v);
                   }}
                   className="flex-1 text-2xl font-bold bg-transparent focus:outline-none text-zinc-900 min-w-0"
@@ -521,24 +521,8 @@ export function FilterSheet({
               </div>
               {errors["budget"] && <FieldError>{errors["budget"]}</FieldError>}
               <p className="text-xs text-zinc-400 mt-1 px-1">
-                {t.filters.budgetHint ?? "Budget totale per persona: volo + hotel. Non verrà mai superato."}
+                {t.filters.budgetHint}
               </p>
-              <div className="flex gap-2 flex-wrap">
-                {[500, 1000, 2000, 5000, 10000].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => set("budget", v)}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                      draft.budget === v
-                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-emerald-500 shadow-sm shadow-emerald-200"
-                        : "bg-white text-zinc-600 border-zinc-200 hover:border-emerald-300"
-                    }`}
-                  >
-                    {currencySymbol}{v.toLocaleString()}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* ── Persone + Stanze ── */}
