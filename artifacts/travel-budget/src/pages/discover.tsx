@@ -432,63 +432,63 @@ function WelcomeSplash({ onDismiss }: { onDismiss: () => void }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-primary flex flex-col items-center justify-center overflow-hidden"
+      className="fixed inset-0 z-[100] bg-[#f5f5f5] flex flex-col items-center justify-center overflow-hidden"
     >
-      {/* Animated background blobs */}
+      {/* Subtle background circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute w-80 h-80 rounded-full bg-white/10 -top-20 -left-20"
-          animate={{ scale: [1, 1.15, 1], rotate: [0, 20, 0] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute w-96 h-96 rounded-full bg-primary/5 -top-24 -left-24"
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute w-60 h-60 rounded-full bg-white/5 bottom-10 -right-16"
-          animate={{ scale: [1.1, 1, 1.1], rotate: [0, -15, 0] }}
+          className="absolute w-72 h-72 rounded-full bg-orange-100/70 bottom-10 -right-20"
+          animate={{ scale: [1.05, 1, 1.05] }}
           transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
         />
       </div>
 
       {/* Animated icons row */}
-      <div className="flex items-end justify-center gap-6 mb-10">
+      <div className="flex items-end justify-center gap-5 mb-10">
         <motion.div
-          initial={{ x: -120, opacity: 0 }}
+          initial={{ x: -80, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 120 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 120 }}
         >
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-            className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg"
+            className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center shadow-md"
           >
-            <Plane className="w-8 h-8 text-white" />
+            <Plane className="w-8 h-8 text-primary" />
           </motion.div>
         </motion.div>
 
         <motion.div
-          initial={{ y: 80, opacity: 0 }}
+          initial={{ y: 60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
+          transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
         >
           <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            className="w-20 h-20 rounded-3xl bg-white/25 backdrop-blur flex items-center justify-center shadow-xl"
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+            className="w-20 h-20 rounded-3xl bg-orange-100 flex items-center justify-center shadow-lg"
           >
-            <Hotel className="w-10 h-10 text-white" />
+            <Hotel className="w-10 h-10 text-orange-500" />
           </motion.div>
         </motion.div>
 
         <motion.div
-          initial={{ x: 120, opacity: 0 }}
+          initial={{ x: 80, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 120 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 120 }}
         >
           <motion.div
             animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-            className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center shadow-lg"
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 1.2 }}
+            className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center shadow-md"
           >
-            <Plane className="w-8 h-8 text-white" />
+            <Plane className="w-8 h-8 text-primary" />
           </motion.div>
         </motion.div>
       </div>
@@ -497,26 +497,27 @@ function WelcomeSplash({ onDismiss }: { onDismiss: () => void }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-        className="text-center px-8 mb-12"
+        transition={{ delay: 0.6 }}
+        className="text-center px-8 mb-10"
       >
-        <h1 className="text-4xl font-black text-white mb-3 tracking-tight">
-          Travel<span className="text-[hsl(25,90%,70%)]">Budget</span>
+        <h1 className="text-4xl font-black text-gray-900 mb-3 tracking-tight">
+          Travel<span className="text-orange-500">Budget</span>
         </h1>
-        <p className="text-white/80 text-lg font-medium">{t.discover.welcomeSub}</p>
+        <p className="text-gray-500 text-base font-medium">{t.discover.welcomeSub}</p>
       </motion.div>
 
       {/* CTA */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.8 }}
       >
         <button
           onClick={onDismiss}
-          className="bg-[hsl(25,90%,55%)] text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:bg-[hsl(25,90%,50%)] active:scale-95 transition-all"
+          className="bg-primary text-white font-bold text-lg px-10 py-4 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.18)] hover:bg-primary/90 active:scale-95 transition-all flex items-center gap-3"
         >
-          {t.discover.welcomeStart} ✈
+          <Plane className="w-5 h-5" />
+          {t.discover.welcomeStart}
         </button>
       </motion.div>
     </motion.div>
@@ -997,9 +998,9 @@ export default function Discover() {
     // ── Destinazione obbligatoria ──────────────────────────────────
     const destValue = (f.arrivalAirport || f.arrivalStation || "").trim();
     if (!destValue || destValue.toLowerCase() === "any") {
-      toast.error("Seleziona prima la destinazione ✈️", {
-        description: "Indica dove vuoi andare per trovare voli e hotel reali.",
-        action: { label: "Scegli", onClick: () => setFilterOpen(true) },
+      toast.error(t.discover.selectDestError, {
+        description: t.discover.selectDestErrorSub,
+        action: { label: t.discover.selectDestBtn, onClick: () => setFilterOpen(true) },
         duration: 5000,
       });
       setFilterOpen(true);
@@ -1588,117 +1589,145 @@ export default function Discover() {
 
   /* ── Pre-search (no filters applied yet) ── */
   if (!hasSearched) {
-    const noDestination = !(filters.arrivalAirport || filters.arrivalStation || "").trim() ||
-      (filters.arrivalAirport || filters.arrivalStation || "").trim().toLowerCase() === "any";
-
     return (
-      <div className="flex-1 flex flex-col bg-primary">
-        {UsageBadge}
-        {!isOnline ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-            <motion.div
-              animate={{ scale: [1, 1.08, 1] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-              className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6"
-            >
-              <WifiOff className="w-10 h-10 text-orange-500" />
-            </motion.div>
-            <h2 className="text-xl font-bold mb-2">{t.offline.title}</h2>
-            <p className="text-sm text-muted-foreground mb-8 max-w-xs leading-relaxed">{t.offline.noCache}</p>
+      <>
+        {/* ── Tinder-style search home ── */}
+        <div className="flex-1 flex flex-col bg-[#f5f5f5] overflow-hidden">
+
+          {/* Top bar */}
+          <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 shadow-sm z-10">
+            <div className="w-10" />
+            <span className="text-xl font-black tracking-tight text-primary select-none">TravelBudget ✈️</span>
             <button
-              onClick={checkConnectivity}
-              className="flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary/90 active:scale-95 transition-all"
+              onClick={() => setLocation("/profile")}
+              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 active:scale-90 transition-transform"
+              aria-label={t.nav.profile}
             >
-              <RefreshCw className="w-4 h-4" />
-              {t.offline.reconnected.replace("! 🚀", "?")}
+              <User className="w-5 h-5" />
             </button>
           </div>
-        ) : noDestination ? (
-          /* ── No destination set: mandatory first step ── */
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-6">
-            <motion.div
-              animate={{ y: [0, -8, 0] }}
-              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-              className="w-24 h-24 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl"
-            >
-              <MapPin className="w-12 h-12 text-white" />
-            </motion.div>
 
-            <div>
-              <h2 className="text-2xl font-black text-white mb-2">Dove vuoi andare?</h2>
-              <p className="text-white/80 text-sm max-w-xs mx-auto leading-relaxed">
-                Scegli la destinazione per trovare <strong className="text-white">voli + hotel reali</strong> nel tuo budget.
-              </p>
+          {UsageBadge}
+
+          {!isOnline ? (
+            /* ── Offline ── */
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+              <motion.div
+                animate={{ scale: [1, 1.08, 1] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+                className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6"
+              >
+                <WifiOff className="w-10 h-10 text-orange-500" />
+              </motion.div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">{t.offline.title}</h2>
+              <p className="text-sm text-gray-500 mb-8 max-w-xs leading-relaxed">{t.offline.noCache}</p>
+              <button
+                onClick={checkConnectivity}
+                className="flex items-center gap-2 bg-primary text-white font-semibold px-6 py-3 rounded-xl hover:bg-primary/90 active:scale-95 transition-all"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {t.offline.reconnected.replace("! 🚀", "?")}
+              </button>
             </div>
+          ) : (
+            /* ── Main search home ── */
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-6 overflow-y-auto">
 
-            <motion.button
-              whileTap={{ scale: 0.96 }}
-              onClick={() => setFilterOpen(true)}
-              className="flex items-center gap-3 bg-white text-primary font-bold text-base px-8 py-4 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.25)] hover:bg-white/95 transition-all"
-            >
-              <Plane className="w-5 h-5" />
-              Scegli destinazione
-              <ChevronRight className="w-5 h-5" />
-            </motion.button>
+              {/* Animated flight + hotel icons */}
+              <div className="flex items-end gap-4 mb-2">
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center"
+                >
+                  <Plane className="w-8 h-8 text-primary" />
+                </motion.div>
+                <motion.div
+                  animate={{ y: [0, -14, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
+                  className="w-20 h-20 rounded-3xl bg-orange-100 flex items-center justify-center"
+                >
+                  <Hotel className="w-10 h-10 text-orange-500" />
+                </motion.div>
+                <motion.div
+                  animate={{ y: [0, -10, 0] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
+                  className="w-16 h-16 rounded-3xl bg-primary/10 flex items-center justify-center"
+                >
+                  <Plane className="w-8 h-8 text-primary" />
+                </motion.div>
+              </div>
 
-            <div className="flex items-center gap-4 text-white/50 text-xs mt-2">
-              <div className="flex items-center gap-1.5">
-                <Plane className="w-3.5 h-3.5" />
-                <span>Voli reali</span>
+              {/* Title */}
+              <div className="text-center">
+                <h1 className="text-3xl font-black text-gray-900 mb-2">{t.discover.discoverTitle}</h1>
+                <p className="text-gray-500 text-sm max-w-xs mx-auto leading-relaxed">{t.discover.chooseDestinationSub}</p>
               </div>
-              <div className="w-1 h-1 rounded-full bg-white/30" />
-              <div className="flex items-center gap-1.5">
-                <Hotel className="w-3.5 h-3.5" />
-                <span>Hotel reali</span>
-              </div>
-              <div className="w-1 h-1 rounded-full bg-white/30" />
-              <div className="flex items-center gap-1.5">
-                <Euro className="w-3.5 h-3.5" />
-                <span>Nel tuo budget</span>
-              </div>
-            </div>
 
-            {(recentSearches ?? []).length > 0 && (
-              <div className="w-full max-w-sm">
-                <p className="text-white/60 text-xs font-medium mb-2 text-left">Ricerche recenti</p>
-                <div className="flex flex-col gap-2">
-                  {(recentSearches ?? []).slice(0, 3).map((entry, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleRepeatSearch(entry)}
-                      className="flex items-center gap-3 bg-white/10 hover:bg-white/20 rounded-xl px-4 py-2.5 text-left transition-colors"
-                    >
-                      <MapPin className="w-4 h-4 text-white/60 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{entry.arrivalLocation}</p>
-                        {entry.departureDate && (
-                          <p className="text-white/50 text-xs">{entry.departureDate.slice(0, 10)}</p>
-                        )}
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-white/40 ml-auto shrink-0" />
-                    </button>
-                  ))}
+              {/* Big search CTA */}
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setFilterOpen(true)}
+                className="w-full max-w-xs bg-primary text-white font-bold text-base px-8 py-4 rounded-2xl shadow-[0_8px_24px_rgba(0,0,0,0.18)] flex items-center justify-center gap-3 hover:bg-primary/90 transition-colors"
+              >
+                <Plane className="w-5 h-5" />
+                {t.discover.chooseDestinationBtn}
+                <ChevronRight className="w-5 h-5" />
+              </motion.button>
+
+              {/* Feature chips */}
+              <div className="flex items-center gap-3 text-gray-500 text-xs flex-wrap justify-center">
+                <div className="flex items-center gap-1.5">
+                  <Plane className="w-3.5 h-3.5 text-primary" />
+                  <span>{t.discover.realFlights}</span>
+                </div>
+                <div className="w-1 h-1 rounded-full bg-gray-300" />
+                <div className="flex items-center gap-1.5">
+                  <Hotel className="w-3.5 h-3.5 text-orange-500" />
+                  <span>{t.discover.realHotels}</span>
+                </div>
+                <div className="w-1 h-1 rounded-full bg-gray-300" />
+                <div className="flex items-center gap-1.5">
+                  <Euro className="w-3.5 h-3.5 text-green-500" />
+                  <span>{t.discover.inYourBudget}</span>
                 </div>
               </div>
-            )}
-          </div>
-        ) : (
-          /* ── Destination set, not searched yet ── */
-          <>
-            <SurpriseBanner onPress={() => setLocation("/surprise")} t={t} />
-            <PreSearchState
-              onOpenFilters={() => setFilterOpen(true)}
-              t={t}
-              recentSearches={recentSearches ?? []}
-              onRepeat={handleRepeatSearch}
-            />
-          </>
-        )}
+
+              {/* Recent searches */}
+              {(recentSearches ?? []).length > 0 && (
+                <div className="w-full max-w-xs">
+                  <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3 text-center">
+                    {t.profile.recentSearches}
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {(recentSearches ?? []).slice(0, 3).map((entry, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleRepeatSearch(entry)}
+                        className="flex items-center gap-3 bg-white hover:bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-left transition-colors shadow-sm active:scale-[0.98]"
+                      >
+                        <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-gray-900 text-sm font-medium truncate">{entry.arrivalLocation}</p>
+                          {entry.departureDate && (
+                            <p className="text-gray-400 text-xs">{entry.departureDate.slice(0, 10)}</p>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <FilterSheet open={filterOpen} filters={filters} onClose={() => setFilterOpen(false)} onApply={handleApplyFilters} />
         <AnimatePresence>
           <PremiumUpgradeModal open={showPremiumModal} onClose={() => setShowPremiumModal(false)} isGuest={!isSignedIn} t={t} onSignUp={() => setLocation("/sign-up")} onUpgrade={handleUpgrade} isUpgrading={upgradeSubscription.isPending} />
         </AnimatePresence>
-      </div>
+      </>
     );
   }
 
